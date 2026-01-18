@@ -32,3 +32,6 @@ build/
 ### VS Code ###
 .vscode/
 /面试/
+
+### Local Config ###
+src/main/resources/application-local.yml
