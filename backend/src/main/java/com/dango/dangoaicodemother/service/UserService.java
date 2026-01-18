@@ -1,9 +1,14 @@
 package com.dango.dangoaicodemother.service;
 
+import com.dango.dangoaicodemother.model.dto.user.UserQueryRequest;
 import com.dango.dangoaicodemother.model.vo.LoginUserVO;
+import com.dango.dangoaicodemother.model.vo.UserVO;
+import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
 import com.dango.dangoaicodemother.model.entity.User;
 import jakarta.servlet.http.HttpServletRequest;
+
+import java.util.List;
 
 /**
  * 用户 服务层。
@@ -21,6 +26,23 @@ public interface UserService extends IService<User> {
      * @return 新用户 id
      */
     long userRegister(String userAccount, String userPassword, String checkPassword);
+
+    /**
+     * 密码加密
+     *
+     * @param userPassword
+     * @return
+     */
+    String getEncryptPassword(String userPassword);
+
+    /**
+     * 验证密码
+     *
+     * @param rawPassword   原始密码
+     * @param encodedPassword 加密后的密码
+     * @return
+     */
+    boolean verifyPassword(String rawPassword, String encodedPassword);
 
     /**
      * 获取脱敏的已登录用户信息
@@ -55,4 +77,24 @@ public interface UserService extends IService<User> {
      */
     boolean userLogout(HttpServletRequest request);
 
+    /**
+     * 获取脱敏的用户信息
+     * @param user
+     * @return
+     */
+    UserVO getUserVO(User user);
+
+    /**
+     * 获取用户查询条件
+     * @param userQueryRequest
+     * @return
+     */
+    QueryWrapper getQueryWrapper(UserQueryRequest userQueryRequest);
+
+    /**
+     * 根据用户列表获取用户信息列表
+     * @param records
+     * @return
+     */
+    List<UserVO> getUserVOList(List<User> records);
 }
