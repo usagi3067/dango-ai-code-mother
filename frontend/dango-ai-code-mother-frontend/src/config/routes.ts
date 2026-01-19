@@ -7,9 +7,11 @@
  * 2. 易于维护：新增页面只需在这里添加一条配置
  * 3. 类型安全：使用 TypeScript 确保配置正确
  * 4. 自动生成：路由配置和菜单配置自动生成，减少人工错误
+ * 5. 权限控制：支持配置页面访问权限
  */
 
 import type { RouteRecordRaw } from 'vue-router'
+import ACCESS_ENUM from '@/access/accessEnum'
 
 /**
  * 路由配置项的类型定义
@@ -25,6 +27,7 @@ export interface RouteConfig {
         menuLabel?: string      // 菜单显示的文本（如果不设置，使用 title）
         icon?: string           // 菜单图标（可选，暂未使用）
         requiresAuth?: boolean  // 是否需要登录（可选，用于权限控制）
+        access?: string         // 访问权限（notLogin/user/admin）
     }
 }
 
@@ -65,7 +68,8 @@ export const routeConfigs: RouteConfig[] = [
         component: () => import('@/pages/UserLoginPage.vue'),
         meta: {
             title: '用户登录',
-            showInMenu: false  // 不在菜单中显示
+            showInMenu: false,  // 不在菜单中显示
+            access: ACCESS_ENUM.NOT_LOGIN  // 不需要登录
         }
     },
     // 用户注册页面（不在菜单中显示）
@@ -75,22 +79,58 @@ export const routeConfigs: RouteConfig[] = [
         component: () => import('@/pages/UserRegisterPage.vue'),
         meta: {
             title: '用户注册',
-            showInMenu: false  // 不在菜单中显示
+            showInMenu: false,  // 不在菜单中显示
+            access: ACCESS_ENUM.NOT_LOGIN  // 不需要登录
+        }
+    },
+    // 无权限页面（不在菜单中显示）
+    {
+        path: '/noAuth',
+        name: 'noAuth',
+        component: () => import('@/pages/NoAuthPage.vue'),
+        meta: {
+            title: '无权限',
+            showInMenu: false,  // 不在菜单中显示
+            access: ACCESS_ENUM.NOT_LOGIN  // 不需要登录
+        }
+    },
+    // 用户管理页面（只有管理员可以访问）
+    {
+        path: '/admin/userManage',
+        name: 'userManage',
+        component: () => import('@/pages/admin/UserManagePage.vue'),
+        meta: {
+            title: '用户管理',
+            menuLabel: '用户管理',
+            showInMenu: true,  // 在菜单中显示（但只有管理员能看到）
+            access: ACCESS_ENUM.ADMIN  // 需要管理员权限
         }
     }
     
     /**
-     * 用户管理页面示例（暂未实现）
+     * 新增页面示例：
      * 
-     * // 用户管理
+     * // 需要登录的页面
      * {
-     *   path: '/admin/userManage',
-     *   name: 'userManage',
-     *   component: () => import('@/pages/UserManagePage.vue'),
+     *   path: '/myApp',
+     *   name: 'myApp',
+     *   component: () => import('@/pages/MyAppPage.vue'),
      *   meta: {
-     *     title: '用户管理',
+     *     title: '我的应用',
      *     showInMenu: true,
-     *     requiresAuth: true
+     *     access: ACCESS_ENUM.USER  // 需要登录
+     *   }
+     * }
+     * 
+     * // 管理员页面
+     * {
+     *   path: '/admin/settings',
+     *   name: 'settings',
+     *   component: () => import('@/pages/admin/SettingsPage.vue'),
+     *   meta: {
+     *     title: '系统设置',
+     *     showInMenu: true,
+     *     access: ACCESS_ENUM.ADMIN  // 需要管理员权限
      *   }
      * }
      */
@@ -133,12 +173,48 @@ export function generateRoutes(): RouteRecordRaw[] {
  * 
  * 这个函数会被 GlobalHeader.vue 使用
  * 过滤出需要显示在菜单中的路由
+ * 
+ * 优化：根据用户权限过滤菜单
+ * - 只显示用户有权限访问的菜单项
+ * - 例如：普通用户看不到"用户管理"菜单
+ * 
+ * @param loginUser - 当前登录用户（可选）
+ * @returns 过滤后的路由配置数组
  */
-export function getMenuRoutes(): RouteConfig[] {
-    return routeConfigs.filter(route => {
-        // 如果没有设置 showInMenu，默认显示
-        return route.meta?.showInMenu !== false
-    })
+export function getMenuRoutes(loginUser?: any): RouteConfig[] {
+  // 导入权限检查函数
+  const checkAccess = (needAccess: string) => {
+    // 如果没有传入 loginUser，使用默认的权限检查
+    if (!loginUser) {
+      return needAccess === ACCESS_ENUM.NOT_LOGIN
+    }
+    
+    // 获取用户角色
+    const loginUserAccess = loginUser?.userRole ?? ACCESS_ENUM.NOT_LOGIN
+    
+    // 检查权限
+    if (needAccess === ACCESS_ENUM.NOT_LOGIN) {
+      return true
+    }
+    if (needAccess === ACCESS_ENUM.USER) {
+      return loginUserAccess !== ACCESS_ENUM.NOT_LOGIN
+    }
+    if (needAccess === ACCESS_ENUM.ADMIN) {
+      return loginUserAccess === ACCESS_ENUM.ADMIN
+    }
+    return true
+  }
+  
+  return routeConfigs.filter(route => {
+    // 1. 如果没有设置 showInMenu，默认显示
+    if (route.meta?.showInMenu === false) {
+      return false
+    }
+    
+    // 2. 检查用户是否有权限访问这个路由
+    const needAccess = route.meta?.access ?? ACCESS_ENUM.NOT_LOGIN
+    return checkAccess(needAccess)
+  })
 }
 
 /**

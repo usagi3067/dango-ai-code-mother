@@ -82,6 +82,17 @@ app.use(router)
 app.use(Antd)
 
 /**
+ * 导入权限控制
+ * 
+ * 这个导入会执行 access/index.ts 中的代码
+ * 注册全局路由守卫，实现权限控制
+ * 
+ * 必须在 router 注册之后导入
+ * 因为权限控制需要使用 router 实例
+ */
+import '@/access'
+
+/**
  * 将 Vue 应用挂载到 DOM 元素上
  * '#app': CSS 选择器，对应 index.html 中的 <div id="app"></div>
  * 挂载后，Vue 会接管这个 DOM 元素，将虚拟 DOM 渲染成真实 DOM

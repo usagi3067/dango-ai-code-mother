@@ -93,8 +93,9 @@
  * 导入 Vue 3 的响应式 API
  * ref: 用于创建响应式数据，数据变化时会自动更新视图
  * onMounted: 生命周期钩子，组件挂载后执行
+ * computed: 计算属性，依赖的数据变化时自动重新计算
  */
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 
 /**
  * 导入 Vue Router 的路由钩子
@@ -231,23 +232,35 @@ router.afterEach(() => {
 })
 
 /**
- * 菜单项配置数组
+ * 菜单项配置数组（响应式）
  * 
- * 优化后的版本：
- * - 从统一配置文件自动生成菜单项
- * - 不需要手动编写菜单配置
- * - 路由和菜单自动保持同步
+ * 使用 computed 计算属性：
+ * - 当 loginUserStore.loginUser 变化时，自动重新计算
+ * - 用户登录/注销后，菜单会自动更新
+ * 
+ * 为什么要用 computed？
+ * - 如果直接赋值，只会在组件初始化时计算一次
+ * - 用户登录后，loginUser 变化了，但菜单不会更新
+ * - 使用 computed 后，loginUser 变化时会自动重新计算菜单
  * 
  * 工作原理：
- * 1. getMenuRoutes() 获取所有需要显示在菜单中的路由
- * 2. map() 将路由配置转换为 Ant Design Menu 需要的格式
- * 3. 自动生成 key、label 和 onClick 处理函数
+ * 1. getMenuRoutes(loginUserStore.loginUser) 获取用户有权限访问的路由
+ * 2. 当 loginUserStore.loginUser 变化时，computed 会自动重新执行
+ * 3. map() 将路由配置转换为 Ant Design Menu 需要的格式
+ * 4. 自动生成 key、label 和 onClick 处理函数
+ * 
+ * 示例：
+ * - 未登录：菜单显示 [首页, 关于]
+ * - 登录普通用户：菜单显示 [首页, 关于]
+ * - 登录管理员：菜单显示 [首页, 关于, 用户管理]
  */
-const menuItems: MenuProps['items'] = getMenuRoutes().map(route => ({
-  key: route.name,  // 使用路由名称作为菜单 key
-  label: route.meta?.menuLabel || route.meta?.title || route.name,  // 菜单显示文本
-  onClick: () => router.push(route.path)  // 点击时跳转到对应路径
-}))
+const menuItems = computed<MenuProps['items']>(() => {
+  return getMenuRoutes(loginUserStore.loginUser).map(route => ({
+    key: route.name,  // 使用路由名称作为菜单 key
+    label: route.meta?.menuLabel || route.meta?.title || route.name,  // 菜单显示文本
+    onClick: () => router.push(route.path)  // 点击时跳转到对应路径
+  }))
+})
 
 /**
  * 菜单配置说明：
