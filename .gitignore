@@ -1,0 +1,14 @@
+# IDE
+.idea/
+.vscode/
+
+# Interview materials
+面试/
+
+# macOS
+.DS_Store
+/面试/
+/.idea/
+/.kiro/
+/.mvn/
+/frontend/dango-ai-code-mother-frontend/.vscode/
