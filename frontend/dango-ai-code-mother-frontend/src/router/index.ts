@@ -73,9 +73,9 @@ router.beforeEach((to, from, next) => {
    * 根据路由的 meta.title 设置浏览器标题栏
    */
   if (to.meta.title) {
-    document.title = `${to.meta.title} - AI 代码母体`
+    document.title = `${to.meta.title} - AI 应用生成`
   } else {
-    document.title = 'AI 代码母体'
+    document.title = 'AI 应用生成'
   }
 
   /**

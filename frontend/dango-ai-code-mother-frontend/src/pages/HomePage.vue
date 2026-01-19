@@ -5,9 +5,9 @@
 <template>
   <div class="home-page">
     <div class="welcome-section">
-      <h1 class="title">欢迎使用 AI 代码母体</h1>
+      <h1 class="title">欢迎使用 AI 应用生成</h1>
       <p class="description">
-        一个基于 AI 的智能代码生成平台，帮助开发者快速构建高质量的应用程序
+        一个基于 AI 的智能应用生成平台，帮助开发者快速构建高质量的应用程序
       </p>
     </div>
 

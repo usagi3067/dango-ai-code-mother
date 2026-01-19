@@ -12,6 +12,50 @@
 import BasicLayout from '@/layouts/BasicLayout.vue'
 
 /**
+ * 导入 Vue 的生命周期钩子
+ * onMounted: 组件挂载完成后执行的钩子函数
+ * 适合在这里执行初始化操作，比如获取用户信息
+ */
+import { onMounted } from 'vue'
+
+/**
+ * 导入 Pinia store
+ * useLoginUserStore: 登录用户状态管理仓库
+ * 用于管理全局的用户登录状态
+ */
+import { useLoginUserStore } from '@/stores/loginUser.ts'
+
+/**
+ * 获取登录用户 store 实例
+ * 
+ * 调用 useLoginUserStore() 会返回一个 store 对象，包含：
+ * - loginUser: 响应式的用户信息状态
+ * - fetchLoginUser: 获取用户信息的方法
+ * - setLoginUser: 设置用户信息的方法
+ */
+const loginUserStore = useLoginUserStore()
+
+/**
+ * 组件挂载后执行
+ * 
+ * 为什么在这里获取用户信息？
+ * 1. App.vue 是根组件，最先加载
+ * 2. 在这里获取用户信息，确保所有子组件都能访问到用户状态
+ * 3. 只需要获取一次，避免重复请求
+ * 
+ * 执行流程：
+ * 1. 用户打开网站
+ * 2. App.vue 组件挂载
+ * 3. 调用 fetchLoginUser() 向后端请求用户信息
+ * 4. 如果用户已登录，后端返回用户信息并更新 store
+ * 5. 所有使用 loginUserStore 的组件都会自动更新显示
+ */
+onMounted(() => {
+  // 调用 store 中的方法，从后端获取登录用户信息
+  loginUserStore.fetchLoginUser()
+})
+
+/**
  * 在 script setup 中：
  * - 导入的组件会自动注册，可以直接在模板中使用
  * - 不需要 return 语句

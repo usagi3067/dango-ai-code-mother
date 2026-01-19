@@ -4,10 +4,10 @@
 -->
 <template>
   <div class="about-page">
-    <a-card title="关于 AI 代码母体" :bordered="false">
+    <a-card title="关于 AI 应用生成" :bordered="false">
       <a-descriptions :column="1" bordered>
         <a-descriptions-item label="项目名称">
-          AI 代码母体
+          AI 应用生成
         </a-descriptions-item>
         <a-descriptions-item label="版本">
           1.0.0
