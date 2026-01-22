@@ -45,12 +45,11 @@
               自动为子元素添加合适的间距，避免手动设置 margin
             -->
             <a-space>
-              <!-- 
-                a-avatar: Ant Design 的头像组件
-                :src: 动态绑定头像图片地址（冒号表示绑定动态数据）
-                如果用户有头像就显示，没有则显示默认头像
-              -->
-              <a-avatar :src="loginUserStore.loginUser.userAvatar" />
+              <!-- 用户头像 -->
+              <UserAvatar 
+                :src="loginUserStore.loginUser.userAvatar" 
+                :name="loginUserStore.loginUser.userName"
+              />
 
               <!-- 
                 显示用户名
@@ -152,6 +151,11 @@ import { userLogout } from '@/api/userController'
  * - 当用户信息变化时，组件会自动更新
  */
 import { useLoginUserStore } from '@/stores/loginUser.ts'
+
+/**
+ * 导入用户头像组件
+ */
+import UserAvatar from '@/components/UserAvatar.vue'
 
 /**
  * 获取登录用户 store 实例

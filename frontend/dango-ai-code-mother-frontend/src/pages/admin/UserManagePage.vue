@@ -99,12 +99,11 @@
         <template #bodyCell="{ column, record }">
           <!-- 头像列 -->
           <template v-if="column.key === 'userAvatar'">
-            <!-- 
-              a-avatar: Ant Design 的头像组件
-              :src: 头像图片地址
-              :size: 头像大小
-            -->
-            <a-avatar :src="record.userAvatar" :size="48" />
+            <UserAvatar 
+              :src="record.userAvatar" 
+              :name="record.userName"
+              :size="48"
+            />
           </template>
           
           <!-- 用户角色列 -->
@@ -184,6 +183,11 @@ import { listUserVoByPage, deleteUser } from '@/api/userController'
  * 导入 Ant Design Vue 的表格类型定义
  */
 import type { TableProps } from 'ant-design-vue'
+
+/**
+ * 导入用户头像组件
+ */
+import UserAvatar from '@/components/UserAvatar.vue'
 
 /**
  * 表格列配置

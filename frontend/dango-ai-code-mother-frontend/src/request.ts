@@ -23,6 +23,11 @@ import axios from 'axios'
 import { message } from 'ant-design-vue'
 
 /**
+ * 导入环境变量配置
+ */
+import { API_BASE_URL } from '@/config/env'
+
+/**
  * 创建 Axios 实例
  * 
  * 为什么要创建实例而不是直接使用 axios？
@@ -49,7 +54,7 @@ const myAxios = axios.create({
    * - 测试环境：https://test-api.example.com/api
    * - 生产环境：https://api.example.com/api
    */
-  baseURL: 'http://localhost:8123/api',
+  baseURL: API_BASE_URL,
 
   /**
    * timeout: 请求超时时间（毫秒）

@@ -159,8 +159,9 @@ import { reactive } from 'vue'
 /**
  * 导入 Vue Router 的路由钩子
  * useRouter: 用于页面跳转
+ * useRoute: 用于获取当前路由信息（包括查询参数）
  */
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 
 /**
  * 导入 Ant Design Vue 的消息提示组件
@@ -182,9 +183,15 @@ import { useLoginUserStore } from '@/stores/loginUser'
 
 /**
  * 获取路由实例
- * 用于登录成功后跳转到首页
+ * 用于登录成功后跳转
  */
 const router = useRouter()
+
+/**
+ * 获取当前路由信息
+ * 用于获取 redirect 查询参数
+ */
+const route = useRoute()
 
 /**
  * 获取登录用户 store 实例
@@ -285,10 +292,17 @@ const handleSubmit = async (values: any) => {
     message.success('登录成功')
     
     /**
-     * 3. 跳转到首页
+     * 3. 跳转到目标页面
+     * 
+     * 获取 redirect 参数：
+     * - 如果 URL 中有 redirect 参数，跳转到该页面
+     * - 否则跳转到首页
+     * 
+     * 示例：
+     * - URL: /user/login?redirect=/admin/userManage
+     * - 登录成功后跳转到 /admin/userManage
      * 
      * router.push: 编程式导航
-     * - path: '/': 跳转到首页路径
      * - replace: true: 使用替换模式
      * 
      * replace 模式的作用：
@@ -300,8 +314,9 @@ const handleSubmit = async (values: any) => {
      * - 用户已经登录成功，不应该再回到登录页
      * - 提升用户体验，避免误操作
      */
+    const redirectPath = (route.query.redirect as string) || '/'
     router.push({
-      path: '/',
+      path: redirectPath,
       replace: true
     })
   } else {

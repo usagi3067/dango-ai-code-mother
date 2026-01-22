@@ -1,0 +1,250 @@
+/**
+ * Markdown 渲染样式
+ * 
+ * 包含 Markdown 内容的基础样式和代码高亮样式
+ */
+
+/* ==================== Markdown 基础样式 ==================== */
+
+.markdown-content {
+  line-height: 1.7;
+  color: #333;
+  word-wrap: break-word;
+}
+
+.markdown-content p {
+  margin: 0 0 12px 0;
+}
+
+.markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+/* 标题样式 */
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4,
+.markdown-content h5,
+.markdown-content h6 {
+  margin: 16px 0 8px 0;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.markdown-content h1 { font-size: 1.5em; }
+.markdown-content h2 { font-size: 1.3em; }
+.markdown-content h3 { font-size: 1.15em; }
+.markdown-content h4 { font-size: 1em; }
+
+/* 列表样式 */
+.markdown-content ul,
+.markdown-content ol {
+  margin: 8px 0;
+  padding-left: 24px;
+}
+
+.markdown-content li {
+  margin: 4px 0;
+}
+
+/* 引用样式 */
+.markdown-content blockquote {
+  margin: 12px 0;
+  padding: 8px 16px;
+  border-left: 4px solid #52c4a0;
+  background: #f9f9f9;
+  color: #666;
+}
+
+/* 链接样式 */
+.markdown-content a {
+  color: #52c4a0;
+  text-decoration: none;
+}
+
+.markdown-content a:hover {
+  text-decoration: underline;
+}
+
+/* 粗体和斜体 */
+.markdown-content strong {
+  font-weight: 600;
+}
+
+.markdown-content em {
+  font-style: italic;
+}
+
+/* 分隔线 */
+.markdown-content hr {
+  margin: 16px 0;
+  border: none;
+  border-top: 1px solid #e8e8e8;
+}
+
+/* 表格样式 */
+.markdown-content table {
+  width: 100%;
+  margin: 12px 0;
+  border-collapse: collapse;
+}
+
+.markdown-content th,
+.markdown-content td {
+  padding: 8px 12px;
+  border: 1px solid #e8e8e8;
+  text-align: left;
+}
+
+.markdown-content th {
+  background: #fafafa;
+  font-weight: 600;
+}
+
+/* ==================== 代码块样式 ==================== */
+
+/* 代码块容器 */
+.markdown-content .hljs-code-block {
+  margin: 12px 0;
+  padding: 0;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #1e1e1e;
+}
+
+/* 代码块内容 */
+.markdown-content .hljs-code-block code {
+  display: block;
+  padding: 16px;
+  overflow-x: auto;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #d4d4d4;
+  background: #1e1e1e;
+}
+
+/* 行内代码 */
+.markdown-content .hljs-inline {
+  padding: 2px 6px;
+  margin: 0 2px;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 0.9em;
+  color: #e83e8c;
+  background: #f5f5f5;
+}
+
+/* ==================== VS Code Dark+ 主题高亮样式 ==================== */
+
+.hljs {
+  background: #1e1e1e;
+  color: #d4d4d4;
+}
+
+/* 注释 */
+.hljs-comment,
+.hljs-quote {
+  color: #6a9955;
+  font-style: italic;
+}
+
+/* 关键字 */
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-built_in,
+.hljs-name {
+  color: #569cd6;
+}
+
+/* 字符串 */
+.hljs-string,
+.hljs-attr,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-template-tag,
+.hljs-template-variable {
+  color: #ce9178;
+}
+
+/* 数字 */
+.hljs-number,
+.hljs-literal,
+.hljs-variable,
+.hljs-params {
+  color: #b5cea8;
+}
+
+/* 函数 */
+.hljs-function .hljs-title,
+.hljs-title.function_ {
+  color: #dcdcaa;
+}
+
+/* 类名 */
+.hljs-class .hljs-title,
+.hljs-title.class_ {
+  color: #4ec9b0;
+}
+
+/* 属性 */
+.hljs-attribute,
+.hljs-property {
+  color: #9cdcfe;
+}
+
+/* 标签 */
+.hljs-tag {
+  color: #808080;
+}
+
+.hljs-tag .hljs-name {
+  color: #569cd6;
+}
+
+.hljs-tag .hljs-attr {
+  color: #9cdcfe;
+}
+
+/* 类型 */
+.hljs-type {
+  color: #4ec9b0;
+}
+
+/* 符号 */
+.hljs-symbol,
+.hljs-bullet {
+  color: #d7ba7d;
+}
+
+/* 正则表达式 */
+.hljs-regexp {
+  color: #d16969;
+}
+
+/* 删除/添加 */
+.hljs-deletion {
+  color: #ce9178;
+  background: rgba(206, 145, 120, 0.1);
+}
+
+.hljs-addition {
+  color: #b5cea8;
+  background: rgba(181, 206, 168, 0.1);
+}
+
+/* 强调 */
+.hljs-emphasis {
+  font-style: italic;
+}
+
+.hljs-strong {
+  font-weight: bold;
+}
+
+/* 选中效果 */
+.hljs::selection,
+.hljs *::selection {
+  background: #264f78;
+}
