@@ -53,6 +53,11 @@ public class App implements Serializable {
     private String initPrompt;
 
     /**
+     * 应用标签
+     */
+    private String tag;
+
+    /**
      * 代码生成类型（枚举）
      */
     @Column("codeGenType")

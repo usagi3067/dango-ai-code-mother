@@ -52,6 +52,15 @@
             :options="CODE_GEN_TYPE_OPTIONS"
           />
         </a-form-item>
+        <a-form-item label="标签" name="tag">
+          <a-select
+            v-model:value="searchParams.tag"
+            placeholder="请选择标签"
+            allow-clear
+            style="width: 120px"
+            :options="APP_TAG_OPTIONS"
+          />
+        </a-form-item>
         <a-form-item>
           <a-space>
             <a-button type="primary" html-type="submit">搜索</a-button>
@@ -134,6 +143,13 @@
             <span>{{ getCodeGenTypeLabel(record.codeGenType) || '-' }}</span>
           </template>
 
+          <!-- 标签列：显示应用标签 -->
+          <template v-else-if="column.key === 'tag'">
+            <a-tag :color="getAppTagColor(record.tag)">
+              {{ getAppTagLabel(record.tag) }}
+            </a-tag>
+          </template>
+
           <!-- 部署状态列 -->
           <template v-else-if="column.key === 'deployKey'">
             <a-tag v-if="record.deployKey" color="green">已部署</a-tag>
@@ -200,6 +216,11 @@ import {
 import { CODE_GEN_TYPE_OPTIONS, getCodeGenTypeLabel } from '@/config/codeGenType'
 
 /**
+ * 导入应用标签配置
+ */
+import { APP_TAG_OPTIONS, getAppTagColor, getAppTagLabel } from '@/config/appTag'
+
+/**
  * 导入用户头像组件
  */
 import UserAvatar from '@/components/UserAvatar.vue'
@@ -225,6 +246,7 @@ const columns = [
   { title: 'ID', dataIndex: 'id', key: 'id', width: 80 },
   { title: '封面', dataIndex: 'cover', key: 'cover', width: 100 },
   { title: '应用名称', dataIndex: 'appName', key: 'appName', width: 150, ellipsis: true },
+  { title: '标签', dataIndex: 'tag', key: 'tag', width: 100 },
   { title: '代码类型', dataIndex: 'codeGenType', key: 'codeGenType', width: 100 },
   { title: '创建者', dataIndex: 'user', key: 'user', width: 120 },
   { title: '优先级', dataIndex: 'priority', key: 'priority', width: 80, align: 'center' as const },
@@ -239,7 +261,8 @@ const columns = [
 const searchParams = reactive({
   appName: '',
   userId: '',
-  codeGenType: ''
+  codeGenType: '',
+  tag: ''
 })
 
 /**
@@ -275,11 +298,14 @@ const loadData = async () => {
     const res = await listAppVoByPageByAdmin({
       pageNum: pagination.current,
       pageSize: pagination.pageSize,
+      sortField: 'createTime',  // 按创建时间排序
+      sortOrder: 'desc',         // 降序（最新的在前面）
       // || undefined: 如果为空字符串，传 undefined（不传这个参数）
       appName: searchParams.appName || undefined,
       // 用户 ID 需要转换类型
       userId: searchParams.userId ? (searchParams.userId as any) : undefined,
-      codeGenType: searchParams.codeGenType || undefined
+      codeGenType: searchParams.codeGenType || undefined,
+      tag: searchParams.tag || undefined
     })
     
     if (res.data.code === 0 && res.data.data) {
@@ -311,6 +337,7 @@ const handleReset = () => {
   searchParams.appName = ''
   searchParams.userId = ''
   searchParams.codeGenType = ''
+  searchParams.tag = ''
   pagination.current = 1
   loadData()
 }

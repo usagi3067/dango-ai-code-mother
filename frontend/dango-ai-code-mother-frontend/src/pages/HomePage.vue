@@ -240,6 +240,41 @@
         />
       </div>
       
+      <!-- 
+        标签筛选区域
+        显示"全部"和 8 个预定义标签按钮
+        点击按钮可以筛选对应类别的应用
+      -->
+      <div class="tag-filter-section">
+        <a-space wrap :size="[8, 8]">
+          <!-- 
+            "全部"按钮
+            selectedTag 为空字符串时高亮
+          -->
+          <a-button 
+            :type="selectedTag === '' ? 'primary' : 'default'"
+            size="small"
+            @click="handleTagChange('')"
+          >
+            全部
+          </a-button>
+          <!-- 
+            标签按钮列表
+            v-for 遍历 APP_TAG_OPTIONS 数组
+            当前选中的标签显示为 primary 类型（高亮）
+          -->
+          <a-button 
+            v-for="tag in APP_TAG_OPTIONS" 
+            :key="tag.value"
+            :type="selectedTag === tag.value ? 'primary' : 'default'"
+            size="small"
+            @click="handleTagChange(tag.value)"
+          >
+            {{ tag.label }}
+          </a-button>
+        </a-space>
+      </div>
+      
       <a-spin :spinning="featuredLoading">
         <div v-if="featuredApps.length > 0" class="app-grid">
           <AppCard
@@ -361,6 +396,13 @@ import { getDeployUrl } from '@/config/env'
  */
 import { useLoginUserStore } from '@/stores/loginUser'
 
+/**
+ * 导入应用标签配置
+ * 
+ * APP_TAG_OPTIONS: 标签选项数组，用于渲染筛选按钮
+ */
+import { APP_TAG_OPTIONS } from '@/config/appTag'
+
 // ==================== 初始化 ====================
 
 /**
@@ -453,6 +495,12 @@ const featuredPagination = reactive({
   pageSize: 6,
   total: 0
 })
+
+/**
+ * 当前选中的标签筛选
+ * 空字符串表示"全部"
+ */
+const selectedTag = ref('')
 
 // ==================== 方法定义 ====================
 
@@ -599,17 +647,26 @@ const loadMyApps = async () => {
 /**
  * 加载精选应用列表
  * 逻辑与 loadMyApps 类似
+ * 支持按标签筛选
  */
 const loadFeaturedApps = async () => {
   featuredLoading.value = true
   
   try {
-    const res = await listGoodAppVoByPage({
+    // 构建查询参数
+    const params: API.AppQueryRequest = {
       pageNum: featuredPagination.current,
       pageSize: featuredPagination.pageSize,
       sortField: 'createTime',  // 按创建时间排序
       sortOrder: 'desc'       // 优先级高的在前面
-    })
+    }
+    
+    // 如果选中了标签，添加标签筛选条件
+    if (selectedTag.value) {
+      params.tag = selectedTag.value
+    }
+    
+    const res = await listGoodAppVoByPage(params)
     
     if (res.data.code === 0 && res.data.data) {
       featuredApps.value = res.data.data.records || []
@@ -620,6 +677,19 @@ const loadFeaturedApps = async () => {
   } finally {
     featuredLoading.value = false
   }
+}
+
+/**
+ * 处理标签筛选切换
+ * 
+ * @param tag - 选中的标签值，空字符串表示"全部"
+ */
+const handleTagChange = (tag: string) => {
+  selectedTag.value = tag
+  // 切换标签时重置到第 1 页
+  featuredPagination.current = 1
+  // 重新加载数据
+  loadFeaturedApps()
 }
 
 /**
@@ -909,6 +979,35 @@ onMounted(() => {
   color: #1a1a1a;
 }
 
+/* ==================== 标签筛选样式 ==================== */
+
+/* 标签筛选区域容器 */
+.tag-filter-section {
+  margin-bottom: 20px;
+}
+
+/* 标签筛选按钮样式 */
+.tag-filter-section :deep(.ant-btn) {
+  border-radius: 16px;  /* 圆角胶囊形状 */
+  transition: all 0.2s;
+}
+
+/* 标签筛选按钮悬停效果 */
+.tag-filter-section :deep(.ant-btn:not(.ant-btn-primary):hover) {
+  border-color: #52c4a0;
+  color: #52c4a0;
+}
+
+/* 选中状态的按钮样式 */
+.tag-filter-section :deep(.ant-btn-primary) {
+  background: linear-gradient(135deg, #52c4a0 0%, #3db389 100%);
+  border: none;
+}
+
+.tag-filter-section :deep(.ant-btn-primary:hover) {
+  background: linear-gradient(135deg, #45b894 0%, #35a07a 100%);
+}
+
 /* ==================== 应用卡片网格样式 ==================== */
 
 .app-grid {
@@ -949,6 +1048,12 @@ onMounted(() => {
   
   .prompt-input-wrapper {
     margin: 0 16px;
+  }
+  
+  /* 标签筛选响应式：小屏幕上按钮更紧凑 */
+  .tag-filter-section :deep(.ant-btn) {
+    padding: 0 10px;
+    font-size: 12px;
   }
 }
 </style>

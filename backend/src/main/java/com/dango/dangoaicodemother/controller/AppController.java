@@ -4,11 +4,12 @@ package com.dango.dangoaicodemother.controller;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import com.dango.dangoaicodemother.ai.model.AppNameAndTagResult;
 import com.dango.dangoaicodemother.annotation.AuthCheck;
 import com.dango.dangoaicodemother.common.BaseResponse;
 import com.dango.dangoaicodemother.common.DeleteRequest;
 import com.dango.dangoaicodemother.common.ResultUtils;
-import com.dango.dangoaicodemother.core.AppNameGeneratorFacade;
+import com.dango.dangoaicodemother.core.AppInfoGeneratorFacade;
 import com.dango.dangoaicodemother.exception.BusinessException;
 import com.dango.dangoaicodemother.exception.ErrorCode;
 import com.dango.dangoaicodemother.exception.ThrowUtils;
@@ -54,7 +55,7 @@ public class AppController {
     private UserService userService;
 
     @Resource
-    private AppNameGeneratorFacade appNameGeneratorFacade;
+    private AppInfoGeneratorFacade appInfoGeneratorFacade;
     /**
      * 创建应用
      *
@@ -74,8 +75,10 @@ public class AppController {
         App app = new App();
         BeanUtil.copyProperties(appAddRequest, app);
         app.setUserId(loginUser.getId());
-        // 使用 AI 智能生成应用名称
-        app.setAppName(appNameGeneratorFacade.generateAppName(initPrompt));
+        // 使用 AI 智能生成应用名称和标签
+        AppNameAndTagResult appInfo = appInfoGeneratorFacade.generateAppInfo(initPrompt);
+        app.setAppName(appInfo.getAppName());
+        app.setTag(appInfo.getTag());
         // 暂时设置为多文件生成
         app.setCodeGenType(CodeGenTypeEnum.MULTI_FILE.getValue());
         // 插入数据库
@@ -85,7 +88,7 @@ public class AppController {
     }
 
     /**
-     * 更新应用（用户只能更新自己的应用名称）
+     * 更新应用（用户只能更新自己的应用名称和标签）
      *
      * @param appUpdateRequest 更新请求
      * @param request          请求
@@ -108,6 +111,7 @@ public class AppController {
         App app = new App();
         app.setId(id);
         app.setAppName(appUpdateRequest.getAppName());
+        app.setTag(appUpdateRequest.getTag());
         // 设置编辑时间
         app.setEditTime(LocalDateTime.now());
         boolean result = appService.updateById(app);

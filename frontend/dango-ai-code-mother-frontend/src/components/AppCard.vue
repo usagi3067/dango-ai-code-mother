@@ -47,7 +47,12 @@
           :size="36"
         />
         <div class="app-info-right">
-          <div class="app-name">{{ app.appName || '未命名应用' }}</div>
+          <div class="app-name-row">
+            <span class="app-name">{{ app.appName || '未命名应用' }}</span>
+            <a-tag :color="getAppTagColor(app.tag)" size="small">
+              {{ getAppTagLabel(app.tag) }}
+            </a-tag>
+          </div>
           <div class="app-author">{{ app.user?.userName || '匿名用户' }}</div>
         </div>
       </div>
@@ -58,6 +63,7 @@
 <script setup lang="ts">
 import { AppstoreOutlined, MessageOutlined, ExportOutlined } from '@ant-design/icons-vue'
 import UserAvatar from '@/components/UserAvatar.vue'
+import { getAppTagColor, getAppTagLabel } from '@/config/appTag'
 
 /**
  * 定义组件 Props
@@ -158,6 +164,22 @@ defineEmits<{
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.app-name-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.app-name-row :deep(.ant-tag) {
+  flex-shrink: 0;
+  margin: 0;
+  font-size: 12px;
+  line-height: 18px;
+  padding: 0 6px;
 }
 
 .app-author {

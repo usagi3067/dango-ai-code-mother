@@ -35,6 +35,7 @@ create table app
     cover        varchar(512)                       null comment '应用封面',
     initPrompt   text                               null comment '应用初始化的 prompt',
     codeGenType  varchar(64)                        null comment '代码生成类型（枚举）',
+    tag          varchar(32) default 'website'      null comment '应用标签',
     deployKey    varchar(64)                        null comment '部署标识',
     deployedTime datetime                           null comment '部署时间',
     priority     int      default 0                 not null comment '优先级',
@@ -45,5 +46,6 @@ create table app
     isDelete     tinyint  default 0                 not null comment '是否删除',
     UNIQUE KEY uk_deployKey (deployKey), -- 确保部署标识唯一
     INDEX idx_appName (appName),         -- 提升基于应用名称的查询性能
-    INDEX idx_userId (userId)            -- 提升基于用户 ID 的查询性能
+    INDEX idx_userId (userId),           -- 提升基于用户 ID 的查询性能
+    INDEX idx_tag (tag)                  -- 提升基于标签的查询性能
 ) comment '应用' collate = utf8mb4_unicode_ci;

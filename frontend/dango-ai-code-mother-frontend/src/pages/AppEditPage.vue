@@ -69,6 +69,19 @@
           </a-form-item>
 
           <!-- 
+            应用标签（所有用户都可以修改）
+            使用下拉选择框选择预定义的标签
+          -->
+          <a-form-item label="标签" name="tag">
+            <a-select
+              v-model:value="formData.tag"
+              placeholder="请选择标签"
+              :options="APP_TAG_OPTIONS"
+              style="width: 200px"
+            />
+          </a-form-item>
+
+          <!-- 
             管理员专属字段
             v-if="isAdmin": 只有管理员才能看到这些字段
           -->
@@ -172,6 +185,11 @@ import {
 import { getCodeGenTypeLabel } from '@/config/codeGenType'
 
 /**
+ * 导入应用标签配置
+ */
+import { APP_TAG_OPTIONS } from '@/config/appTag'
+
+/**
  * 导入用户头像组件
  */
 import UserAvatar from '@/components/UserAvatar.vue'
@@ -208,7 +226,8 @@ const appInfo = ref<API.AppVO | null>(null)
 const formData = reactive({
   appName: '',
   cover: '',
-  priority: 0
+  priority: 0,
+  tag: ''  // 应用标签
 })
 
 // 加载状态
@@ -240,6 +259,7 @@ const loadAppInfo = async () => {
       formData.appName = res.data.data.appName || ''
       formData.cover = res.data.data.cover || ''
       formData.priority = res.data.data.priority || 0
+      formData.tag = res.data.data.tag || ''
     } else {
       message.error('获取应用信息失败')
       router.back()
@@ -269,13 +289,15 @@ const handleSubmit = async () => {
         id: appId.value as any,
         appName: formData.appName,
         cover: formData.cover,
-        priority: formData.priority
+        priority: formData.priority,
+        tag: formData.tag
       })
     } else {
-      // 普通用户只能更新应用名称
+      // 普通用户可以更新应用名称和标签
       res = await updateApp({
         id: appId.value as any,
-        appName: formData.appName
+        appName: formData.appName,
+        tag: formData.tag
       })
     }
     

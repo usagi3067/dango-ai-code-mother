@@ -73,6 +73,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         String cover = appQueryRequest.getCover();
         String initPrompt = appQueryRequest.getInitPrompt();
         String codeGenType = appQueryRequest.getCodeGenType();
+        String tag = appQueryRequest.getTag();
         String deployKey = appQueryRequest.getDeployKey();
         Integer priority = appQueryRequest.getPriority();
         Long userId = appQueryRequest.getUserId();
@@ -84,6 +85,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
                 .like("cover", cover)
                 .like("initPrompt", initPrompt)
                 .eq("codeGenType", codeGenType)
+                .eq("tag", tag)
                 .eq("deployKey", deployKey)
                 .eq("priority", priority)
                 .eq("userId", userId)
