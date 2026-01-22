@@ -8,6 +8,7 @@ import com.dango.dangoaicodemother.annotation.AuthCheck;
 import com.dango.dangoaicodemother.common.BaseResponse;
 import com.dango.dangoaicodemother.common.DeleteRequest;
 import com.dango.dangoaicodemother.common.ResultUtils;
+import com.dango.dangoaicodemother.core.AppNameGeneratorFacade;
 import com.dango.dangoaicodemother.exception.BusinessException;
 import com.dango.dangoaicodemother.exception.ErrorCode;
 import com.dango.dangoaicodemother.exception.ThrowUtils;
@@ -51,6 +52,9 @@ public class AppController {
 
     @Resource
     private UserService userService;
+
+    @Resource
+    private AppNameGeneratorFacade appNameGeneratorFacade;
     /**
      * 创建应用
      *
@@ -70,8 +74,8 @@ public class AppController {
         App app = new App();
         BeanUtil.copyProperties(appAddRequest, app);
         app.setUserId(loginUser.getId());
-        // 应用名称暂时为 initPrompt 前 12 位
-        app.setAppName(initPrompt.substring(0, Math.min(initPrompt.length(), 12)));
+        // 使用 AI 智能生成应用名称
+        app.setAppName(appNameGeneratorFacade.generateAppName(initPrompt));
         // 暂时设置为多文件生成
         app.setCodeGenType(CodeGenTypeEnum.MULTI_FILE.getValue());
         // 插入数据库

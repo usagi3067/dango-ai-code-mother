@@ -4,6 +4,7 @@ import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
@@ -11,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 public class AiCodeGeneratorServiceFactory {
 
     @Resource
-    private ChatModel chatModel;
+    private ChatModel openAiChatModel;
 
     @Resource
     private StreamingChatModel streamingChatModel;
@@ -27,7 +28,7 @@ public class AiCodeGeneratorServiceFactory {
     @Bean
     public AiCodeGeneratorService aiCodeGeneratorService() {
         return AiServices.builder(AiCodeGeneratorService.class)
-                .chatModel(chatModel)
+                .chatModel(openAiChatModel)
                 .streamingChatModel(streamingChatModel)
                 .build();
     }
