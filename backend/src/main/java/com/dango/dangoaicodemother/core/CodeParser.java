@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
  * 该类主要用于从 AI 生成的 Markdown 文本中提取特定类型的代码块（如 HTML, CSS, JS）。
  * 由于 AI 输出通常包含描述性文字和 Markdown 代码格式，我们需要正则提取核心代码以便后续处理和保存。
  *
- * @author yupi
+ * @author dango
  */
 @Deprecated
 public class CodeParser {

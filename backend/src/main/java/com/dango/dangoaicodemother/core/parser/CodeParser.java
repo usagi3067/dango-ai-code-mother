@@ -3,7 +3,7 @@ package com.dango.dangoaicodemother.core.parser;
 /**
  * 代码解析器策略接口
  * 
- * @author yupi
+ * @author dango
  */
 public interface CodeParser<T> {
 
