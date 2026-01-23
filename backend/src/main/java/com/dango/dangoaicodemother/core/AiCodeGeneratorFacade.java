@@ -1,6 +1,7 @@
 package com.dango.dangoaicodemother.core;
 
 import com.dango.dangoaicodemother.ai.AiCodeGeneratorService;
+import com.dango.dangoaicodemother.ai.AiCodeGeneratorServiceFactory;
 import com.dango.dangoaicodemother.ai.model.HtmlCodeResult;
 import com.dango.dangoaicodemother.ai.model.MultiFileCodeResult;
 import com.dango.dangoaicodemother.core.parser.CodeParserExecutor;
@@ -23,7 +24,7 @@ import java.io.File;
 public class AiCodeGeneratorFacade {
 
     @Resource
-    private AiCodeGeneratorService aiCodeGeneratorService;
+    private AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
 
     /**
      * 统一入口：根据类型生成并保存代码（使用 appId）
@@ -37,6 +38,8 @@ public class AiCodeGeneratorFacade {
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成类型为空");
         }
+
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId);
         return switch (codeGenTypeEnum) {
             case HTML -> {
                 // 在 switch 表达式的多行代码块中，使用 yield 返回结果
@@ -65,6 +68,7 @@ public class AiCodeGeneratorFacade {
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "生成类型为空");
         }
+        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId);
         return switch (codeGenTypeEnum) {
             case HTML -> {
                 Flux<String> codeStream = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);

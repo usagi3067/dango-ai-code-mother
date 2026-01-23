@@ -7,6 +7,7 @@ import com.dango.dangoaicodemother.model.vo.ChatHistoryVO;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 
 import java.util.List;
 
@@ -79,4 +80,13 @@ public interface ChatHistoryService extends IService<ChatHistory> {
      * @return 对话历史VO列表
      */
     List<ChatHistoryVO> getChatHistoryVOList(List<ChatHistory> chatHistoryList);
+
+    /**
+     * 加载对话历史到会话记忆中
+     * @param appId 应用ID
+     * @param chatMemory 会话记忆
+     * @param maxCount 最大数量
+     * @return
+     */
+    int loadChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount);
 }
