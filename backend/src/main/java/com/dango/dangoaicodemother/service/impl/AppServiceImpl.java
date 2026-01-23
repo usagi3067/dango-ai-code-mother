@@ -18,10 +18,12 @@ import com.dango.dangoaicodemother.model.enums.CodeGenTypeEnum;
 import com.dango.dangoaicodemother.model.vo.AppVO;
 import com.dango.dangoaicodemother.model.vo.UserVO;
 import com.dango.dangoaicodemother.service.AppService;
+import com.dango.dangoaicodemother.service.ChatHistoryService;
 import com.dango.dangoaicodemother.service.UserService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -38,12 +40,15 @@ import java.util.stream.Collectors;
  *
  * @author dango
  */
+@Slf4j
 @Service
 public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppService {
     @Resource
     private UserService userService;
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
+    @Resource
+    private ChatHistoryService chatHistoryService;
 
 
     @Override
@@ -129,8 +134,38 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         if (codeGenTypeEnum == null) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的代码生成类型");
         }
-        // 5. 调用 AI 生成代码
-        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+        // 5. 保存用户消息到对话历史
+        Long userId = loginUser.getId();
+        try {
+            chatHistoryService.saveUserMessage(appId, userId, message);
+        } catch (Exception e) {
+            log.error("保存用户消息失败: {}", e.getMessage());
+        }
+        // 6. 调用 AI 生成代码，并在完成后保存 AI 回复
+        StringBuilder aiResponseBuilder = new StringBuilder();
+        // 收集 AI 回复内容
+        return aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId)
+                .doOnNext(aiResponseBuilder::append)
+                .doOnComplete(() -> {
+                    // AI 回复成功后保存 AI 消息
+                    String aiResponse = aiResponseBuilder.toString();
+                    if (StrUtil.isNotBlank(aiResponse)) {
+                        try {
+                            chatHistoryService.saveAiMessage(appId, userId, aiResponse);
+                        } catch (Exception e) {
+                            log.error("保存 AI 消息失败: {}", e.getMessage());
+                        }
+                    }
+                })
+                .doOnError(error -> {
+                    // AI 回复失败时保存错误消息
+                    String errorMessage = "生成代码失败: " + error.getMessage();
+                    try {
+                        chatHistoryService.saveAiMessage(appId, userId, errorMessage);
+                    } catch (Exception e) {
+                        log.error("保存错误消息失败: {}", e.getMessage());
+                    }
+                });
     }
 
     @Override

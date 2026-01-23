@@ -21,6 +21,7 @@ import com.dango.dangoaicodemother.model.entity.User;
 import com.dango.dangoaicodemother.model.enums.CodeGenTypeEnum;
 import com.dango.dangoaicodemother.model.vo.AppVO;
 import com.dango.dangoaicodemother.service.AppService;
+import com.dango.dangoaicodemother.service.ChatHistoryService;
 import com.dango.dangoaicodemother.service.UserService;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
@@ -56,6 +57,9 @@ public class AppController {
 
     @Resource
     private AppInfoGeneratorFacade appInfoGeneratorFacade;
+
+    @Resource
+    private ChatHistoryService chatHistoryService;
     /**
      * 创建应用
      *
@@ -140,6 +144,8 @@ public class AppController {
         if (!oldApp.getUserId().equals(loginUser.getId()) && !UserConstant.ADMIN_ROLE.equals(loginUser.getUserRole())) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
         }
+        // 级联删除该应用的所有对话历史
+        chatHistoryService.deleteByAppId(id);
         boolean result = appService.removeById(id);
         return ResultUtils.success(result);
     }
@@ -227,6 +233,8 @@ public class AppController {
         // 判断是否存在
         App oldApp = appService.getById(id);
         ThrowUtils.throwIf(oldApp == null, ErrorCode.NOT_FOUND_ERROR);
+        // 级联删除该应用的所有对话历史
+        chatHistoryService.deleteByAppId(id);
         boolean result = appService.removeById(id);
         return ResultUtils.success(result);
     }
