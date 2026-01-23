@@ -120,6 +120,18 @@ export const routeConfigs: RouteConfig[] = [
       showInMenu: true,
       access: ACCESS_ENUM.ADMIN
     }
+  },
+  // 对话管理页面（管理员）
+  {
+    path: '/admin/chatHistoryManage',
+    name: 'chatHistoryManage',
+    component: () => import('@/pages/admin/ChatHistoryManagePage.vue'),
+    meta: {
+      title: '对话管理',
+      menuLabel: '对话管理',
+      showInMenu: true,
+      access: ACCESS_ENUM.ADMIN
+    }
   }
 ]
 

@@ -102,6 +102,18 @@
           用于实现滚动到底部功能
         -->
         <div ref="messageListRef" class="message-list">
+          <!-- 加载更多按钮 -->
+          <div v-if="hasMore" class="load-more-wrapper">
+            <a-button 
+              type="link" 
+              :loading="loadingHistory"
+              @click="loadChatHistory(true)"
+            >
+              <template #icon><LoadingOutlined v-if="loadingHistory" /></template>
+              {{ loadingHistory ? '加载中...' : '加载更多历史消息' }}
+            </a-button>
+          </div>
+          
           <!-- 
             遍历消息列表
             :class: 动态绑定 class
@@ -241,10 +253,11 @@
             <p>正在生成中...</p>
           </div>
           
-          <!-- 空状态 -->
+          <!-- 空状态：没有预览 URL 或历史记录不足 -->
           <div v-else class="preview-empty">
             <FileTextOutlined class="empty-icon" />
-            <p>发送消息后，生成的网页将在这里展示</p>
+            <p v-if="messages.length < 2">发送消息后，生成的网页将在这里展示</p>
+            <p v-else>加载预览中...</p>
           </div>
         </div>
       </div>
@@ -322,13 +335,15 @@ import {
   SendOutlined,         // 发送图标
   ExportOutlined,       // 导出/外链图标
   FileTextOutlined,     // 文件图标
-  CheckCircleOutlined   // 成功勾选图标
+  CheckCircleOutlined,  // 成功勾选图标
+  LoadingOutlined       // 加载图标
 } from '@ant-design/icons-vue'
 
 /**
  * 导入 API 接口
  */
 import { getAppVoById, deployApp } from '@/api/appController'
+import { listChatHistoryByAppId } from '@/api/chatHistoryController'
 
 /**
  * 导入环境变量配置
@@ -444,16 +459,126 @@ const deployModalVisible = ref(false)  // 部署成功弹窗是否显示
 const deployedUrl = ref('')            // 部署后的 URL
 
 /**
- * 是否为查看模式（从 URL 参数 ?view=1 判断）
- * 查看模式下不会自动发送初始消息
- */
-const isViewMode = ref(false)
-
-/**
  * 是否为应用所有者
  * 只有所有者才能在对话页发送消息
  */
 const isOwner = ref(true)
+
+// ==================== 对话历史相关 ====================
+
+/**
+ * 游标 ID，用于分页加载历史消息
+ * undefined 表示加载最新的消息
+ */
+const lastId = ref<number | undefined>(undefined)
+
+/**
+ * 是否还有更多历史消息可加载
+ */
+const hasMore = ref(false)
+
+/**
+ * 是否正在加载历史消息
+ */
+const loadingHistory = ref(false)
+
+/**
+ * 历史记录总数，用于判断是否显示预览
+ */
+const historyCount = ref(0)
+
+/**
+ * 对话历史是否已加载完成
+ * 用于确保在历史加载完成后才判断是否自动发送
+ */
+const historyLoaded = ref(false)
+
+/**
+ * 将 ChatHistoryVO 转换为 Message 格式
+ * @param history - 后端返回的对话历史记录
+ * @returns Message 格式的消息对象
+ */
+const convertToMessage = (history: API.ChatHistoryVO): Message => {
+  return {
+    role: history.messageType === 'ai' ? 'ai' : 'user',
+    content: history.message || '',
+    loading: false
+  }
+}
+
+/**
+ * 加载对话历史
+ * 
+ * @param isLoadMore - 是否为加载更多（true: 加载更早的消息，false: 初始加载）
+ */
+const loadChatHistory = async (isLoadMore = false) => {
+  if (!appId.value || loadingHistory.value) return
+  
+  loadingHistory.value = true
+  
+  try {
+    // 使用 as any 绕过类型检查，保持 appId 为字符串格式避免精度丢失
+    const res = await listChatHistoryByAppId({
+      appId: appId.value as any,
+      lastId: isLoadMore ? lastId.value : undefined,
+      size: 10
+    })
+    
+    if (res.data.code === 0 && res.data.data) {
+      const records = res.data.data.records || []
+      const totalRow = res.data.data.totalRow || 0
+      
+      // 更新历史记录总数
+      if (!isLoadMore) {
+        historyCount.value = totalRow
+      }
+      
+      if (records.length > 0) {
+        // 将 ChatHistoryVO 转换为 Message 格式
+        // API 返回的是按时间降序（最新的在前），需要反转为升序
+        const newMessages = records.map(convertToMessage).reverse()
+        
+        if (isLoadMore) {
+          // 加载更多：保存当前滚动位置
+          const scrollContainer = messageListRef.value
+          const previousScrollHeight = scrollContainer?.scrollHeight || 0
+          
+          // 将更早的消息添加到列表开头
+          messages.value = [...newMessages, ...messages.value]
+          
+          // 恢复滚动位置
+          nextTick(() => {
+            if (scrollContainer) {
+              const newScrollHeight = scrollContainer.scrollHeight
+              scrollContainer.scrollTop = newScrollHeight - previousScrollHeight
+            }
+          })
+        } else {
+          // 初始加载：直接设置消息列表
+          messages.value = newMessages
+          // 滚动到底部
+          scrollToBottom()
+        }
+        
+        // 更新游标：使用最早消息的 ID（records 反转前的最后一条）
+        lastId.value = records[records.length - 1].id
+        
+        // 判断是否还有更多历史消息
+        // 如果当前加载的消息数量等于请求的数量，可能还有更多
+        hasMore.value = records.length === 10
+      } else {
+        hasMore.value = false
+      }
+    }
+  } catch (error) {
+    console.error('加载对话历史失败：', error)
+    message.error('加载对话历史失败')
+  } finally {
+    loadingHistory.value = false
+    // 标记历史加载完成
+    historyLoaded.value = true
+  }
+}
 
 // ==================== 方法定义 ====================
 
@@ -461,7 +586,7 @@ const isOwner = ref(true)
  * 获取应用信息
  * 
  * 页面加载时调用，获取应用的详细信息
- * 如果应用有初始提示词，会自动发送给 AI（非查看模式下）
+ * 先加载对话历史，再判断是否自动发送初始消息
  */
 const loadAppInfo = async () => {
   if (!appId.value) return
@@ -489,10 +614,27 @@ const loadAppInfo = async () => {
       isOwner.value = !!(currentUserId && appUserId && String(currentUserId) === String(appUserId))
       
       /**
-       * 如果应用有初始提示词，且消息列表为空，且不是查看模式
-       * 自动将初始提示词作为第一条消息发送
+       * 先加载对话历史
        */
-      if (appInfo.value.initPrompt && messages.value.length === 0 && !isViewMode.value) {
+      await loadChatHistory()
+      
+      /**
+       * 根据前端消息列表数量决定是否显示预览
+       * 如果有至少 2 条对话记录，显示网站预览
+       */
+      if (messages.value.length >= 2 && appInfo.value.codeGenType) {
+        previewUrl.value = getStaticPreviewUrl(appInfo.value.codeGenType, appId.value)
+        iframeKey.value++
+      }
+      
+      /**
+       * 自动发送初始消息的条件：
+       * 1. 应用有初始提示词
+       * 2. 用户是应用所有者
+       * 3. 历史已加载完成（historyLoaded === true）
+       * 4. 前端消息列表为空（messages.value.length === 0）
+       */
+      if (appInfo.value.initPrompt && isOwner.value && historyLoaded.value && messages.value.length === 0) {
         inputText.value = appInfo.value.initPrompt
         await handleSend()
       }
@@ -645,8 +787,11 @@ const handleSend = async () => {
         
         // 延迟更新预览，确保后端文件已写入完成
         setTimeout(async () => {
-          // 重新获取应用信息（可能有新的 codeGenType）
-          await loadAppInfo()
+          // 重新获取应用信息（可能有新的 codeGenType），但不重新加载对话历史
+          const res = await getAppVoById({ id: appId.value as any })
+          if (res.data.code === 0 && res.data.data) {
+            appInfo.value = res.data.data
+          }
           updatePreview()
         }, 1000)
       } else {
@@ -670,9 +815,13 @@ const handleSend = async () => {
       messages.value[aiMessageIndex].loading = false
       isGenerating.value = false
       
-      // 延迟更新预览
+      // 延迟更新预览，但不重新加载对话历史
       setTimeout(async () => {
-        await loadAppInfo()
+        // 重新获取应用信息（可能有新的 codeGenType），但不重新加载对话历史
+        const res = await getAppVoById({ id: appId.value as any })
+        if (res.data.code === 0 && res.data.data) {
+          appInfo.value = res.data.data
+        }
         updatePreview()
       }, 1000)
     })
@@ -853,12 +1002,6 @@ onMounted(() => {
    */
   const id = route.params.id
   
-  /**
-   * 检查是否为查看模式
-   * URL 参数 ?view=1 表示查看模式，不自动发送消息
-   */
-  isViewMode.value = route.query.view === '1'
-  
   if (id) {
     // 确保 ID 是字符串
     appId.value = String(id)
@@ -885,12 +1028,14 @@ onMounted(() => {
 watch(() => route.params.id, (newId) => {
   if (newId) {
     appId.value = String(newId)
-    // 检查是否为查看模式
-    isViewMode.value = route.query.view === '1'
     // 重置状态
     messages.value = []
     previewUrl.value = ''
     isOwner.value = true
+    lastId.value = undefined
+    hasMore.value = false
+    historyCount.value = 0
+    historyLoaded.value = false  // 重置历史加载标志
     // 重新加载应用信息
     loadAppInfo()
   }
@@ -988,6 +1133,20 @@ watch(() => route.params.id, (newId) => {
   flex: 1;
   overflow-y: auto;  /* 垂直滚动 */
   padding: 24px;
+}
+
+/* 加载更多按钮 */
+.load-more-wrapper {
+  text-align: center;
+  margin-bottom: 16px;
+}
+
+.load-more-wrapper .ant-btn-link {
+  color: #999;
+}
+
+.load-more-wrapper .ant-btn-link:hover {
+  color: #52c4a0;
 }
 
 /* 单条消息 */
