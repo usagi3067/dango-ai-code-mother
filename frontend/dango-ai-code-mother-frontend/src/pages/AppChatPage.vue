@@ -72,8 +72,15 @@
         </a-dropdown>
       </div>
       
-      <!-- 右侧区域：部署按钮 -->
+      <!-- 右侧区域：下载代码 + 部署按钮 -->
       <div class="top-right">
+        <a-button 
+          :loading="downloading"
+          @click="handleDownload"
+        >
+          <template #icon><DownloadOutlined /></template>
+          下载代码
+        </a-button>
         <a-button 
           type="primary" 
           :loading="deploying"
@@ -330,6 +337,7 @@ import {
   EditOutlined,         // 编辑图标
   HomeOutlined,         // 首页图标
   CloudUploadOutlined,  // 云上传图标（部署）
+  DownloadOutlined,     // 下载图标
   UploadOutlined,       // 上传图标
   ThunderboltOutlined,  // 闪电图标（优化）
   SendOutlined,         // 发送图标
@@ -457,6 +465,11 @@ const iframeKey = ref(0)     // iframe 的 key，用于强制刷新
 const deploying = ref(false)           // 是否正在部署
 const deployModalVisible = ref(false)  // 部署成功弹窗是否显示
 const deployedUrl = ref('')            // 部署后的 URL
+
+/**
+ * 下载相关
+ */
+const downloading = ref(false)         // 是否正在下载
 
 /**
  * 是否为应用所有者
@@ -915,6 +928,72 @@ const scrollToBottom = () => {
 }
 
 /**
+ * 下载应用代码
+ * 
+ * 调用后端下载接口，获取 ZIP 压缩包
+ * 后端返回的是文件流，需要使用 fetch 处理 blob 响应
+ */
+const handleDownload = async () => {
+  if (!appId.value) return
+  
+  downloading.value = true
+  
+  try {
+    // 构建下载 URL
+    const downloadUrl = `${API_BASE_URL}/app/download/${appId.value}`
+    
+    // 使用 fetch 发送请求，携带 Cookie
+    const response = await fetch(downloadUrl, {
+      method: 'GET',
+      credentials: 'include'  // 携带 Cookie
+    })
+    
+    // 检查响应状态
+    if (!response.ok) {
+      // 尝试解析错误信息
+      const contentType = response.headers.get('Content-Type')
+      if (contentType && contentType.includes('application/json')) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || '下载失败')
+      }
+      throw new Error(`下载失败：${response.status}`)
+    }
+    
+    // 从响应头获取文件名
+    const contentDisposition = response.headers.get('Content-Disposition')
+    let fileName = `${appId.value}.zip`
+    if (contentDisposition) {
+      const match = contentDisposition.match(/filename="?([^"]+)"?/)
+      if (match && match[1]) {
+        fileName = match[1]
+      }
+    }
+    
+    // 获取 blob 数据
+    const blob = await response.blob()
+    
+    // 创建下载链接并触发下载
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    document.body.appendChild(link)
+    link.click()
+    
+    // 清理
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+    
+    message.success('下载成功')
+  } catch (error: any) {
+    console.error('下载代码失败：', error)
+    message.error(error.message || '下载失败，请稍后重试')
+  } finally {
+    downloading.value = false
+  }
+}
+
+/**
  * 部署应用
  * 
  * 调用后端部署接口，获取部署后的访问 URL
@@ -1093,6 +1172,12 @@ watch(() => route.params.id, (newId) => {
 
 .app-name-wrapper:hover {
   background: #f5f5f5;
+}
+
+/* 右侧按钮区域 */
+.top-right {
+  display: flex;
+  gap: 12px;
 }
 
 .app-logo {
