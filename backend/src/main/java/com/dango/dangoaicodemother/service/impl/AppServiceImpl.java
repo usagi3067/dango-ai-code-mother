@@ -5,7 +5,10 @@ import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
+import com.dango.dangoaicodemother.ai.AiCodeGenTypeRoutingService;
+import com.dango.dangoaicodemother.ai.model.AppNameAndTagResult;
 import com.dango.dangoaicodemother.core.AiCodeGeneratorFacade;
+import com.dango.dangoaicodemother.core.AppInfoGeneratorFacade;
 import com.dango.dangoaicodemother.core.builder.VueProjectBuilder;
 import com.dango.dangoaicodemother.core.handler.StreamHandlerExecutor;
 import com.dango.dangoaicodemother.exception.BusinessException;
@@ -13,6 +16,7 @@ import com.dango.dangoaicodemother.exception.ErrorCode;
 import com.dango.dangoaicodemother.exception.ThrowUtils;
 import com.dango.dangoaicodemother.mapper.AppMapper;
 import com.dango.dangoaicodemother.model.constant.AppConstant;
+import com.dango.dangoaicodemother.model.dto.app.AppAddRequest;
 import com.dango.dangoaicodemother.model.dto.app.AppQueryRequest;
 import com.dango.dangoaicodemother.model.entity.App;
 import com.dango.dangoaicodemother.model.entity.User;
@@ -239,5 +243,31 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         });
     }
 
+    @Resource
+    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
+    @Resource
+    private AppInfoGeneratorFacade appInfoGeneratorFacade;
 
+    @Override
+    public Long createApp(AppAddRequest appAddRequest, User loginUser) {
+        // 参数校验
+        String initPrompt = appAddRequest.getInitPrompt();
+        ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化 prompt 不能为空");
+        // 构造入库对象
+        App app = new App();
+        BeanUtil.copyProperties(appAddRequest, app);
+        app.setUserId(loginUser.getId());
+        // 使用 AI 智能生成应用名称和标签
+        AppNameAndTagResult appInfo = appInfoGeneratorFacade.generateAppInfo(initPrompt);
+        app.setAppName(appInfo.getAppName());
+        app.setTag(appInfo.getTag());
+        // 使用 AI 智能选择代码生成类型
+        CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
+        app.setCodeGenType(selectedCodeGenType.getValue());
+        // 插入数据库
+        boolean result = this.save(app);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        log.info("应用创建成功，ID: {}, 类型: {}", app.getId(), selectedCodeGenType.getValue());
+        return app.getId();
+    }
 }

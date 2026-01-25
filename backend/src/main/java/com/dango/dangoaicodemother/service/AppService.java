@@ -1,5 +1,6 @@
 package com.dango.dangoaicodemother.service;
 
+import com.dango.dangoaicodemother.model.dto.app.AppAddRequest;
 import com.dango.dangoaicodemother.model.dto.app.AppQueryRequest;
 import com.dango.dangoaicodemother.model.entity.App;
 import com.dango.dangoaicodemother.model.entity.User;
@@ -61,4 +62,12 @@ public interface AppService extends IService<App> {
       * @param appUrl 应用地址
      */
     void generateAppScreenshotAsync(Long appId, String appUrl);
+
+    /**
+     * 创建应用
+     * @param appAddRequest
+     * @param loginUser
+     * @return
+     */
+    Long createApp(AppAddRequest appAddRequest, User loginUser);
 }

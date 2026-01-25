@@ -1,6 +1,7 @@
 package com.dango.dangoaicodemother.ai;
 
 import com.dango.dangoaicodemother.ai.tools.FileWriteTool;
+import com.dango.dangoaicodemother.ai.tools.ToolManager;
 import com.dango.dangoaicodemother.exception.BusinessException;
 import com.dango.dangoaicodemother.exception.ErrorCode;
 import com.dango.dangoaicodemother.model.enums.CodeGenTypeEnum;
@@ -38,6 +39,9 @@ public class AiCodeGeneratorServiceFactory {
 
     @Resource
     private ChatHistoryService chatHistoryService;
+
+    @Resource
+    private ToolManager toolManager;
 
 
 
@@ -92,7 +96,7 @@ public class AiCodeGeneratorServiceFactory {
                     .streamingChatModel(reasoningStreamingChatModel)
                     .chatMemory(chatMemory)
                     .chatMemoryProvider(memoryId -> chatMemory)
-                    .tools(new FileWriteTool())
+                    .tools(toolManager.getAllTools())
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                             toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                     ))

@@ -52,6 +52,10 @@
               || 短路求值：如果左边为假值，返回右边的值
             -->
             <span class="app-name">{{ appInfo?.appName || '未命名应用' }}</span>
+            <!-- 生成类型标签 -->
+            <a-tag v-if="appInfo?.codeGenType" color="processing" class="code-gen-type-tag">
+              {{ getCodeGenTypeLabel(appInfo.codeGenType) }}
+            </a-tag>
             <DownOutlined />
           </div>
           
@@ -61,6 +65,9 @@
           -->
           <template #overlay>
             <a-menu>
+              <a-menu-item @click="showAppDetail">
+                <InfoCircleOutlined /> 应用详情
+              </a-menu-item>
               <a-menu-item @click="goToEdit">
                 <EditOutlined /> 编辑应用
               </a-menu-item>
@@ -171,6 +178,36 @@
 
         <!-- 输入区域 -->
         <div class="input-area">
+          <!-- 选中元素信息展示 -->
+          <a-alert
+            v-if="selectedElementInfo"
+            class="selected-element-alert"
+            type="info"
+            closable
+            @close="clearSelectedElement"
+          >
+            <template #message>
+              <div class="selected-element-info">
+                <div class="element-header">
+                  <span class="element-tag">选中元素：{{ selectedElementInfo.tagName.toLowerCase() }}</span>
+                  <span v-if="selectedElementInfo.id" class="element-id">#{{ selectedElementInfo.id }}</span>
+                  <span v-if="selectedElementInfo.className" class="element-class">.{{ selectedElementInfo.className.split(' ').filter(c => c && !c.startsWith('edit-')).join('.') }}</span>
+                </div>
+                <div class="element-details">
+                  <div v-if="selectedElementInfo.textContent" class="element-item">
+                    内容: {{ selectedElementInfo.textContent.substring(0, 50) }}{{ selectedElementInfo.textContent.length > 50 ? '...' : '' }}
+                  </div>
+                  <div v-if="selectedElementInfo.pagePath" class="element-item">
+                    页面路径: {{ selectedElementInfo.pagePath }}
+                  </div>
+                  <div class="element-item">
+                    选择器: <code class="element-selector-code">{{ selectedElementInfo.selector }}</code>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </a-alert>
+          
           <!-- 
             消息输入框
             :disabled: 生成中或非所有者时禁用输入
@@ -182,7 +219,7 @@
             <a-textarea
               v-model:value="inputText"
               :auto-size="{ minRows: 1, maxRows: 4 }"
-              placeholder="描述越详细，页面越具体，可以一步一步完善生成结果..."
+              :placeholder="getInputPlaceholder()"
               class="chat-input"
               :disabled="isGenerating || !isOwner"
               @pressEnter.prevent="handleSend"
@@ -195,9 +232,16 @@
               <template #icon><UploadOutlined /></template>
               上传
             </a-button>
-            <a-button type="text" disabled>
-              <template #icon><EditOutlined /></template>
-              编辑
+            <!-- 编辑模式按钮 -->
+            <a-button 
+              v-if="isOwner && previewUrl"
+              :type="isEditMode ? 'primary' : 'text'"
+              :danger="isEditMode"
+              @click="toggleEditMode"
+              :class="{ 'edit-mode-btn-active': isEditMode }"
+            >
+              <template #icon><AimOutlined /></template>
+              {{ isEditMode ? '退出编辑' : '编辑模式' }}
             </a-button>
             <a-button type="text" disabled>
               <template #icon><ThunderboltOutlined /></template>
@@ -246,12 +290,14 @@
             :key: 强制刷新 iframe
             - 当 key 变化时，Vue 会销毁旧元素，创建新元素
             - 用于在生成完成后刷新预览
+            @load: iframe 加载完成时触发，用于初始化可视化编辑器
           -->
           <iframe 
             v-if="previewUrl && !isGenerating" 
             :src="previewUrl" 
             class="preview-iframe"
             :key="iframeKey"
+            @load="onIframeLoad"
           />
           
           <!-- 生成中的加载状态 -->
@@ -294,6 +340,41 @@
         <a-button type="link" @click="openDeployedUrl">
           <ExportOutlined /> 访问应用
         </a-button>
+      </div>
+    </a-modal>
+
+    <!-- ==================== 应用详情弹窗 ==================== -->
+    <a-modal
+      v-model:open="appDetailModalVisible"
+      title="应用详情"
+      :footer="null"
+      width="500px"
+    >
+      <div class="app-detail-content">
+        <a-descriptions :column="1" bordered size="small">
+          <a-descriptions-item label="应用名称">
+            {{ appInfo?.appName || '未命名应用' }}
+          </a-descriptions-item>
+          <a-descriptions-item label="生成类型">
+            <a-tag v-if="appInfo?.codeGenType" color="processing">
+              {{ getCodeGenTypeLabel(appInfo.codeGenType) }}
+            </a-tag>
+            <span v-else class="text-muted">未生成</span>
+          </a-descriptions-item>
+          <a-descriptions-item label="应用标签">
+            <a-tag v-if="appInfo?.tag" color="blue">{{ appInfo.tag }}</a-tag>
+            <span v-else class="text-muted">无</span>
+          </a-descriptions-item>
+          <a-descriptions-item label="创建时间">
+            {{ appInfo?.createTime || '-' }}
+          </a-descriptions-item>
+          <a-descriptions-item label="更新时间">
+            {{ appInfo?.updateTime || '-' }}
+          </a-descriptions-item>
+          <a-descriptions-item v-if="appInfo?.deployedTime" label="部署时间">
+            {{ appInfo.deployedTime }}
+          </a-descriptions-item>
+        </a-descriptions>
       </div>
     </a-modal>
   </div>
@@ -344,7 +425,9 @@ import {
   ExportOutlined,       // 导出/外链图标
   FileTextOutlined,     // 文件图标
   CheckCircleOutlined,  // 成功勾选图标
-  LoadingOutlined       // 加载图标
+  LoadingOutlined,      // 加载图标
+  InfoCircleOutlined,   // 信息图标
+  AimOutlined           // 瞄准图标（编辑模式）
 } from '@ant-design/icons-vue'
 
 /**
@@ -361,6 +444,11 @@ import { listChatHistoryByAppId } from '@/api/chatHistoryController'
 import { API_BASE_URL, getStaticPreviewUrl } from '@/config/env'
 
 /**
+ * 导入代码生成类型配置
+ */
+import { getCodeGenTypeLabel } from '@/config/codeGenType'
+
+/**
  * 导入 Pinia Store
  * 用于获取当前登录用户信息
  */
@@ -375,6 +463,11 @@ import { renderMarkdown } from '@/utils/markdown'
  * 导入 Markdown 样式
  */
 import '@/styles/markdown.css'
+
+/**
+ * 导入可视化编辑器
+ */
+import { VisualEditor, type ElementInfo } from '@/utils/visualEditor'
 
 // ==================== 路由相关 ====================
 
@@ -467,6 +560,11 @@ const deployModalVisible = ref(false)  // 部署成功弹窗是否显示
 const deployedUrl = ref('')            // 部署后的 URL
 
 /**
+ * 应用详情弹窗
+ */
+const appDetailModalVisible = ref(false)
+
+/**
  * 下载相关
  */
 const downloading = ref(false)         // 是否正在下载
@@ -476,6 +574,32 @@ const downloading = ref(false)         // 是否正在下载
  * 只有所有者才能在对话页发送消息
  */
 const isOwner = ref(true)
+
+// ==================== 可视化编辑相关 ====================
+
+/**
+ * 是否处于编辑模式
+ */
+const isEditMode = ref(false)
+
+/**
+ * 选中的元素信息
+ */
+const selectedElementInfo = ref<ElementInfo | null>(null)
+
+/**
+ * iframe 元素引用
+ */
+const previewIframeRef = ref<HTMLIFrameElement | null>(null)
+
+/**
+ * 可视化编辑器实例
+ */
+const visualEditor = new VisualEditor({
+  onElementSelected: (elementInfo: ElementInfo) => {
+    selectedElementInfo.value = elementInfo
+  }
+})
 
 // ==================== 对话历史相关 ====================
 
@@ -671,16 +795,38 @@ const loadAppInfo = async () => {
  * 6. 连接关闭后，更新预览
  */
 const handleSend = async () => {
-  const text = inputText.value.trim()
+  let text = inputText.value.trim()
   
   // 验证：内容不能为空，且不能在生成中重复发送
   if (!text || isGenerating.value) return
 
-  // 1. 添加用户消息
+  // 如果有选中的元素，将元素信息添加到提示词中
+  if (selectedElementInfo.value) {
+    let elementContext = `\n\n【选中元素信息】`
+    if (selectedElementInfo.value.pagePath) {
+      elementContext += `\n- 页面路径: ${selectedElementInfo.value.pagePath}`
+    }
+    elementContext += `\n- 标签: ${selectedElementInfo.value.tagName.toLowerCase()}`
+    elementContext += `\n- 选择器: ${selectedElementInfo.value.selector}`
+    if (selectedElementInfo.value.textContent) {
+      elementContext += `\n- 当前内容: ${selectedElementInfo.value.textContent.substring(0, 100)}`
+    }
+    text += elementContext
+  }
+
+  // 1. 添加用户消息（包含元素信息）
   messages.value.push({ role: 'user', content: text })
   
   // 清空输入框
   inputText.value = ''
+  
+  // 发送消息后，清除选中元素并退出编辑模式
+  if (selectedElementInfo.value) {
+    clearSelectedElement()
+    if (isEditMode.value) {
+      toggleEditMode()
+    }
+  }
   
   // 2. 添加 AI 消息占位
   // 记录索引，后续用于更新这条消息的内容
@@ -1053,6 +1199,13 @@ const openPreviewInNewTab = () => {
 }
 
 /**
+ * 显示应用详情弹窗
+ */
+const showAppDetail = () => {
+  appDetailModalVisible.value = true
+}
+
+/**
  * 跳转到编辑页
  */
 const goToEdit = () => {
@@ -1064,6 +1217,58 @@ const goToEdit = () => {
  */
 const goBack = () => {
   router.push('/')
+}
+
+// ==================== 可视化编辑相关方法 ====================
+
+/**
+ * 切换编辑模式
+ */
+const toggleEditMode = () => {
+  // 检查 iframe 是否已经加载
+  if (!previewIframeRef.value) {
+    message.warning('请等待页面加载完成')
+    return
+  }
+  
+  const newEditMode = visualEditor.toggleEditMode()
+  isEditMode.value = newEditMode
+  
+  // 退出编辑模式时清除选中元素
+  if (!newEditMode) {
+    selectedElementInfo.value = null
+  }
+}
+
+/**
+ * 清除选中的元素
+ */
+const clearSelectedElement = () => {
+  selectedElementInfo.value = null
+  visualEditor.clearSelection()
+}
+
+/**
+ * iframe 加载完成回调
+ */
+const onIframeLoad = () => {
+  // 获取 iframe 元素引用
+  const iframe = document.querySelector('.preview-iframe') as HTMLIFrameElement
+  if (iframe) {
+    previewIframeRef.value = iframe
+    visualEditor.init(iframe)
+    visualEditor.onIframeLoad()
+  }
+}
+
+/**
+ * 获取输入框占位符文本
+ */
+const getInputPlaceholder = () => {
+  if (selectedElementInfo.value) {
+    return `正在编辑 ${selectedElementInfo.value.tagName.toLowerCase()} 元素，描述您想要的修改...`
+  }
+  return '描述越详细，页面越具体，可以一步一步完善生成结果...'
 }
 
 // ==================== 生命周期和监听器 ====================
@@ -1087,6 +1292,11 @@ onMounted(() => {
     // 加载应用信息
     loadAppInfo()
   }
+  
+  // 监听 iframe 消息（用于可视化编辑）
+  window.addEventListener('message', (event) => {
+    visualEditor.handleIframeMessage(event)
+  })
 })
 
 /**
@@ -1408,6 +1618,23 @@ watch(() => route.params.id, (newId) => {
   flex: 1;
 }
 
+/* ==================== 应用详情弹窗 ==================== */
+
+.app-detail-content {
+  padding: 8px 0;
+}
+
+.app-detail-content .text-muted {
+  color: #999;
+}
+
+/* ==================== 生成类型标签 ==================== */
+
+.code-gen-type-tag {
+  margin-left: 8px;
+  font-size: 12px;
+}
+
 /* ==================== 响应式设计 ==================== */
 
 /* 平板设备：改为上下布局 */
@@ -1427,5 +1654,76 @@ watch(() => route.params.id, (newId) => {
   .preview-panel {
     height: 50%;
   }
+}
+
+/* ==================== 可视化编辑相关样式 ==================== */
+
+/* 选中元素信息提示框 */
+.selected-element-alert {
+  margin-bottom: 12px;
+}
+
+.selected-element-info {
+  line-height: 1.4;
+}
+
+.element-header {
+  margin-bottom: 6px;
+  font-weight: 500;
+}
+
+.element-tag {
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+  color: #1890ff;
+}
+
+.element-id {
+  color: #52c41a;
+  margin-left: 4px;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+}
+
+.element-class {
+  color: #faad14;
+  margin-left: 4px;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+}
+
+.element-details {
+  margin-top: 6px;
+}
+
+.element-item {
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: #666;
+}
+
+.element-item:last-child {
+  margin-bottom: 0;
+}
+
+.element-selector-code {
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  background: #f6f8fa;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  color: #d73a49;
+  border: 1px solid #e1e4e8;
+  word-break: break-all;
+}
+
+/* 编辑模式按钮激活状态 */
+.edit-mode-btn-active {
+  background-color: #ff4d4f !important;
+  border-color: #ff4d4f !important;
+  color: white !important;
+}
+
+.edit-mode-btn-active:hover {
+  background-color: #ff7875 !important;
+  border-color: #ff7875 !important;
 }
 </style>
