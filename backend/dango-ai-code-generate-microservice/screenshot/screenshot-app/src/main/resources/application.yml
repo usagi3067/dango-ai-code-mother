@@ -1,0 +1,33 @@
+spring:
+  application:
+    name: dango-ai-code-user
+  profiles:
+    active: local
+  session:
+    store-type: redis
+    # session 30 天过期
+    timeout: 2592000
+  # mysql
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://rm-cn-sn34m8htv0001kxo.rwlb.rds.aliyuncs.com:3306/dango_ai_code_mother
+    username: dango
+    password: A20203331040a
+server:
+  port: 8125
+  servlet:
+    context-path: /api
+    # cookie 30 天过期
+    session:
+      cookie:
+        max-age: 2592000
+# springdoc-openapi
+springdoc:
+  group-configs:
+    - group: 'default'
+      packages-to-scan: com.dango.dangoaicodeuser.controller
+# knife4j
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn

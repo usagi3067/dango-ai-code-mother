@@ -1,0 +1,22 @@
+package com.dango.dangoaicodeapp;
+
+import dev.langchain4j.community.store.embedding.redis.spring.RedisEmbeddingStoreAutoConfiguration;
+import org.mybatis.spring.annotation.MapperScan;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.ComponentScan;
+
+/**
+ * @author dango
+ * @description
+ * @date
+ */
+
+@SpringBootApplication(exclude = {RedisEmbeddingStoreAutoConfiguration.class})
+@MapperScan("com.dango.dangoaicodeapp.mapper")
+@ComponentScan(basePackages = {"com.dango.dangoaicodeapp", "com.dango.aicodegenerate"})
+public class DangoAiCodeAppApplication {
+    public static void main(String[] args) {
+        SpringApplication.run(DangoAiCodeAppApplication.class, args);
+    }
+}
