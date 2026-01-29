@@ -15,6 +15,7 @@ import com.dango.dangoaicodeuser.service.UserService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.servlet.http.HttpServletRequest;
+import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +31,7 @@ import static com.dango.dangoaicodeuser.model.constant.UserConstant.USER_LOGIN_S
  * @author dango
  */
 @Service
+@DubboService
 public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements UserService{
 
     // BCrypt 密码编码器（cost=10，即 2^10=1024 轮迭代）
@@ -134,22 +136,6 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements U
     }
 
 
-    @Override
-    public User getLoginUser(HttpServletRequest request) {
-        // 先判断是否已登录
-        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
-        User currentUser = (User) userObj;
-        if (currentUser == null || currentUser.getId() == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
-        }
-        // 从数据库查询（追求性能的话可以注释，直接返回上述结果）
-        long userId = currentUser.getId();
-        currentUser = this.getById(userId);
-        if (currentUser == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
-        }
-        return currentUser;
-    }
 
     @Override
     public boolean userLogout(HttpServletRequest request) {

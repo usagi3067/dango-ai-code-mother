@@ -1,6 +1,6 @@
 spring:
   application:
-    name: dango-ai-code-user
+    name: dango-ai-code-app
   profiles:
     active: local
   session:
@@ -13,6 +13,8 @@ spring:
     url: jdbc:mysql://rm-cn-sn34m8htv0001kxo.rwlb.rds.aliyuncs.com:3306/dango_ai_code_mother
     username: dango
     password: A20203331040a
+  main:
+    allow-circular-references: true
 server:
   port: 8124
   servlet:

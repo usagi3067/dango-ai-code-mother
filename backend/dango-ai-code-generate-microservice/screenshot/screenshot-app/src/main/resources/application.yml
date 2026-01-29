@@ -1,6 +1,6 @@
 spring:
   application:
-    name: dango-ai-code-user
+    name: dango-ai-code-screenshot
   profiles:
     active: local
   session:

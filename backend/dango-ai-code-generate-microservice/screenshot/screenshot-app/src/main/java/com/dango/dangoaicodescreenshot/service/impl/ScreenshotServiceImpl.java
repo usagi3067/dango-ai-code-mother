@@ -9,6 +9,7 @@ import com.dango.dangoaicodescreenshot.ScreenshotService;
 import com.dango.dangoaicodescreenshot.utils.WebScreenshotUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -17,6 +18,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
 @Service
+@DubboService
 @Slf4j
 public class ScreenshotServiceImpl implements ScreenshotService {
 

@@ -1,5 +1,7 @@
 package com.dango.dangoaicodeuser.service;
 
+import com.dango.dangoaicodecommon.exception.BusinessException;
+import com.dango.dangoaicodecommon.exception.ErrorCode;
 import com.dango.dangoaicodeuser.model.dto.user.UserQueryRequest;
 import com.dango.dangoaicodeuser.model.entity.User;
 import com.dango.dangoaicodeuser.model.vo.LoginUserVO;
@@ -9,6 +11,8 @@ import com.mybatisflex.core.service.IService;
 import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
+
+import static com.dango.dangoaicodeuser.model.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
  * 用户 服务层。
@@ -61,13 +65,15 @@ public interface UserService extends IService<User> {
      */
     LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request);
 
-    /**
-     * 获取当前登录用户
-     *
-     * @param request
-     * @return
-     */
-    User getLoginUser(HttpServletRequest request);
+    // 静态方法，避免跨服务调用
+    static User getLoginUser(HttpServletRequest request) {
+        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+        User currentUser = (User) userObj;
+        if (currentUser == null || currentUser.getId() == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        return currentUser;
+    }
 
     /**
      * 用户注销

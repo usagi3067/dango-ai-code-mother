@@ -56,7 +56,7 @@ public class ChatHistoryController {
         // 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
         // 获取当前登录用户
-        User loginUser = userService.getLoginUser(request);
+        User loginUser = UserService.getLoginUser(request);
         // 调用服务获取对话历史
         Page<ChatHistoryVO> chatHistoryVOPage = chatHistoryService.listByAppId(appId, lastId, size, loginUser);
         return ResultUtils.success(chatHistoryVOPage);
