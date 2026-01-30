@@ -3,3 +3,5 @@
 /app/app-service/src/main/resources/application-local.yml
 /common/src/main/resources/application-local.yml
 /screenshot/screenshot-app/src/main/resources/application-local.yml
+/logs/
+/tmp/
