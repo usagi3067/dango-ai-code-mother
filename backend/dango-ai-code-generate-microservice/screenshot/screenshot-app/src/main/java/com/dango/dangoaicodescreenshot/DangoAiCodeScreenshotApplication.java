@@ -11,7 +11,7 @@ import org.springframework.context.annotation.ComponentScan;
  * @date
  */
 @SpringBootApplication
-@ComponentScan(basePackages = {"com.dango.dangoaicodecommon"})
+@ComponentScan(basePackages = {"com.dango.dangoaicodecommon", "com.dango.dangoaicodescreenshot"})
 @EnableDubbo
 public class DangoAiCodeScreenshotApplication {
     public static void main(String[] args) {

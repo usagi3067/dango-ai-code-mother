@@ -24,10 +24,10 @@ import com.dango.dangoaicodeapp.service.ChatHistoryService;
 import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
 import com.dango.dangoaicodecommon.exception.ThrowUtils;
-import com.dango.dangoaicodescreenshot.ScreenshotService;
+import com.dango.dangoaicodescreenshot.InnerScreenshotService;
 import com.dango.dangoaicodeuser.model.entity.User;
 import com.dango.dangoaicodeuser.model.vo.UserVO;
-import com.dango.dangoaicodeuser.service.UserService;
+import com.dango.dangoaicodeuser.service.InnerUserService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
@@ -45,15 +45,18 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * 应用 服务层实现。
+ * 应用服务层实现
  *
  * @author dango
  */
 @Slf4j
 @Service
-public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppService {
+public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppService {
+
     @DubboReference
-    private UserService userService;
+    private InnerUserService innerUserService;
+    @DubboReference
+    private InnerScreenshotService innerScreenshotService;
     @Resource
     private AiCodeGeneratorFacade aiCodeGeneratorFacade;
     @Resource
@@ -62,7 +65,10 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
     private StreamHandlerExecutor streamHandlerExecutor;
     @Resource
     private VueProjectBuilder vueProjectBuilder;
-
+    @Resource
+    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
+    @Resource
+    private AppInfoGeneratorFacade appInfoGeneratorFacade;
 
     @Override
     public AppVO getAppVO(App app) {
@@ -74,8 +80,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         // 关联查询用户信息
         Long userId = app.getUserId();
         if (userId != null) {
-            User user = userService.getById(userId);
-            UserVO userVO = userService.getUserVO(user);
+            User user = innerUserService.getById(userId);
+            UserVO userVO = innerUserService.getUserVO(user);
             appVO.setUser(userVO);
         }
         return appVO;
@@ -119,8 +125,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         Set<Long> userIds = appList.stream()
                 .map(App::getUserId)
                 .collect(Collectors.toSet());
-        Map<Long, UserVO> userVOMap = userService.listByIds(userIds).stream()
-                .collect(Collectors.toMap(User::getId, userService::getUserVO));
+        Map<Long, UserVO> userVOMap = innerUserService.listByIds(userIds).stream()
+                .collect(Collectors.toMap(User::getId, innerUserService::getUserVO));
         return appList.stream().map(app -> {
             AppVO appVO = getAppVO(app);
             UserVO userVO = userVOMap.get(app.getUserId());
@@ -154,7 +160,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         } catch (Exception e) {
             log.error("保存用户消息失败: {}", e.getMessage());
         }
-       // 6. 调用 AI 生成代码（流式）
+        // 6. 调用 AI 生成代码（流式）
         Flux<String> codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
         // 7. 收集 AI 响应内容并在完成后记录到对话历史
         return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum);
@@ -221,9 +227,6 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         return appDeployUrl;
     }
 
-    @DubboReference
-    private ScreenshotService screenshotService;
-
     /**
      * 异步生成应用截图并更新封面
      *
@@ -235,7 +238,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
         // 使用虚拟线程异步执行
         Thread.startVirtualThread(() -> {
             // 调用截图服务生成截图并上传
-            String screenshotUrl = screenshotService.generateAndUploadScreenshot(appUrl);
+            String screenshotUrl = innerScreenshotService.generateAndUploadScreenshot(appUrl);
             // 更新应用封面字段
             App updateApp = new App();
             updateApp.setId(appId);
@@ -244,11 +247,6 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App>  implements AppS
             ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR, "更新应用封面字段失败");
         });
     }
-
-    @Resource
-    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
-    @Resource
-    private AppInfoGeneratorFacade appInfoGeneratorFacade;
 
     @Override
     public Long createApp(AppAddRequest appAddRequest, User loginUser) {

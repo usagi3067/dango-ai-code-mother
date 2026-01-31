@@ -15,7 +15,6 @@ import com.dango.dangoaicodeuser.service.UserService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.servlet.http.HttpServletRequest;
-import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -26,13 +25,12 @@ import java.util.stream.Collectors;
 import static com.dango.dangoaicodeuser.model.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
- * 用户 服务层实现。
+ * 用户服务层实现（本服务内部使用）
  *
  * @author dango
  */
 @Service
-@DubboService
-public class UserServiceImpl extends ServiceImpl<UserMapper, User>  implements UserService{
+public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
     // BCrypt 密码编码器（cost=10，即 2^10=1024 轮迭代）
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);

@@ -12,12 +12,12 @@ import com.dango.dangoaicodecommon.exception.ThrowUtils;
 import com.dango.dangoaicodeuser.annotation.AuthCheck;
 import com.dango.dangoaicodeuser.model.constant.UserConstant;
 import com.dango.dangoaicodeuser.model.entity.User;
-import com.dango.dangoaicodeuser.service.UserService;
+
+import com.dango.dangoaicodeuser.service.InnerUserService;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,10 +33,6 @@ public class ChatHistoryController {
 
     @Resource
     private ChatHistoryService chatHistoryService;
-
-    @Resource
-    @Lazy
-    private UserService userService;
 
     /**
      * 获取应用的对话历史（游标分页）
@@ -56,7 +52,7 @@ public class ChatHistoryController {
         // 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
         // 获取当前登录用户
-        User loginUser = UserService.getLoginUser(request);
+        User loginUser = InnerUserService.getLoginUser(request);
         // 调用服务获取对话历史
         Page<ChatHistoryVO> chatHistoryVOPage = chatHistoryService.listByAppId(appId, lastId, size, loginUser);
         return ResultUtils.success(chatHistoryVOPage);

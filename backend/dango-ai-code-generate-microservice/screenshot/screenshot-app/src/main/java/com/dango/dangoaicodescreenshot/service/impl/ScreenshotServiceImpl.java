@@ -5,11 +5,10 @@ import cn.hutool.core.util.StrUtil;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
 import com.dango.dangoaicodecommon.exception.ThrowUtils;
 import com.dango.dangoaicodecommon.manager.CosManager;
-import com.dango.dangoaicodescreenshot.ScreenshotService;
+import com.dango.dangoaicodescreenshot.service.ScreenshotService;
 import com.dango.dangoaicodescreenshot.utils.WebScreenshotUtils;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.dubbo.config.annotation.DubboService;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -17,8 +16,12 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.UUID;
 
+/**
+ * 截图服务层实现（本服务内部使用）
+ *
+ * @author dango
+ */
 @Service
-@DubboService
 @Slf4j
 public class ScreenshotServiceImpl implements ScreenshotService {
 
