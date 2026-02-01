@@ -324,7 +324,11 @@
           <!-- 生成中的加载状态 -->
           <div v-else-if="isGenerating" class="preview-loading">
             <a-spin size="large" />
-            <p>正在生成中...</p>
+            <!-- 根据是否为修改模式显示不同的提示信息 -->
+            <p v-if="isModifyModeGeneration">正在修改中...</p>
+            <p v-else>正在生成中...</p>
+            <p v-if="isModifyModeGeneration" class="preview-loading-hint">修改模式：快速定向修改选中元素</p>
+            <p v-else class="preview-loading-hint">创建模式：收集素材、智能路由、生成代码</p>
           </div>
           
           <!-- 空状态：没有预览 URL 或历史记录不足 -->
@@ -567,6 +571,12 @@ const inputText = ref('')
  * - 预览区显示状态
  */
 const isGenerating = ref(false)
+
+/**
+ * 当前生成是否为修改模式
+ * 用于显示不同的进度提示信息
+ */
+const isModifyModeGeneration = ref(false)
 
 /**
  * 预览相关
@@ -812,6 +822,19 @@ const loadAppInfo = async () => {
 }
 
 /**
+ * 元素信息 DTO 接口
+ * 用于向后端传递选中元素的信息
+ */
+interface ElementInfoDTO {
+  tagName: string
+  id?: string
+  className?: string
+  textContent?: string
+  selector: string
+  pagePath?: string
+}
+
+/**
  * 发送消息
  * 
  * 【核心流程】
@@ -828,16 +851,19 @@ const handleSend = async () => {
   // 验证：内容不能为空，且不能在生成中重复发送
   if (!text || isGenerating.value) return
 
-  // 如果有选中的元素，将元素信息添加到提示词中
-  if (selectedElementInfo.value) {
+  // 保存当前选中的元素信息（用于后续构建 URL 参数）
+  const currentElementInfo = selectedElementInfo.value
+
+  // 如果有选中的元素，将元素信息添加到提示词中（用于用户消息显示）
+  if (currentElementInfo) {
     let elementContext = `\n\n【选中元素信息】`
-    if (selectedElementInfo.value.pagePath) {
-      elementContext += `\n- 页面路径: ${selectedElementInfo.value.pagePath}`
+    if (currentElementInfo.pagePath) {
+      elementContext += `\n- 页面路径: ${currentElementInfo.pagePath}`
     }
-    elementContext += `\n- 标签: ${selectedElementInfo.value.tagName.toLowerCase()}`
-    elementContext += `\n- 选择器: ${selectedElementInfo.value.selector}`
-    if (selectedElementInfo.value.textContent) {
-      elementContext += `\n- 当前内容: ${selectedElementInfo.value.textContent.substring(0, 100)}`
+    elementContext += `\n- 标签: ${currentElementInfo.tagName.toLowerCase()}`
+    elementContext += `\n- 选择器: ${currentElementInfo.selector}`
+    if (currentElementInfo.textContent) {
+      elementContext += `\n- 当前内容: ${currentElementInfo.textContent.substring(0, 100)}`
     }
     text += elementContext
   }
@@ -849,7 +875,7 @@ const handleSend = async () => {
   inputText.value = ''
   
   // 发送消息后，清除选中元素并退出编辑模式
-  if (selectedElementInfo.value) {
+  if (currentElementInfo) {
     clearSelectedElement()
     if (isEditMode.value) {
       toggleEditMode()
@@ -863,6 +889,8 @@ const handleSend = async () => {
   
   // 3. 设置生成状态
   isGenerating.value = true
+  // 设置是否为修改模式生成（用于显示不同的进度提示）
+  isModifyModeGeneration.value = !!currentElementInfo
   
   // 重置用户滚动状态，新消息发送时应该滚动到底部
   userScrolledAway.value = false
@@ -889,7 +917,21 @@ const handleSend = async () => {
     // 构建请求 URL
     // encodeURIComponent: URL 编码，处理特殊字符
     // agent: 是否使用 Agent 模式
-    const url = `${API_BASE_URL}/app/chat/gen/code?appId=${appId.value}&message=${encodeURIComponent(text)}&agent=${agentMode.value}`
+    let url = `${API_BASE_URL}/app/chat/gen/code?appId=${appId.value}&message=${encodeURIComponent(text)}&agent=${agentMode.value}`
+    
+    // 如果有选中的元素，将 elementInfo 作为 JSON 字符串添加到 URL 参数
+    // 这会触发后端的修改模式（Modify Mode）
+    if (currentElementInfo) {
+      const elementInfoDTO: ElementInfoDTO = {
+        tagName: currentElementInfo.tagName,
+        id: currentElementInfo.id || undefined,
+        className: currentElementInfo.className || undefined,
+        textContent: currentElementInfo.textContent || undefined,
+        selector: currentElementInfo.selector,
+        pagePath: currentElementInfo.pagePath || undefined
+      }
+      url += `&elementInfo=${encodeURIComponent(JSON.stringify(elementInfoDTO))}`
+    }
     
     /**
      * 创建 EventSource 实例
@@ -905,6 +947,39 @@ const handleSend = async () => {
      * 用于区分正常关闭和异常错误
      */
     let streamCompleted = false
+    
+    /**
+     * 是否为修改模式
+     * 当有 elementInfo 时为修改模式，需要过滤掉图片收集等无关步骤的进度信息
+     */
+    const isModifyMode = !!currentElementInfo
+    
+    /**
+     * 需要在修改模式下过滤的进度消息关键词
+     * 这些是创建模式特有的步骤，修改模式不需要显示
+     */
+    const createModeProgressKeywords = [
+      '[图片规划]',
+      '[内容图片收集]',
+      '[插画收集]',
+      '[架构图收集]',
+      '[Logo收集]',
+      '[图片聚合]',
+      '[提示词增强]',
+      '[智能路由]',
+      '正在分析需求并收集相关图片资源',
+      '开始执行搜索任务',
+      '已整合图片资源',
+      '无图片资源需要整合'
+    ]
+    
+    /**
+     * 检查消息是否应该被过滤（仅在修改模式下）
+     */
+    const shouldFilterMessage = (message: string): boolean => {
+      if (!isModifyMode) return false
+      return createModeProgressKeywords.some(keyword => message.includes(keyword))
+    }
     
     /**
      * 监听消息事件
@@ -923,6 +998,10 @@ const handleSend = async () => {
         const data = JSON.parse(event.data)
         
         if (data && data.d) {
+          // 修改模式下过滤掉创建模式特有的进度消息
+          if (shouldFilterMessage(data.d)) {
+            return
+          }
           // 将内容片段追加到 AI 消息中
           messages.value[aiMessageIndex].content += data.d
           // 滚动到底部
@@ -931,6 +1010,10 @@ const handleSend = async () => {
       } catch (e) {
         // 如果解析失败，尝试直接使用原始数据
         if (event.data) {
+          // 修改模式下过滤掉创建模式特有的进度消息
+          if (shouldFilterMessage(event.data)) {
+            return
+          }
           messages.value[aiMessageIndex].content += event.data
           scrollToBottom()
         }
@@ -973,6 +1056,7 @@ const handleSend = async () => {
         // 正常关闭：服务器发送完数据后关闭连接
         streamCompleted = true
         isGenerating.value = false
+        isModifyModeGeneration.value = false
         messages.value[aiMessageIndex].loading = false
         eventSource.close()
         
@@ -1008,6 +1092,7 @@ const handleSend = async () => {
       eventSource.close()
       messages.value[aiMessageIndex].loading = false
       isGenerating.value = false
+      isModifyModeGeneration.value = false
       
       // 生成完成，重置滚动状态
       userScrolledAway.value = false
@@ -1055,6 +1140,7 @@ const handleStreamError = (error: unknown, aiMessageIndex: number) => {
   
   // 重置生成状态
   isGenerating.value = false
+  isModifyModeGeneration.value = false
 }
 
 /**
@@ -1714,6 +1800,13 @@ watch(() => route.params.id, (newId) => {
   justify-content: center;
   height: 100%;
   color: #999;
+}
+
+/* 加载状态提示文字 */
+.preview-loading-hint {
+  font-size: 12px;
+  color: #bbb;
+  margin-top: 8px;
 }
 
 .empty-icon {

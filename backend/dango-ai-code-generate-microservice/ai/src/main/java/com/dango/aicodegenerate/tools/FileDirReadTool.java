@@ -3,7 +3,6 @@ package com.dango.aicodegenerate.tools;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONObject;
-import com.dango.dangoaicodeapp.model.constant.AppConstant;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.agent.tool.ToolMemoryId;
@@ -46,12 +45,24 @@ public class FileDirReadTool extends BaseTool{
             @ToolMemoryId Long appId
     ) {
         try {
-            Path path = Paths.get(relativeDirPath == null ? "" : relativeDirPath);
-            if (!path.isAbsolute()) {
-                String projectDirName = "vue_project_" + appId;
-                Path projectRoot = Paths.get(AppConstant.CODE_OUTPUT_ROOT_DIR, projectDirName);
-                path = projectRoot.resolve(relativeDirPath == null ? "" : relativeDirPath);
+            // 自动探测项目目录（支持 html、multi_file、vue_project 三种类型）
+            Path projectRoot = getProjectRoot(appId);
+            if (projectRoot == null) {
+                return "错误：未找到 appId=" + appId + " 对应的项目目录";
             }
+            
+            Path path;
+            if (StrUtil.isBlank(relativeDirPath)) {
+                path = projectRoot;
+            } else {
+                Path relativePath = Paths.get(relativeDirPath);
+                if (relativePath.isAbsolute()) {
+                    path = relativePath;
+                } else {
+                    path = projectRoot.resolve(relativeDirPath);
+                }
+            }
+            
             File targetDir = path.toFile();
             if (!targetDir.exists() || !targetDir.isDirectory()) {
                 return "错误：目录不存在或不是目录 - " + relativeDirPath;

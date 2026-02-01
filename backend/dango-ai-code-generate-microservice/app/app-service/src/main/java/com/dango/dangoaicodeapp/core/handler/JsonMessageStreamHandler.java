@@ -9,6 +9,7 @@ import com.dango.aicodegenerate.tools.BaseTool;
 import com.dango.aicodegenerate.tools.ToolManager;
 import com.dango.dangoaicodeapp.core.builder.VueProjectBuilder;
 import com.dango.dangoaicodeapp.model.constant.AppConstant;
+import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.service.ChatHistoryService;
 import com.dango.dangoaicodeuser.model.entity.User;
 import jakarta.annotation.Resource;
@@ -21,7 +22,8 @@ import java.util.Set;
 
 /**
  * JSON 消息流处理器
- * 处理 VUE_PROJECT 类型的复杂流式响应，包含工具调用信息
+ * 统一处理所有代码生成类型（HTML、MULTI_FILE、VUE_PROJECT）的流式响应
+ * 支持 AI_RESPONSE、TOOL_REQUEST、TOOL_EXECUTED 三种消息类型
  */
 @Slf4j
 @Component
@@ -34,18 +36,20 @@ public class JsonMessageStreamHandler {
     private ToolManager toolManager;
 
     /**
-     * 处理 TokenStream（VUE_PROJECT）
-     * 解析 JSON 消息并重组为完整的响应格式
+     * 处理 JSON 格式的流式消息
+     * 统一处理所有代码生成类型
+     * 注意：AppController 会将输出包装为 {d: "..."} 格式，这里不需要再包装
      *
      * @param originFlux         原始流
      * @param chatHistoryService 聊天历史服务
      * @param appId              应用ID
      * @param loginUser          登录用户
+     * @param codeGenType        代码生成类型
      * @return 处理后的流
      */
     public Flux<String> handle(Flux<String> originFlux,
                                ChatHistoryService chatHistoryService,
-                               long appId, User loginUser) {
+                               long appId, User loginUser, CodeGenTypeEnum codeGenType) {
         // 收集数据用于生成后端记忆格式
         StringBuilder chatHistoryStringBuilder = new StringBuilder();
         // 用于跟踪已经见过的工具ID，判断是否是第一次调用
@@ -61,9 +65,11 @@ public class JsonMessageStreamHandler {
                     String aiResponse = chatHistoryStringBuilder.toString();
                     chatHistoryService.saveAiMessage(appId, loginUser.getId(), aiResponse);
 
-                    // 异步构造 Vue 项目
-                    String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
-                    vueProjectBuilder.buildProjectAsync(projectPath);
+                    // 只有 VUE_PROJECT 类型才需要异步构造 Vue 项目
+                    if (codeGenType == CodeGenTypeEnum.VUE_PROJECT) {
+                        String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
+                        vueProjectBuilder.buildProjectAsync(projectPath);
+                    }
                 })
                 .doOnError(error -> {
                     // 如果AI回复失败，也要记录错误消息

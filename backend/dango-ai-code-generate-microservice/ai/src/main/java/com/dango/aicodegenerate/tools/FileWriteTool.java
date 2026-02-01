@@ -3,7 +3,6 @@ package com.dango.aicodegenerate.tools;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.json.JSONObject;
 
-import com.dango.dangoaicodeapp.model.constant.AppConstant;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.agent.tool.ToolMemoryId;
@@ -35,9 +34,8 @@ public class FileWriteTool extends BaseTool{
         try {
             Path path = Paths.get(relativeFilePath);
             if (!path.isAbsolute()) {
-                // 相对路径处理，创建基于 appId 的项目目录
-                String projectDirName = "vue_project_" + appId;
-                Path projectRoot = Paths.get(AppConstant.CODE_OUTPUT_ROOT_DIR, projectDirName);
+                // 自动探测项目目录，如果不存在则使用 vue_project 作为默认类型
+                Path projectRoot = getProjectRootOrDefault(appId, null);
                 path = projectRoot.resolve(relativeFilePath);
             }
             // 创建父目录（如果不存在）

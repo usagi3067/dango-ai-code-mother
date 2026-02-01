@@ -1,9 +1,13 @@
 package com.dango.dangoaicodeapp.workflow.state;
 
+import cn.hutool.json.JSONUtil;
 import com.dango.aicodegenerate.model.ImageCollectionPlan;
 import com.dango.aicodegenerate.model.ImageResource;
 import com.dango.aicodegenerate.model.QualityResult;
+import com.dango.aicodegenerate.model.message.AiResponseMessage;
+import com.dango.dangoaicodeapp.model.entity.ElementInfo;
 import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
+import com.dango.dangoaicodeapp.model.enums.OperationModeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -125,6 +129,34 @@ public class WorkflowContext implements Serializable {
      */
     private QualityResult qualityResult;
 
+    // ========== 创建/修改分离相关字段 ==========
+
+    /**
+     * 最大修复重试次数
+     */
+    public static final int MAX_FIX_RETRY_COUNT = 3;
+
+    /**
+     * 操作模式（CREATE、MODIFY、FIX）
+     */
+    private OperationModeEnum operationMode;
+
+    /**
+     * 项目目录结构（用于修改模式）
+     */
+    private String projectStructure;
+
+    /**
+     * 选中的元素信息（用于修改模式）
+     */
+    private ElementInfo elementInfo;
+
+    /**
+     * 修复重试次数
+     */
+    @Builder.Default
+    private int fixRetryCount = 0;
+
     // ========== 上下文操作方法 ==========
 
     /**
@@ -171,6 +203,7 @@ public class WorkflowContext implements Serializable {
 
     /**
      * 发送消息到流（如果 sink 存在）
+     * 注意：此方法直接发送原始消息，用于转发已经是 JSON 格式的消息
      */
     public void emit(String message) {
         FluxSink<String> sink = getSink();
@@ -180,10 +213,23 @@ public class WorkflowContext implements Serializable {
     }
 
     /**
-     * 发送带前缀的节点消息
+     * 发送文本消息到流，自动包装为 JSON 格式
+     * 用于发送工作流状态消息（如节点开始、完成等）
+     */
+    public void emitText(String text) {
+        FluxSink<String> sink = getSink();
+        if (sink != null) {
+            // 将纯文本包装为 AiResponseMessage JSON 格式
+            AiResponseMessage message = new AiResponseMessage(text);
+            sink.next(JSONUtil.toJsonStr(message));
+        }
+    }
+
+    /**
+     * 发送带前缀的节点消息（自动包装为 JSON 格式）
      */
     public void emitNodeMessage(String nodeName, String message) {
-        emit(String.format("[%s] %s", nodeName, message));
+        emitText(String.format("[%s] %s", nodeName, message));
     }
 
     /**

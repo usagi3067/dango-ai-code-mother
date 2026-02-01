@@ -2,7 +2,6 @@ package com.dango.aicodegenerate.tools;
 
 import cn.hutool.json.JSONObject;
 
-import com.dango.dangoaicodeapp.model.constant.AppConstant;
 import dev.langchain4j.agent.tool.P;
 import dev.langchain4j.agent.tool.Tool;
 import dev.langchain4j.agent.tool.ToolMemoryId;
@@ -36,8 +35,11 @@ public class FileModifyTool extends BaseTool {
         try {
             Path path = Paths.get(relativeFilePath);
             if (!path.isAbsolute()) {
-                String projectDirName = "vue_project_" + appId;
-                Path projectRoot = Paths.get(AppConstant.CODE_OUTPUT_ROOT_DIR, projectDirName);
+                // 自动探测项目目录（支持 html、multi_file、vue_project 三种类型）
+                Path projectRoot = getProjectRoot(appId);
+                if (projectRoot == null) {
+                    return "错误：未找到 appId=" + appId + " 对应的项目目录";
+                }
                 path = projectRoot.resolve(relativeFilePath);
             }
             if (!Files.exists(path) || !Files.isRegularFile(path)) {

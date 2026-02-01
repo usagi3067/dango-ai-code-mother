@@ -10,6 +10,7 @@ import com.dango.dangoaicodemother.ai.model.message.ToolExecutedMessage;
 import com.dango.dangoaicodemother.ai.model.message.ToolRequestMessage;
 import com.dango.dangoaicodemother.core.parser.CodeParserExecutor;
 import com.dango.dangoaicodemother.core.saver.CodeFileSaverExecutor;
+import com.dango.dangoaicodemother.core.wrapper.StreamMessageWrapper;
 import com.dango.dangoaicodemother.exception.BusinessException;
 import com.dango.dangoaicodemother.exception.ErrorCode;
 import com.dango.dangoaicodemother.model.enums.CodeGenTypeEnum;
@@ -79,13 +80,18 @@ public class AiCodeGeneratorFacade {
         return switch (codeGenTypeEnum) {
             case HTML -> {
                 Flux<String> codeStream = aiCodeGeneratorService.generateHtmlCodeStream(userMessage);
-                yield processCodeStream(codeStream, CodeGenTypeEnum.HTML, appId);
+                Flux<String> processedStream = processCodeStream(codeStream, CodeGenTypeEnum.HTML, appId);
+                // 包装为 JSON 格式
+                yield StreamMessageWrapper.wrapFlux(processedStream);
             }
             case MULTI_FILE -> {
                 Flux<String> codeStream = aiCodeGeneratorService.generateMultiFileCodeStream(userMessage);
-                yield processCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
+                Flux<String> processedStream = processCodeStream(codeStream, CodeGenTypeEnum.MULTI_FILE, appId);
+                // 包装为 JSON 格式
+                yield StreamMessageWrapper.wrapFlux(processedStream);
             }
             case VUE_PROJECT -> {
+                // 保持不变，已经是 JSON 格式
                 TokenStream tokenStream = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
                 yield processTokenStream(tokenStream);
             }

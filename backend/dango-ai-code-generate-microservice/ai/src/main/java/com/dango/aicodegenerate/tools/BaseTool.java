@@ -1,6 +1,12 @@
 package com.dango.aicodegenerate.tools;
 
 import cn.hutool.json.JSONObject;
+import com.dango.dangoaicodeapp.model.constant.AppConstant;
+import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
+
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
  * 工具基类
@@ -38,4 +44,49 @@ public abstract class BaseTool {
      * @return 格式化的工具执行结果
      */
     public abstract String generateToolExecutedResult(JSONObject arguments);
+
+    /**
+     * 根据 appId 获取项目根目录路径
+     * 自动探测项目类型（html、multi_file、vue_project）
+     *
+     * @param appId 应用 ID
+     * @return 项目根目录路径，如果不存在则返回 null
+     */
+    protected Path getProjectRoot(Long appId) {
+        if (appId == null || appId <= 0) {
+            return null;
+        }
+
+        // 按优先级尝试查找各种类型的项目目录
+        for (CodeGenTypeEnum type : CodeGenTypeEnum.values()) {
+            String dirName = type.getValue() + "_" + appId;
+            Path projectPath = Paths.get(AppConstant.CODE_OUTPUT_ROOT_DIR, dirName);
+            if (Files.exists(projectPath)) {
+                return projectPath;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * 根据 appId 获取项目根目录路径，如果不存在则使用默认类型创建路径
+     * 
+     * @param appId 应用 ID
+     * @param defaultType 默认的代码生成类型（用于新项目）
+     * @return 项目根目录路径
+     */
+    protected Path getProjectRootOrDefault(Long appId, CodeGenTypeEnum defaultType) {
+        Path existingPath = getProjectRoot(appId);
+        if (existingPath != null) {
+            return existingPath;
+        }
+
+        // 如果项目不存在，使用默认类型
+        if (defaultType == null) {
+            defaultType = CodeGenTypeEnum.VUE_PROJECT;
+        }
+        String dirName = defaultType.getValue() + "_" + appId;
+        return Paths.get(AppConstant.CODE_OUTPUT_ROOT_DIR, dirName);
+    }
 }

@@ -58,9 +58,13 @@ public class CodeQualityCheckNode {
                 } else {
                     context.emitNodeMessage(NODE_NAME, "正在分析代码质量...\n");
 
+                    // 转义代码中的双花括号，避免 LangChain4j 将其误认为模板变量
+                    // 例如 {{blog.summary}} 会被转义为 { {blog.summary} }
+                    String escapedCodeContent = escapeTemplateVariables(codeContent);
+
                     // 2. 调用 AI 进行代码质量检查
                     CodeQualityCheckService qualityCheckService = SpringContextUtil.getBean(CodeQualityCheckService.class);
-                    qualityResult = qualityCheckService.checkCodeQuality(codeContent);
+                    qualityResult = qualityCheckService.checkCodeQuality(escapedCodeContent);
 
                     log.info("代码质量检查完成 - 是否通过: {}", qualityResult.getIsValid());
 
@@ -155,5 +159,19 @@ public class CodeQualityCheckNode {
     private static boolean isCodeFile(File file) {
         String fileName = file.getName().toLowerCase();
         return CODE_EXTENSIONS.stream().anyMatch(fileName::endsWith);
+    }
+
+    /**
+     * 转义代码中的双花括号，避免 LangChain4j 将其误认为模板变量
+     * 例如 {{variable}} 会被转义为 { {variable} }
+     * 这样 AI 仍然能看到原始的模板语法，但 LangChain4j 不会尝试替换它
+     */
+    private static String escapeTemplateVariables(String content) {
+        if (StrUtil.isBlank(content)) {
+            return content;
+        }
+        // 将 {{ 替换为 { {，将 }} 替换为 } }
+        // 这样可以避免 LangChain4j 的模板引擎解析这些变量
+        return content.replace("{{", "{ {").replace("}}", "} }");
     }
 }

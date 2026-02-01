@@ -17,6 +17,7 @@ import com.dango.dangoaicodeapp.model.constant.AppConstant;
 import com.dango.dangoaicodeapp.model.dto.app.AppAddRequest;
 import com.dango.dangoaicodeapp.model.dto.app.AppQueryRequest;
 import com.dango.dangoaicodeapp.model.entity.App;
+import com.dango.dangoaicodeapp.model.entity.ElementInfo;
 import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.model.vo.AppVO;
 import com.dango.dangoaicodeapp.service.AppService;
@@ -138,12 +139,18 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Override
     public Flux<String> chatToGenCode(Long appId, String message, User loginUser) {
-        // 默认使用传统模式
-        return chatToGenCode(appId, message, loginUser, false);
+        // 默认使用传统模式，无元素信息
+        return chatToGenCode(appId, message, null, loginUser, false);
     }
 
     @Override
     public Flux<String> chatToGenCode(Long appId, String message, User loginUser, boolean agent) {
+        // 委托给带 elementInfo 参数的方法
+        return chatToGenCode(appId, message, null, loginUser, agent);
+    }
+
+    @Override
+    public Flux<String> chatToGenCode(Long appId, String message, ElementInfo elementInfo, User loginUser, boolean agent) {
         // 1. 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
         ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
@@ -167,16 +174,24 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         } catch (Exception e) {
             log.error("保存用户消息失败: {}", e.getMessage());
         }
-        // 6. 根据 agent 参数选择生成方式
+        // 6. 根据 agent 参数和 elementInfo 选择生成方式
         Flux<String> codeStream;
         if (agent) {
-            // Agent 模式：使用工作流生成代码
-            log.info("使用 Agent 模式（工作流）生成代码, appId: {}", appId);
-            codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(message, appId);
+            // Agent 模式：使用工作流生成代码，传递 elementInfo
+            // 工作流内部已经统一输出 JSON 格式，不需要再包装
+            log.info("使用 Agent 模式（工作流）生成代码, appId: {}, hasElementInfo: {}", appId, elementInfo != null);
+            codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(message, appId, elementInfo);
         } else {
             // 传统模式：调用 AI 生成代码（流式）
-            log.info("使用传统模式生成代码, appId: {}", appId);
-            codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+            // 如果有 elementInfo 且非 Agent 模式，自动切换到 Agent 模式
+            if (elementInfo != null) {
+                log.info("检测到 elementInfo，自动切换到 Agent 模式, appId: {}", appId);
+                codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(message, appId, elementInfo);
+            } else {
+                log.info("使用传统模式生成代码, appId: {}", appId);
+                // AiCodeGeneratorFacade 已经对 HTML/MULTI_FILE 进行了包装
+                codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
+            }
         }
         // 7. 收集 AI 响应内容并在完成后记录到对话历史
         return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum);

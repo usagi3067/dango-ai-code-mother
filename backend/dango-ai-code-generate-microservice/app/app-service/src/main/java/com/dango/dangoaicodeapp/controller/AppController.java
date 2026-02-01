@@ -9,6 +9,7 @@ import com.dango.dangoaicodeapp.core.AppInfoGeneratorFacade;
 import com.dango.dangoaicodeapp.model.constant.AppConstant;
 import com.dango.dangoaicodeapp.model.dto.app.*;
 import com.dango.dangoaicodeapp.model.entity.App;
+import com.dango.dangoaicodeapp.model.entity.ElementInfo;
 import com.dango.dangoaicodeapp.model.vo.AppVO;
 import com.dango.dangoaicodeapp.service.AppService;
 import com.dango.dangoaicodeapp.service.ChatHistoryService;
@@ -28,6 +29,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
@@ -45,6 +47,7 @@ import java.util.Map;
  *
  * @author dango
  */
+@Slf4j
 @RestController
 @RequestMapping("/app")
 public class AppController {
@@ -289,24 +292,39 @@ public class AppController {
     /**
      * 应用聊天生成代码（流式 SSE）
      *
-     * @param appId   应用 ID
-     * @param message 用户消息
-     * @param agent   是否启用 Agent 模式（工作流模式），默认 false
-     * @param request 请求对象
+     * @param appId       应用 ID
+     * @param message     用户消息
+     * @param agent       是否启用 Agent 模式（工作流模式），默认 false
+     * @param elementInfo 选中的元素信息（JSON 字符串，可选，用于修改模式）
+     * @param request     请求对象
      * @return 生成结果流
      */
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
                                                        @RequestParam String message,
                                                        @RequestParam(defaultValue = "false") boolean agent,
+                                                       @RequestParam(required = false) String elementInfo,
                                                        HttpServletRequest request) {
         // 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
         ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
         // 获取当前登录用户
         User loginUser = InnerUserService.getLoginUser(request);
-        // 调用服务生成代码（流式），传递 agent 参数
-        Flux<String> contentFlux = appService.chatToGenCode(appId, message, loginUser, agent);
+        
+        // 解析 elementInfo JSON 字符串
+        ElementInfo parsedElementInfo = null;
+        if (StrUtil.isNotBlank(elementInfo)) {
+            try {
+                ElementInfoDTO dto = JSONUtil.toBean(elementInfo, ElementInfoDTO.class);
+                parsedElementInfo = convertToElementInfo(dto);
+                log.info("解析 elementInfo 成功: selector={}", parsedElementInfo.getSelector());
+            } catch (Exception e) {
+                log.warn("解析 elementInfo 失败: {}", e.getMessage());
+            }
+        }
+        
+        // 调用服务生成代码（流式），传递 agent 和 elementInfo 参数
+        Flux<String> contentFlux = appService.chatToGenCode(appId, message, parsedElementInfo, loginUser, agent);
         // 转换为 ServerSentEvent 格式
         return contentFlux
                 .map(chunk -> {
@@ -326,6 +344,23 @@ public class AppController {
                                 .data("")
                                 .build()
                 ));
+    }
+    
+    /**
+     * 将 ElementInfoDTO 转换为 ElementInfo 实体
+     * 
+     * @param dto 元素信息 DTO
+     * @return 元素信息实体
+     */
+    private ElementInfo convertToElementInfo(ElementInfoDTO dto) {
+        return ElementInfo.builder()
+                .tagName(dto.getTagName())
+                .id(dto.getId())
+                .className(dto.getClassName())
+                .textContent(dto.getTextContent())
+                .selector(dto.getSelector())
+                .pagePath(dto.getPagePath())
+                .build();
     }
 
     /**

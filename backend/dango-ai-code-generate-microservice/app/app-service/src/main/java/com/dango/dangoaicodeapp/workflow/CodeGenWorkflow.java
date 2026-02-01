@@ -2,8 +2,12 @@ package com.dango.dangoaicodeapp.workflow;
 
 import cn.hutool.core.thread.ExecutorBuilder;
 import cn.hutool.core.thread.ThreadFactoryBuilder;
+import cn.hutool.json.JSONUtil;
 import com.dango.aicodegenerate.model.QualityResult;
+import com.dango.aicodegenerate.model.message.AiResponseMessage;
+import com.dango.dangoaicodeapp.model.entity.ElementInfo;
 import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
+import com.dango.dangoaicodeapp.model.enums.OperationModeEnum;
 import com.dango.dangoaicodeapp.workflow.node.*;
 import com.dango.dangoaicodeapp.workflow.node.concurrent.*;
 import com.dango.dangoaicodeapp.workflow.state.WorkflowContext;
@@ -15,6 +19,7 @@ import org.bsc.langgraph4j.GraphRepresentation;
 import org.bsc.langgraph4j.GraphStateException;
 import org.bsc.langgraph4j.NodeOutput;
 import org.bsc.langgraph4j.RunnableConfig;
+import org.bsc.langgraph4j.StateGraph;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
 import org.bsc.langgraph4j.prebuilt.MessagesStateGraph;
 import reactor.core.publisher.Flux;
@@ -29,19 +34,40 @@ import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
 
 /**
  * 代码生成工作流
- * 使用 LangGraph4j 的并发能力实现图片收集的并发执行
+ * 使用 LangGraph4j 的子图能力实现创建/修改模式分离
  * 
- * 工作流结构：
- * START → image_plan → [并发分支]
- *                      ├── content_image_collector ─┐
- *                      ├── illustration_collector ──┼── image_aggregator → prompt_enhancer → router → code_generator → code_quality_check → [条件边] → project_builder/END
- *                      ├── diagram_collector ───────┤
- *                      └── logo_collector ──────────┘
+ * 工作流结构（使用子图）：
+ * START → mode_router → [条件边]
+ *                       ├── create_subgraph (创建模式子图)
+ *                       └── modify_subgraph (修改模式子图)
+ *                              ↓
+ *                       quality_check_subgraph (质检修复子图)
+ *                              ↓
+ *                       [条件边] → project_builder / END
+ * 
+ * 创建模式子图：
+ * image_plan → [并发分支] → image_aggregator → prompt_enhancer → router → code_generator
+ * 
+ * 修改模式子图：
+ * code_reader → code_modifier
+ * 
+ * 质检修复子图：
+ * code_quality_check ←→ code_fixer (循环修复)
  */
 @Slf4j
 public class CodeGenWorkflow {
 
     // ========== 节点 Key 常量 ==========
+    // 主工作流节点
+    private static final String NODE_MODE_ROUTER = "mode_router";
+    private static final String NODE_PROJECT_BUILDER = "project_builder";
+    
+    // 子图节点名称
+    private static final String SUBGRAPH_CREATE = "create_subgraph";
+    private static final String SUBGRAPH_MODIFY = "modify_subgraph";
+    private static final String SUBGRAPH_QUALITY_CHECK = "quality_check_subgraph";
+    
+    // 创建模式子图节点
     private static final String NODE_IMAGE_PLAN = "image_plan";
     private static final String NODE_CONTENT_IMAGE_COLLECTOR = "content_image_collector";
     private static final String NODE_ILLUSTRATION_COLLECTOR = "illustration_collector";
@@ -51,13 +77,27 @@ public class CodeGenWorkflow {
     private static final String NODE_PROMPT_ENHANCER = "prompt_enhancer";
     private static final String NODE_ROUTER = "router";
     private static final String NODE_CODE_GENERATOR = "code_generator";
+    
+    // 修改模式子图节点
+    private static final String NODE_CODE_READER = "code_reader";
+    private static final String NODE_CODE_MODIFIER = "code_modifier";
+    
+    // 质检修复子图节点
     private static final String NODE_CODE_QUALITY_CHECK = "code_quality_check";
-    private static final String NODE_PROJECT_BUILDER = "project_builder";
+    private static final String NODE_CODE_FIXER = "code_fixer";
 
     // ========== 条件边路由常量 ==========
+    // 模式路由
+    private static final String ROUTE_CREATE = "create";
+    private static final String ROUTE_MODIFY = "modify";
+    
+    // 质检子图内部路由
+    private static final String ROUTE_FIX = "fix";
+    private static final String ROUTE_PASS = "pass";
+    
+    // 质检子图出口路由
     private static final String ROUTE_BUILD = "build";
-    private static final String ROUTE_SKIP_BUILD = "skip_build";
-    private static final String ROUTE_FAIL = "fail";
+    private static final String ROUTE_END = "end";
 
     /**
      * 并发执行线程池
@@ -77,66 +117,211 @@ public class CodeGenWorkflow {
     }
 
     /**
-     * 创建工作流
+     * 创建工作流（使用子图重构）
+     * 
+     * 工作流结构：
+     * 1. 模式路由节点判断操作模式
+     * 2. 根据模式路由到创建子图或修改子图
+     * 3. 两个子图都汇聚到质检修复子图
+     * 4. 质检通过后根据类型决定是否构建
+     * 
+     * 注意：使用 addSubgraph 方法添加未编译的子图，确保上下文正确传递
      */
-    public CompiledGraph<MessagesState<String>> createWorkflow() {
-        try {
-            return new MessagesStateGraph<String>()
-                    // 添加图片规划节点
-                    .addNode(NODE_IMAGE_PLAN, ImagePlanNode.create())
-
-                    // 添加并发图片收集节点
-                    .addNode(NODE_CONTENT_IMAGE_COLLECTOR, ContentImageCollectorNode.create())
-                    .addNode(NODE_ILLUSTRATION_COLLECTOR, IllustrationCollectorNode.create())
-                    .addNode(NODE_DIAGRAM_COLLECTOR, DiagramCollectorNode.create())
-                    .addNode(NODE_LOGO_COLLECTOR, LogoCollectorNode.create())
-
-                    // 添加图片聚合节点
-                    .addNode(NODE_IMAGE_AGGREGATOR, ImageAggregatorNode.create())
-
-                    // 添加后续处理节点
-                    .addNode(NODE_PROMPT_ENHANCER, PromptEnhancerNode.create())
-                    .addNode(NODE_ROUTER, RouterNode.create())
-                    .addNode(NODE_CODE_GENERATOR, CodeGeneratorNode.create())
-                    .addNode(NODE_CODE_QUALITY_CHECK, CodeQualityCheckNode.create())
-                    .addNode(NODE_PROJECT_BUILDER, ProjectBuilderNode.create())
-
-                    // 添加边：开始 -> 图片规划
-                    .addEdge(START, NODE_IMAGE_PLAN)
-
-                    // 并发分支：从计划节点分发到各个收集节点
-                    .addEdge(NODE_IMAGE_PLAN, NODE_CONTENT_IMAGE_COLLECTOR)
-                    .addEdge(NODE_IMAGE_PLAN, NODE_ILLUSTRATION_COLLECTOR)
-                    .addEdge(NODE_IMAGE_PLAN, NODE_DIAGRAM_COLLECTOR)
-                    .addEdge(NODE_IMAGE_PLAN, NODE_LOGO_COLLECTOR)
-
-                    // 汇聚：所有收集节点都汇聚到聚合器
-                    .addEdge(NODE_CONTENT_IMAGE_COLLECTOR, NODE_IMAGE_AGGREGATOR)
-                    .addEdge(NODE_ILLUSTRATION_COLLECTOR, NODE_IMAGE_AGGREGATOR)
-                    .addEdge(NODE_DIAGRAM_COLLECTOR, NODE_IMAGE_AGGREGATOR)
-                    .addEdge(NODE_LOGO_COLLECTOR, NODE_IMAGE_AGGREGATOR)
-
-                    // 继续串行流程
-                    .addEdge(NODE_IMAGE_AGGREGATOR, NODE_PROMPT_ENHANCER)
-                    .addEdge(NODE_PROMPT_ENHANCER, NODE_ROUTER)
-                    .addEdge(NODE_ROUTER, NODE_CODE_GENERATOR)
-                    .addEdge(NODE_CODE_GENERATOR, NODE_CODE_QUALITY_CHECK)
-
-                    // 质检条件边
-                    .addConditionalEdges(NODE_CODE_QUALITY_CHECK,
-                            edge_async(this::routeAfterQualityCheck),
-                            Map.of(
-                                    ROUTE_BUILD, NODE_PROJECT_BUILDER,
-                                    ROUTE_SKIP_BUILD, END,
-                                    ROUTE_FAIL, NODE_CODE_GENERATOR
-                            ))
-                    .addEdge(NODE_PROJECT_BUILDER, END)
-
-                    // 编译工作流
-                    .compile();
-        } catch (GraphStateException e) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "工作流创建失败");
+    public CompiledGraph<MessagesState<String>> createWorkflow() throws GraphStateException {
+        // 获取未编译的子图
+        StateGraph<MessagesState<String>> createSubGraph = buildCreateModeSubGraph();
+        StateGraph<MessagesState<String>> modifySubGraph = buildModifyModeSubGraph();
+        StateGraph<MessagesState<String>> qualityCheckSubGraph = buildQualityCheckSubGraph();
+        
+        return new MessagesStateGraph<String>()
+                // 模式路由节点
+                .addNode(NODE_MODE_ROUTER, ModeRouterNode.create())
+                
+                // 添加子图（使用 addNode 方法添加未编译的子图，确保上下文传递）
+                .addNode(SUBGRAPH_CREATE, createSubGraph)
+                .addNode(SUBGRAPH_MODIFY, modifySubGraph)
+                .addNode(SUBGRAPH_QUALITY_CHECK, qualityCheckSubGraph)
+                
+                // 项目构建节点
+                .addNode(NODE_PROJECT_BUILDER, ProjectBuilderNode.create())
+                
+                // 入口边
+                .addEdge(START, NODE_MODE_ROUTER)
+                
+                // 模式路由条件边
+                .addConditionalEdges(NODE_MODE_ROUTER,
+                        edge_async(ModeRouterNode::routeToNextNode),
+                        Map.of(
+                                ROUTE_CREATE, SUBGRAPH_CREATE,
+                                ROUTE_MODIFY, SUBGRAPH_MODIFY
+                        ))
+                
+                // 子图出口汇聚到质检子图
+                .addEdge(SUBGRAPH_CREATE, SUBGRAPH_QUALITY_CHECK)
+                .addEdge(SUBGRAPH_MODIFY, SUBGRAPH_QUALITY_CHECK)
+                
+                // 质检子图出口条件边
+                .addConditionalEdges(SUBGRAPH_QUALITY_CHECK,
+                        edge_async(this::routeAfterQualityCheck),
+                        Map.of(
+                                ROUTE_BUILD, NODE_PROJECT_BUILDER,
+                                ROUTE_END, END
+                        ))
+                
+                // 构建完成
+                .addEdge(NODE_PROJECT_BUILDER, END)
+                
+                // 编译工作流
+                .compile();
+    }
+    
+    /**
+     * 构建创建模式子图
+     * 
+     * 包含节点：
+     * - 图片规划节点
+     * - 并发图片收集节点（内容图片、插画、架构图、Logo）
+     * - 图片聚合节点
+     * - 提示词增强节点
+     * - 路由节点
+     * - 代码生成节点
+     * 
+     * @return 创建模式子图
+     */
+    private StateGraph<MessagesState<String>> buildCreateModeSubGraph() throws GraphStateException {
+        return new MessagesStateGraph<String>()
+                // 图片规划节点
+                .addNode(NODE_IMAGE_PLAN, ImagePlanNode.create())
+                
+                // 并发图片收集节点
+                .addNode(NODE_CONTENT_IMAGE_COLLECTOR, ContentImageCollectorNode.create())
+                .addNode(NODE_ILLUSTRATION_COLLECTOR, IllustrationCollectorNode.create())
+                .addNode(NODE_DIAGRAM_COLLECTOR, DiagramCollectorNode.create())
+                .addNode(NODE_LOGO_COLLECTOR, LogoCollectorNode.create())
+                
+                // 图片聚合节点
+                .addNode(NODE_IMAGE_AGGREGATOR, ImageAggregatorNode.create())
+                
+                // 后续处理节点
+                .addNode(NODE_PROMPT_ENHANCER, PromptEnhancerNode.create())
+                .addNode(NODE_ROUTER, RouterNode.create())
+                .addNode(NODE_CODE_GENERATOR, CodeGeneratorNode.create())
+                
+                // 入口边
+                .addEdge(START, NODE_IMAGE_PLAN)
+                
+                // 并发图片收集边
+                .addEdge(NODE_IMAGE_PLAN, NODE_CONTENT_IMAGE_COLLECTOR)
+                .addEdge(NODE_IMAGE_PLAN, NODE_ILLUSTRATION_COLLECTOR)
+                .addEdge(NODE_IMAGE_PLAN, NODE_DIAGRAM_COLLECTOR)
+                .addEdge(NODE_IMAGE_PLAN, NODE_LOGO_COLLECTOR)
+                
+                // 汇聚到聚合器
+                .addEdge(NODE_CONTENT_IMAGE_COLLECTOR, NODE_IMAGE_AGGREGATOR)
+                .addEdge(NODE_ILLUSTRATION_COLLECTOR, NODE_IMAGE_AGGREGATOR)
+                .addEdge(NODE_DIAGRAM_COLLECTOR, NODE_IMAGE_AGGREGATOR)
+                .addEdge(NODE_LOGO_COLLECTOR, NODE_IMAGE_AGGREGATOR)
+                
+                // 串行流程
+                .addEdge(NODE_IMAGE_AGGREGATOR, NODE_PROMPT_ENHANCER)
+                .addEdge(NODE_PROMPT_ENHANCER, NODE_ROUTER)
+                .addEdge(NODE_ROUTER, NODE_CODE_GENERATOR)
+                
+                // 出口
+                .addEdge(NODE_CODE_GENERATOR, END);
+    }
+    
+    /**
+     * 构建修改模式子图
+     * 
+     * 包含节点：
+     * - 代码读取节点：读取现有项目结构
+     * - 代码修改节点：使用修改专用提示词进行增量修改
+     * 
+     * @return 修改模式子图
+     */
+    private StateGraph<MessagesState<String>> buildModifyModeSubGraph() throws GraphStateException {
+        return new MessagesStateGraph<String>()
+                // 代码读取节点
+                .addNode(NODE_CODE_READER, CodeReaderNode.create())
+                
+                // 代码修改节点
+                .addNode(NODE_CODE_MODIFIER, CodeModifierNode.create())
+                
+                // 入口边
+                .addEdge(START, NODE_CODE_READER)
+                
+                // 读取后修改
+                .addEdge(NODE_CODE_READER, NODE_CODE_MODIFIER)
+                
+                // 出口
+                .addEdge(NODE_CODE_MODIFIER, END);
+    }
+    
+    /**
+     * 构建质检修复子图
+     * 
+     * 包含节点：
+     * - 代码质量检查节点
+     * - 代码修复节点
+     * 
+     * 循环逻辑：
+     * - 质检失败且未达最大重试次数 → 修复节点
+     * - 修复完成 → 重新质检
+     * - 质检通过或达到最大重试次数 → 出口
+     * 
+     * @return 质检修复子图
+     */
+    private StateGraph<MessagesState<String>> buildQualityCheckSubGraph() throws GraphStateException {
+        return new MessagesStateGraph<String>()
+                // 质检节点
+                .addNode(NODE_CODE_QUALITY_CHECK, CodeQualityCheckNode.create())
+                
+                // 修复节点
+                .addNode(NODE_CODE_FIXER, CodeFixerNode.create())
+                
+                // 入口边
+                .addEdge(START, NODE_CODE_QUALITY_CHECK)
+                
+                // 质检条件边（内部循环）
+                .addConditionalEdges(NODE_CODE_QUALITY_CHECK,
+                        edge_async(this::routeInQualityCheck),
+                        Map.of(
+                                ROUTE_FIX, NODE_CODE_FIXER,
+                                ROUTE_PASS, END
+                        ))
+                
+                // 修复后重新质检
+                .addEdge(NODE_CODE_FIXER, NODE_CODE_QUALITY_CHECK);
+    }
+    
+    /**
+     * 质检子图内部路由逻辑
+     * 
+     * 判断逻辑：
+     * 1. 质检失败且未达最大重试次数 → 路由到修复节点
+     * 2. 质检通过或达到最大重试次数 → 路由到出口
+     * 
+     * @param state 消息状态
+     * @return 路由目标（"fix" 或 "pass"）
+     */
+    private String routeInQualityCheck(MessagesState<String> state) {
+        WorkflowContext context = WorkflowContext.getContext(state);
+        QualityResult qualityResult = context.getQualityResult();
+        
+        // 质检失败且未达最大重试次数，路由到修复节点
+        if (qualityResult == null || !qualityResult.getIsValid()) {
+            if (context.getFixRetryCount() < WorkflowContext.MAX_FIX_RETRY_COUNT) {
+                log.info("质检未通过，路由到修复节点 (重试次数: {}/{})", 
+                        context.getFixRetryCount(), WorkflowContext.MAX_FIX_RETRY_COUNT);
+                return ROUTE_FIX;
+            } else {
+                log.warn("达到最大修复重试次数 ({})，强制通过质检", WorkflowContext.MAX_FIX_RETRY_COUNT);
+            }
         }
+        
+        log.info("质检通过或达到最大重试次数，路由到出口");
+        return ROUTE_PASS;
     }
 
     /**
@@ -152,25 +337,44 @@ public class CodeGenWorkflow {
      * 执行工作流
      */
     public WorkflowContext executeWorkflow(String originalPrompt) {
-        return executeWorkflow(originalPrompt, 0L);
+        return executeWorkflow(originalPrompt, 0L, null);
     }
 
     /**
      * 执行工作流（支持 appId 参数）
      */
     public WorkflowContext executeWorkflow(String originalPrompt, Long appId) {
-        CompiledGraph<MessagesState<String>> workflow = createWorkflow();
+        return executeWorkflow(originalPrompt, appId, null);
+    }
+    
+    /**
+     * 执行工作流（支持 appId 和 elementInfo 参数）
+     * 
+     * @param originalPrompt 用户原始提示词
+     * @param appId 应用 ID
+     * @param elementInfo 选中的元素信息（用于修改模式）
+     * @return 工作流上下文
+     */
+    public WorkflowContext executeWorkflow(String originalPrompt, Long appId, ElementInfo elementInfo) {
+        CompiledGraph<MessagesState<String>> workflow = null;
+        try {
+            workflow = createWorkflow();
+        } catch (GraphStateException e) {
+            log.error("创建工作流失败", e);
+            throw new RuntimeException("创建工作流失败", e);
+        }
         RunnableConfig runnableConfig = createRunnableConfig();
 
         WorkflowContext initialContext = WorkflowContext.builder()
                 .originalPrompt(originalPrompt)
                 .currentStep("初始化")
                 .appId(appId)
+                .elementInfo(elementInfo)
                 .build();
 
         GraphRepresentation graph = workflow.getGraph(GraphRepresentation.Type.MERMAID);
         log.info("工作流图:\n{}", graph.content());
-        log.info("开始执行代码生成工作流");
+        log.info("开始执行代码生成工作流, appId: {}, hasElementInfo: {}", appId, elementInfo != null);
 
         WorkflowContext finalContext = null;
         int stepCounter = 1;
@@ -195,13 +399,25 @@ public class CodeGenWorkflow {
      * 执行工作流（Flux 流式输出版本）
      */
     public Flux<String> executeWorkflowWithFlux(String originalPrompt) {
-        return executeWorkflowWithFlux(originalPrompt, 0L);
+        return executeWorkflowWithFlux(originalPrompt, 0L, null);
     }
 
     /**
      * 执行工作流（Flux 流式输出版本，支持 appId 参数）
      */
     public Flux<String> executeWorkflowWithFlux(String originalPrompt, Long appId) {
+        return executeWorkflowWithFlux(originalPrompt, appId, null);
+    }
+    
+    /**
+     * 执行工作流（Flux 流式输出版本，支持 appId 和 elementInfo 参数）
+     * 
+     * @param originalPrompt 用户原始提示词
+     * @param appId 应用 ID
+     * @param elementInfo 选中的元素信息（用于修改模式）
+     * @return 流式输出的代码内容
+     */
+    public Flux<String> executeWorkflowWithFlux(String originalPrompt, Long appId, ElementInfo elementInfo) {
         return Flux.create(sink -> {
             // 生成唯一的执行 ID
             String executionId = appId + "_" + System.currentTimeMillis();
@@ -214,20 +430,24 @@ public class CodeGenWorkflow {
                     CompiledGraph<MessagesState<String>> workflow = createWorkflow();
                     RunnableConfig runnableConfig = createRunnableConfig();
 
-                    // 初始化 WorkflowContext，传入 appId 和 executionId
+                    // 初始化 WorkflowContext，传入 appId、executionId 和 elementInfo
                     WorkflowContext initialContext = WorkflowContext.builder()
                             .appId(appId)
                             .originalPrompt(originalPrompt)
                             .currentStep("初始化")
                             .workflowExecutionId(executionId)
+                            .elementInfo(elementInfo)
                             .build();
 
                     GraphRepresentation graph = workflow.getGraph(GraphRepresentation.Type.MERMAID);
                     log.info("工作流图:\n{}", graph.content());
-                    log.info("开始执行代码生成工作流（流式）, appId: {}, executionId: {}", appId, executionId);
+                    log.info("开始执行代码生成工作流（流式）, appId: {}, executionId: {}, hasElementInfo: {}", 
+                            appId, executionId, elementInfo != null);
 
-                    // 发送工作流开始消息
-                    sink.next("[工作流] 开始处理请求...\n");
+                    // 发送工作流开始消息（包装为 JSON 格式）
+                    String modeHint = elementInfo != null ? "（修改模式）" : "（创建模式）";
+                    String startMessage = "[工作流] 开始处理请求..." + modeHint + "\n";
+                    sink.next(JSONUtil.toJsonStr(new AiResponseMessage(startMessage)));
 
                     int stepCounter = 1;
                     for (NodeOutput<MessagesState<String>> step : workflow.stream(
@@ -242,7 +462,9 @@ public class CodeGenWorkflow {
                     }
 
                     log.info("代码生成工作流执行完成！");
-                    sink.next("[工作流] 全部流程执行完成！\n");
+                    // 发送工作流完成消息（包装为 JSON 格式）
+                    String completeMessage = "[工作流] 全部流程执行完成！\n";
+                    sink.next(JSONUtil.toJsonStr(new AiResponseMessage(completeMessage)));
                     sink.complete();
                 } catch (Exception e) {
                     log.error("工作流执行失败: {}", e.getMessage(), e);
@@ -256,26 +478,27 @@ public class CodeGenWorkflow {
     }
 
     /**
-     * 路由函数：根据质检结果决定下一步
+     * 质检子图出口路由逻辑
+     * 
+     * 判断逻辑：
+     * 1. 如果 codeGenType 为 VUE_PROJECT，需要构建 → 路由到 project_builder
+     * 2. 否则不需要构建 → 路由到 END
+     * 
+     * @param state 消息状态
+     * @return 路由目标（"build" 或 "end"）
      */
     private String routeAfterQualityCheck(MessagesState<String> state) {
         WorkflowContext context = WorkflowContext.getContext(state);
-        QualityResult qualityResult = context.getQualityResult();
-
-        if (qualityResult == null || !qualityResult.getIsValid()) {
-            log.error("代码质检失败，需要重新生成代码");
-            return ROUTE_FAIL;
-        }
-
-        log.info("代码质检通过，继续后续流程");
         CodeGenTypeEnum generationType = context.getGenerationType();
 
         if (generationType == CodeGenTypeEnum.VUE_PROJECT) {
+            log.info("代码类型为 VUE_PROJECT，路由到项目构建节点");
             return ROUTE_BUILD;
         } else {
             // 跳过构建时，将生成目录设置为最终构建目录
             context.setBuildResultDir(context.getGeneratedCodeDir());
-            return ROUTE_SKIP_BUILD;
+            log.info("代码类型为 {}，跳过构建，直接结束", generationType);
+            return ROUTE_END;
         }
     }
 
