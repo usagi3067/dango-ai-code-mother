@@ -1,6 +1,8 @@
 package com.dango.dangoaicodeapp.workflow.state;
 
+import com.dango.aicodegenerate.model.ImageCollectionPlan;
 import com.dango.aicodegenerate.model.ImageResource;
+import com.dango.aicodegenerate.model.QualityResult;
 import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -69,6 +71,31 @@ public class WorkflowContext implements Serializable {
     private List<ImageResource> imageList;
 
     /**
+     * 图片收集计划（用于并发收集）
+     */
+    private ImageCollectionPlan imageCollectionPlan;
+
+    /**
+     * 并发图片收集的中间结果字段 - 内容图片
+     */
+    private List<ImageResource> contentImages;
+
+    /**
+     * 并发图片收集的中间结果字段 - 插画图片
+     */
+    private List<ImageResource> illustrations;
+
+    /**
+     * 并发图片收集的中间结果字段 - 架构图
+     */
+    private List<ImageResource> diagrams;
+
+    /**
+     * 并发图片收集的中间结果字段 - Logo
+     */
+    private List<ImageResource> logos;
+
+    /**
      * 增强后的提示词
      */
     private String enhancedPrompt;
@@ -92,6 +119,11 @@ public class WorkflowContext implements Serializable {
      * 错误信息
      */
     private String errorMessage;
+
+    /**
+     * 质量检查结果
+     */
+    private QualityResult qualityResult;
 
     // ========== 上下文操作方法 ==========
 

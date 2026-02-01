@@ -1,5 +1,7 @@
 package com.dango.dangoaicodeapp.workflow.node;
 
+import cn.hutool.core.util.StrUtil;
+import com.dango.aicodegenerate.model.QualityResult;
 import com.dango.dangoaicodeapp.core.AiCodeGeneratorFacade;
 import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.workflow.state.WorkflowContext;
@@ -35,12 +37,19 @@ public class CodeGeneratorNode {
             // 发送节点开始消息（使用 context 而非 ThreadLocal）
             context.emitNodeStart(NODE_NAME);
 
-            String enhancedPrompt = context.getEnhancedPrompt();
+            // 构造用户消息（包含原始提示词和可能的错误修复信息）
+            String userMessage = buildUserMessage(context);
             CodeGenTypeEnum generationType = context.getGenerationType();
             Long appId = context.getAppId();
 
-            context.emitNodeMessage(NODE_NAME, 
-                    String.format("开始生成 %s 类型代码...\n", generationType.getText()));
+            // 判断是否是修复模式
+            boolean isFixMode = isQualityCheckFailed(context.getQualityResult());
+            if (isFixMode) {
+                context.emitNodeMessage(NODE_NAME, "检测到代码质量问题，正在修复...\n");
+            } else {
+                context.emitNodeMessage(NODE_NAME,
+                        String.format("开始生成 %s 类型代码...\n", generationType.getText()));
+            }
 
             try {
                 // 获取 AI 代码生成外观服务
@@ -48,7 +57,7 @@ public class CodeGeneratorNode {
                 
                 // 使用流式生成，实时输出代码内容
                 Flux<String> codeStream = codeGeneratorFacade.generateAndSaveCodeStream(
-                        enhancedPrompt, generationType, appId);
+                        userMessage, generationType, appId);
                 
                 // 使用 CountDownLatch 等待流式生成完成
                 CountDownLatch latch = new CountDownLatch(1);
@@ -82,6 +91,9 @@ public class CodeGeneratorNode {
                 String generatedCodeDir = buildGeneratedCodeDir(generationType, appId);
                 context.setGeneratedCodeDir(generatedCodeDir);
                 
+                // 清除质量检查结果（重新生成后需要重新检查）
+                context.setQualityResult(null);
+                
                 log.info("代码生成完成，目录: {}", generatedCodeDir);
                 context.emitNodeMessage(NODE_NAME, "\n代码生成并保存完成\n");
                 
@@ -108,5 +120,60 @@ public class CodeGeneratorNode {
         String baseDir = System.getProperty("user.dir") + File.separator + "tmp" + File.separator + "code_output";
         String dirName = generationType.getValue() + "_" + appId;
         return baseDir + File.separator + dirName;
+    }
+
+    /**
+     * 构造用户消息，如果存在质检失败结果则添加错误修复信息
+     */
+    private static String buildUserMessage(WorkflowContext context) {
+        String userMessage = context.getEnhancedPrompt();
+
+        // 检查是否存在质检失败结果
+        QualityResult qualityResult = context.getQualityResult();
+        if (isQualityCheckFailed(qualityResult)) {
+            // 直接将错误修复信息作为新的提示词（起到了修改的作用）
+            userMessage = buildErrorFixPrompt(context.getEnhancedPrompt(), qualityResult);
+        }
+
+        return userMessage;
+    }
+
+    /**
+     * 判断质检是否失败
+     */
+    private static boolean isQualityCheckFailed(QualityResult qualityResult) {
+        return qualityResult != null &&
+                !qualityResult.getIsValid() &&
+                qualityResult.getErrors() != null &&
+                !qualityResult.getErrors().isEmpty();
+    }
+
+    /**
+     * 构造错误修复提示词
+     */
+    private static String buildErrorFixPrompt(String originalPrompt, QualityResult qualityResult) {
+        StringBuilder errorInfo = new StringBuilder();
+
+        // 保留原始需求
+        if (StrUtil.isNotBlank(originalPrompt)) {
+            errorInfo.append("## 原始需求：\n").append(originalPrompt).append("\n\n");
+        }
+
+        errorInfo.append("## 上次生成的代码存在以下问题，请修复：\n");
+
+        // 添加错误列表
+        qualityResult.getErrors().forEach(error ->
+                errorInfo.append("- ").append(error).append("\n"));
+
+        // 添加修复建议（如果有）
+        if (qualityResult.getSuggestions() != null && !qualityResult.getSuggestions().isEmpty()) {
+            errorInfo.append("\n## 修复建议：\n");
+            qualityResult.getSuggestions().forEach(suggestion ->
+                    errorInfo.append("- ").append(suggestion).append("\n"));
+        }
+
+        errorInfo.append("\n请根据上述问题和建议重新生成代码，确保修复所有提到的问题。");
+
+        return errorInfo.toString();
     }
 }

@@ -4,6 +4,7 @@ import com.dango.aicodegenerate.tools.ImageSearchTool;
 import com.dango.aicodegenerate.tools.LogoGeneratorTool;
 import com.dango.aicodegenerate.tools.MermaidDiagramTool;
 import com.dango.aicodegenerate.tools.UndrawIllustrationTool;
+import com.dango.aicodegenerate.service.ImageCollectionPlanService;
 import com.dango.aicodegenerate.service.ImageCollectionService;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
@@ -44,6 +45,17 @@ public class ImageCollectionServiceFactory {
                         mermaidDiagramTool,
                         logoGeneratorTool
                 )
+                .build();
+    }
+
+    /**
+     * 创建图片收集计划 AI 服务
+     * 用于分析用户需求并生成图片收集计划，为并发执行做准备
+     */
+    @Bean
+    public ImageCollectionPlanService createImageCollectionPlanService() {
+        return AiServices.builder(ImageCollectionPlanService.class)
+                .chatModel(chatModel)
                 .build();
     }
 }

@@ -114,8 +114,11 @@
           ref="messageListRef": 模板引用
           可以在 script 中通过 messageListRef.value 访问这个 DOM 元素
           用于实现滚动到底部功能
+          
+          @scroll="handleScroll": 监听滚动事件
+          用于检测用户是否主动滚动离开底部
         -->
-        <div ref="messageListRef" class="message-list">
+        <div ref="messageListRef" class="message-list" @scroll="handleScroll">
           <!-- 加载更多按钮 -->
           <div v-if="hasMore" class="load-more-wrapper">
             <a-button 
@@ -861,8 +864,11 @@ const handleSend = async () => {
   // 3. 设置生成状态
   isGenerating.value = true
   
-  // 滚动到底部，显示最新消息
-  scrollToBottom()
+  // 重置用户滚动状态，新消息发送时应该滚动到底部
+  userScrolledAway.value = false
+  
+  // 滚动到底部，显示最新消息（强制滚动）
+  scrollToBottom(true)
 
   try {
     /**
@@ -970,6 +976,9 @@ const handleSend = async () => {
         messages.value[aiMessageIndex].loading = false
         eventSource.close()
         
+        // 生成完成，重置滚动状态
+        userScrolledAway.value = false
+        
         // 延迟更新预览，确保后端文件已写入完成
         setTimeout(async () => {
           // 重新获取应用信息（可能有新的 codeGenType），但不重新加载对话历史
@@ -999,6 +1008,9 @@ const handleSend = async () => {
       eventSource.close()
       messages.value[aiMessageIndex].loading = false
       isGenerating.value = false
+      
+      // 生成完成，重置滚动状态
+      userScrolledAway.value = false
       
       // 延迟更新预览，但不重新加载对话历史
       setTimeout(async () => {
@@ -1077,11 +1089,49 @@ const updatePreview = () => {
 }
 
 /**
+ * 用户是否手动滚动离开了底部
+ * 用于智能滚动：如果用户正在查看历史消息，不要打扰他
+ */
+const userScrolledAway = ref(false)
+
+/**
+ * 判断滚动条是否在底部附近
+ * 
+ * @param threshold - 阈值，距离底部多少像素内算"在底部"，默认 100px
+ * @returns 是否在底部附近
+ */
+const isNearBottom = (threshold = 100): boolean => {
+  if (!messageListRef.value) return true
+  
+  const { scrollTop, scrollHeight, clientHeight } = messageListRef.value
+  // 距离底部的距离 = 总高度 - 已滚动距离 - 可视区域高度
+  const distanceFromBottom = scrollHeight - scrollTop - clientHeight
+  return distanceFromBottom <= threshold
+}
+
+/**
+ * 处理用户滚动事件
+ * 检测用户是否主动滚动离开了底部
+ */
+const handleScroll = () => {
+  // 如果不在生成中，不需要跟踪滚动状态
+  if (!isGenerating.value) {
+    userScrolledAway.value = false
+    return
+  }
+  
+  // 更新用户滚动状态
+  userScrolledAway.value = !isNearBottom()
+}
+
+/**
  * 滚动到底部
  * 
- * 使消息列表始终显示最新的消息
+ * 智能滚动：只有当用户没有主动向上滚动时才自动滚动
+ * 
+ * @param force - 是否强制滚动（忽略用户滚动状态）
  */
-const scrollToBottom = () => {
+const scrollToBottom = (force = false) => {
   /**
    * nextTick: Vue 的异步更新机制
    * 
@@ -1090,12 +1140,15 @@ const scrollToBottom = () => {
    * 确保我们操作的是最新的 DOM
    */
   nextTick(() => {
-    if (messageListRef.value) {
-      // scrollTop: 滚动条距离顶部的距离
-      // scrollHeight: 内容的总高度
-      // 设置 scrollTop = scrollHeight 即滚动到底部
-      messageListRef.value.scrollTop = messageListRef.value.scrollHeight
-    }
+    if (!messageListRef.value) return
+    
+    // 如果用户主动滚动离开了底部，且不是强制滚动，则不自动滚动
+    if (userScrolledAway.value && !force) return
+    
+    // scrollTop: 滚动条距离顶部的距离
+    // scrollHeight: 内容的总高度
+    // 设置 scrollTop = scrollHeight 即滚动到底部
+    messageListRef.value.scrollTop = messageListRef.value.scrollHeight
   })
 }
 
