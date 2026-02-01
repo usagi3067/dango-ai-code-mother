@@ -1,5 +1,6 @@
 package com.dango.dangoaicodeapp.workflow;
 
+import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.workflow.node.*;
 import com.dango.dangoaicodeapp.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.exception.BusinessException;
@@ -15,11 +16,23 @@ import reactor.core.publisher.Flux;
 
 import java.util.Map;
 
+import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
 import static org.bsc.langgraph4j.StateGraph.END;
 import static org.bsc.langgraph4j.StateGraph.START;
 
 @Slf4j
 public class CodeGenWorkflow {
+
+    // ========== 节点 Key 常量 ==========
+    private static final String NODE_IMAGE_COLLECTOR = "image_collector";
+    private static final String NODE_PROMPT_ENHANCER = "prompt_enhancer";
+    private static final String NODE_ROUTER = "router";
+    private static final String NODE_CODE_GENERATOR = "code_generator";
+    private static final String NODE_PROJECT_BUILDER = "project_builder";
+
+    // ========== 条件边路由常量 ==========
+    private static final String ROUTE_BUILD = "build";
+    private static final String ROUTE_SKIP_BUILD = "skip_build";
 
     /**
      * 创建完整的工作流
@@ -27,26 +40,54 @@ public class CodeGenWorkflow {
     public CompiledGraph<MessagesState<String>> createWorkflow() {
         try {
             return new MessagesStateGraph<String>()
-                    // 添加节点 - 使用完整实现的节点
-                    .addNode("image_collector", ImageCollectorNode.create())
-                    .addNode("prompt_enhancer", PromptEnhancerNode.create())
-                    .addNode("router", RouterNode.create())
-                    .addNode("code_generator", CodeGeneratorNode.create())
-                    .addNode("project_builder", ProjectBuilderNode.create())
+                    // 添加节点
+                    .addNode(NODE_IMAGE_COLLECTOR, ImageCollectorNode.create())
+                    .addNode(NODE_PROMPT_ENHANCER, PromptEnhancerNode.create())
+                    .addNode(NODE_ROUTER, RouterNode.create())
+                    .addNode(NODE_CODE_GENERATOR, CodeGeneratorNode.create())
+                    .addNode(NODE_PROJECT_BUILDER, ProjectBuilderNode.create())
 
                     // 添加边
-                    .addEdge(START, "image_collector")
-                    .addEdge("image_collector", "prompt_enhancer")
-                    .addEdge("prompt_enhancer", "router")
-                    .addEdge("router", "code_generator")
-                    .addEdge("code_generator", "project_builder")
-                    .addEdge("project_builder", END)
+                    .addEdge(START, NODE_IMAGE_COLLECTOR)
+                    .addEdge(NODE_IMAGE_COLLECTOR, NODE_PROMPT_ENHANCER)
+                    .addEdge(NODE_PROMPT_ENHANCER, NODE_ROUTER)
+                    .addEdge(NODE_ROUTER, NODE_CODE_GENERATOR)
+                    // 使用条件边：根据代码生成类型决定是否需要构建
+                    .addConditionalEdges(NODE_CODE_GENERATOR,
+                            edge_async(this::routeBuildOrSkip),
+                            Map.of(
+                                    ROUTE_BUILD, NODE_PROJECT_BUILDER,  // 需要构建
+                                    ROUTE_SKIP_BUILD, END               // 跳过构建直接结束
+                            ))
+                    .addEdge(NODE_PROJECT_BUILDER, END)
 
                     // 编译工作流
                     .compile();
         } catch (GraphStateException e) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "工作流创建失败");
         }
+    }
+
+    /**
+     * 路由函数：决定代码生成后是否需要项目构建
+     * HTML 和 MULTI_FILE 类型在代码生成节点已保存文件，无需构建
+     * VUE_PROJECT 类型需要执行 npm install + npm run build
+     */
+    private String routeBuildOrSkip(MessagesState<String> state) {
+        WorkflowContext context = WorkflowContext.getContext(state);
+        CodeGenTypeEnum generationType = context.getGenerationType();
+
+        // HTML 和 MULTI_FILE 类型不需要构建，直接结束
+        if (generationType == CodeGenTypeEnum.HTML || generationType == CodeGenTypeEnum.MULTI_FILE) {
+            log.info("代码生成类型为 {}，跳过项目构建", generationType.getText());
+            // 跳过构建时，将生成目录设置为最终构建目录
+            context.setBuildResultDir(context.getGeneratedCodeDir());
+            return ROUTE_SKIP_BUILD;
+        }
+
+        // VUE_PROJECT 需要构建
+        log.info("代码生成类型为 {}，进入项目构建节点", generationType.getText());
+        return ROUTE_BUILD;
     }
 
     /**
