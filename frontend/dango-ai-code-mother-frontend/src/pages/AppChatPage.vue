@@ -208,6 +208,24 @@
             </template>
           </a-alert>
           
+          <!-- Agent 模式开关 -->
+          <div class="agent-mode-wrapper">
+            <a-tooltip title="Agent 模式会自动收集素材、智能路由、生成更精细的代码">
+              <div class="agent-mode-switch">
+                <a-switch 
+                  v-model:checked="agentMode" 
+                  size="small"
+                  :disabled="isGenerating"
+                />
+                <span class="agent-mode-label">
+                  <RobotOutlined />
+                  Agent 模式
+                </span>
+                <a-tag v-if="agentMode" color="purple" class="agent-tag">更精细</a-tag>
+              </div>
+            </a-tooltip>
+          </div>
+          
           <!-- 
             消息输入框
             :disabled: 生成中或非所有者时禁用输入
@@ -427,14 +445,15 @@ import {
   CheckCircleOutlined,  // 成功勾选图标
   LoadingOutlined,      // 加载图标
   InfoCircleOutlined,   // 信息图标
-  AimOutlined           // 瞄准图标（编辑模式）
+  AimOutlined,          // 瞄准图标（编辑模式）
+  RobotOutlined         // 机器人图标（Agent 模式）
 } from '@ant-design/icons-vue'
 
 /**
  * 导入 API 接口
  */
-import { getAppVoById, deployApp } from '@/api/appController'
-import { listChatHistoryByAppId } from '@/api/chatHistoryController'
+import { getAppVoById, deployApp } from '@/api/app/appController'
+import { listChatHistoryByAppId } from '@/api/app/chatHistoryController'
 
 /**
  * 导入环境变量配置
@@ -574,6 +593,12 @@ const downloading = ref(false)         // 是否正在下载
  * 只有所有者才能在对话页发送消息
  */
 const isOwner = ref(true)
+
+/**
+ * Agent 模式开关
+ * 开启后使用工作流生成，更精细但耗时更长
+ */
+const agentMode = ref(false)
 
 // ==================== 可视化编辑相关 ====================
 
@@ -857,7 +882,8 @@ const handleSend = async () => {
     
     // 构建请求 URL
     // encodeURIComponent: URL 编码，处理特殊字符
-    const url = `${API_BASE_URL}/app/chat/gen/code?appId=${appId.value}&message=${encodeURIComponent(text)}`
+    // agent: 是否使用 Agent 模式
+    const url = `${API_BASE_URL}/app/chat/gen/code?appId=${appId.value}&message=${encodeURIComponent(text)}&agent=${agentMode.value}`
     
     /**
      * 创建 EventSource 实例
@@ -1289,6 +1315,13 @@ onMounted(() => {
   if (id) {
     // 确保 ID 是字符串
     appId.value = String(id)
+    
+    // 从 URL 查询参数读取 agent 模式状态
+    const agentParam = route.query.agent
+    if (agentParam === 'true') {
+      agentMode.value = true
+    }
+    
     // 加载应用信息
     loadAppInfo()
   }
@@ -1325,6 +1358,14 @@ watch(() => route.params.id, (newId) => {
     hasMore.value = false
     historyCount.value = 0
     historyLoaded.value = false  // 重置历史加载标志
+    agentMode.value = false  // 重置 Agent 模式
+    
+    // 从 URL 查询参数读取 agent 模式状态
+    const agentParam = route.query.agent
+    if (agentParam === 'true') {
+      agentMode.value = true
+    }
+    
     // 重新加载应用信息
     loadAppInfo()
   }
@@ -1515,6 +1556,39 @@ watch(() => route.params.id, (newId) => {
   padding: 16px 24px;
   border-top: 1px solid #e8e8e8;
   background: #fafafa;
+}
+
+/* Agent 模式开关 */
+.agent-mode-wrapper {
+  margin-bottom: 12px;
+}
+
+.agent-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: #f5f5f5;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.agent-mode-switch:hover {
+  background: #ebebeb;
+}
+
+.agent-mode-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: #666;
+}
+
+.agent-tag {
+  margin-left: 4px;
+  font-size: 11px;
 }
 
 .chat-input {

@@ -291,20 +291,22 @@ public class AppController {
      *
      * @param appId   应用 ID
      * @param message 用户消息
+     * @param agent   是否启用 Agent 模式（工作流模式），默认 false
      * @param request 请求对象
      * @return 生成结果流
      */
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
                                                        @RequestParam String message,
+                                                       @RequestParam(defaultValue = "false") boolean agent,
                                                        HttpServletRequest request) {
         // 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
         ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
         // 获取当前登录用户
         User loginUser = InnerUserService.getLoginUser(request);
-        // 调用服务生成代码（流式）
-        Flux<String> contentFlux = appService.chatToGenCode(appId, message, loginUser);
+        // 调用服务生成代码（流式），传递 agent 参数
+        Flux<String> contentFlux = appService.chatToGenCode(appId, message, loginUser, agent);
         // 转换为 ServerSentEvent 格式
         return contentFlux
                 .map(chunk -> {

@@ -103,7 +103,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { message } from 'ant-design-vue'
 import type { TableProps } from 'ant-design-vue'
-import { listChatHistoryByPageForAdmin } from '@/api/chatHistoryController'
+import { listChatHistoryByPageForAdmin } from '@/api/app/chatHistoryController'
 
 /**
  * 消息类型选项

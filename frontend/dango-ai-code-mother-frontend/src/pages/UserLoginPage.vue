@@ -173,7 +173,7 @@ import { message } from 'ant-design-vue'
  * 导入登录 API 接口
  * userLogin: 调用后端登录接口
  */
-import { userLogin } from '@/api/userController'
+import { userLogin } from '@/api/user/userController'
 
 /**
  * 导入 Pinia store

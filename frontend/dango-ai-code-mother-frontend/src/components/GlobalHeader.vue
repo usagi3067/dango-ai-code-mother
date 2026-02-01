@@ -139,7 +139,7 @@ import { getMenuRoutes, findRouteByPath } from '@/config/routes'
  * 导入用户注销 API 接口
  * userLogout: 调用后端注销接口
  */
-import { userLogout } from '@/api/userController'
+import { userLogout } from '@/api/user/userController'
 
 /**
  * 导入 Pinia store

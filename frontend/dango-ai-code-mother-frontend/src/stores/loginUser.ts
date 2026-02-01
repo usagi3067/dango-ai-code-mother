@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 // 从 vue 导入 ref 函数，用于创建响应式数据
 import { ref } from 'vue'
 // 导入后端 API 接口，用于获取登录用户信息
-import { getLoginUser } from '@/api/userController.ts'
+import { getLoginUser } from '@/api/user/userController'
 
 /**
  * 定义登录用户的状态管理仓库

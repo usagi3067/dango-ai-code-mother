@@ -177,7 +177,7 @@ import {
   updateApp, 
   updateAppByAdmin,
   deleteApp 
-} from '@/api/appController'
+} from '@/api/app/appController'
 
 /**
  * 导入代码生成类型配置

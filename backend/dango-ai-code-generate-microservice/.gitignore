@@ -5,3 +5,4 @@
 /screenshot/screenshot-app/src/main/resources/application-local.yml
 /logs/
 /tmp/
+/app/app-service/logs/

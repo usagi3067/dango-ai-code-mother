@@ -177,7 +177,7 @@ import { message, Modal } from 'ant-design-vue'
  * listUserVoByPage: 分页查询用户列表
  * deleteUser: 删除用户
  */
-import { listUserVoByPage, deleteUser } from '@/api/userController'
+import { listUserVoByPage, deleteUser } from '@/api/user/userController'
 
 /**
  * 导入 Ant Design Vue 的表格类型定义

@@ -201,7 +201,7 @@ import { message } from 'ant-design-vue'
  * 导入注册 API 接口
  * userRegister: 调用后端注册接口
  */
-import { userRegister } from '@/api/userController'
+import { userRegister } from '@/api/user/userController'
 
 /**
  * 获取路由实例

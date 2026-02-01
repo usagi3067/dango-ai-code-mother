@@ -85,41 +85,63 @@
         
         <!-- 输入框下方的操作按钮 -->
         <div class="input-actions">
-          <!-- 
-            a-button: Ant Design Vue 的按钮组件
-            type="text": 文字按钮样式（无背景色）
-            disabled: 禁用状态（这些功能暂未实现）
-          -->
-          <a-button type="text" disabled>
+          <!-- 左侧按钮组 -->
+          <div class="input-actions-left">
             <!-- 
-              template #icon: Vue 的具名插槽
-              用于自定义按钮的图标部分
+              a-button: Ant Design Vue 的按钮组件
+              type="text": 文字按钮样式（无背景色）
+              disabled: 禁用状态（这些功能暂未实现）
             -->
-            <template #icon><UploadOutlined /></template>
-            上传
-          </a-button>
-          <a-button type="text" disabled>
-            <template #icon><ThunderboltOutlined /></template>
-            优化
-          </a-button>
+            <a-button type="text" disabled>
+              <!-- 
+                template #icon: Vue 的具名插槽
+                用于自定义按钮的图标部分
+              -->
+              <template #icon><UploadOutlined /></template>
+              上传
+            </a-button>
+            <a-button type="text" disabled>
+              <template #icon><ThunderboltOutlined /></template>
+              优化
+            </a-button>
+          </div>
           
-          <!-- 
-            发送按钮
-            type="primary": 主要按钮样式（蓝色/绑定主题色）
-            shape="circle": 圆形按钮
-            :loading: 动态绑定加载状态
-            - 冒号 : 表示这是一个动态绑定（v-bind 的简写）
-            - 当 creating 为 true 时，按钮显示加载动画
-          -->
-          <a-button 
-            type="primary" 
-            shape="circle" 
-            class="send-btn"
-            :loading="creating"
-            @click="handleCreateApp"
-          >
-            <template #icon><SendOutlined /></template>
-          </a-button>
+          <!-- 右侧：Agent 模式开关 + 发送按钮 -->
+          <div class="input-actions-right">
+            <!-- Agent 模式开关 -->
+            <a-tooltip title="Agent 模式会自动收集素材、智能路由、生成更精细的代码">
+              <div class="agent-mode-switch">
+                <a-switch 
+                  v-model:checked="agentMode" 
+                  size="small"
+                  :disabled="creating"
+                />
+                <span class="agent-mode-label">
+                  <RobotOutlined />
+                  Agent
+                </span>
+                <a-tag v-if="agentMode" color="purple" class="agent-tag">更精细</a-tag>
+              </div>
+            </a-tooltip>
+            
+            <!-- 
+              发送按钮
+              type="primary": 主要按钮样式（蓝色/绑定主题色）
+              shape="circle": 圆形按钮
+              :loading: 动态绑定加载状态
+              - 冒号 : 表示这是一个动态绑定（v-bind 的简写）
+              - 当 creating 为 true 时，按钮显示加载动画
+            -->
+            <a-button 
+              type="primary" 
+              shape="circle" 
+              class="send-btn"
+              :loading="creating"
+              @click="handleCreateApp"
+            >
+              <template #icon><SendOutlined /></template>
+            </a-button>
+          </div>
         </div>
       </div>
 
@@ -359,7 +381,8 @@ import { message } from 'ant-design-vue'
 import { 
   UploadOutlined,      // 上传图标
   ThunderboltOutlined, // 闪电图标（优化）
-  SendOutlined         // 发送图标
+  SendOutlined,        // 发送图标
+  RobotOutlined        // 机器人图标（Agent 模式）
 } from '@ant-design/icons-vue'
 
 /**
@@ -377,7 +400,7 @@ import AppCard from '@/components/AppCard.vue'
  * listMyAppVoByPage: 分页查询我的应用
  * listGoodAppVoByPage: 分页查询精选应用
  */
-import { addApp, listMyAppVoByPage, listGoodAppVoByPage } from '@/api/appController'
+import { addApp, listMyAppVoByPage, listGoodAppVoByPage } from '@/api/app/appController'
 
 /**
  * 导入环境变量配置
@@ -502,6 +525,12 @@ const featuredPagination = reactive({
  */
 const selectedTag = ref('')
 
+/**
+ * Agent 模式开关
+ * 开启后使用工作流生成，更精细但耗时更长
+ */
+const agentMode = ref(false)
+
 // ==================== 方法定义 ====================
 
 /**
@@ -576,8 +605,9 @@ const handleCreateApp = async () => {
        * 模板字符串 ``: 可以嵌入变量 ${变量名}
        * 
        * 跳转到应用对话页面，路径格式: /app/chat/应用ID
+       * agent 参数：传递 Agent 模式状态到聊天页面
        */
-      router.push(`/app/chat/${appId}`)
+      router.push(`/app/chat/${appId}?agent=${agentMode.value}`)
     } else {
       // 请求失败，显示错误信息
       message.error('创建失败：' + res.data.message)
@@ -913,6 +943,49 @@ onMounted(() => {
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid #f0f0f0;  /* 顶部分隔线 */
+}
+
+/* 左侧按钮组 */
+.input-actions-left {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* 右侧按钮组 */
+.input-actions-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Agent 模式开关 */
+.agent-mode-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: #f5f5f5;
+  border-radius: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.agent-mode-switch:hover {
+  background: #ebebeb;
+}
+
+.agent-mode-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #666;
+}
+
+.agent-tag {
+  margin-left: 2px;
+  font-size: 10px;
 }
 
 /* 发送按钮 */
