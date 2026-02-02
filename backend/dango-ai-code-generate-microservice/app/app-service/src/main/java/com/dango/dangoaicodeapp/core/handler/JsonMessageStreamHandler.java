@@ -65,10 +65,11 @@ public class JsonMessageStreamHandler {
                     String aiResponse = chatHistoryStringBuilder.toString();
                     chatHistoryService.saveAiMessage(appId, loginUser.getId(), aiResponse);
 
-                    // 只有 VUE_PROJECT 类型才需要异步构造 Vue 项目
+                    // 只有 VUE_PROJECT 类型才需要同步构建 Vue 项目
+                    // 使用同步构建确保用户在 AI 回复完成时能立即预览到最新的构建结果
                     if (codeGenType == CodeGenTypeEnum.VUE_PROJECT) {
                         String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
-                        vueProjectBuilder.buildProjectAsync(projectPath);
+                        vueProjectBuilder.buildProject(projectPath);
                     }
                 })
                 .doOnError(error -> {
