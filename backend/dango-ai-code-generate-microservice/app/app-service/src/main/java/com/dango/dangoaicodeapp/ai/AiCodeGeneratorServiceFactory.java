@@ -1,5 +1,6 @@
 package com.dango.dangoaicodeapp.ai;
 
+import com.dango.aicodegenerate.guardrail.PromptSafetyInputGuardrail;
 import com.dango.aicodegenerate.service.AiCodeGeneratorService;
 
 import com.dango.aicodegenerate.tools.ToolManager;
@@ -98,6 +99,7 @@ public class AiCodeGeneratorServiceFactory {
                     .chatMemory(chatMemory)
                     .chatMemoryProvider(memoryId -> chatMemory)
                     .tools(toolManager.getAllTools())
+                    .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                             toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                     ))
@@ -107,6 +109,7 @@ public class AiCodeGeneratorServiceFactory {
                     .chatModel(chatModel)
                     .streamingChatModel(openAiStreamingChatModel)
                     .chatMemory(chatMemory)
+                    .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨
                     .build();
             default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
                     "不支持的代码生成类型: " + codeGenType.getValue());

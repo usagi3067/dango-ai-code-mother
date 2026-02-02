@@ -1,5 +1,6 @@
 package com.dango.dangoaicodeapp.ai;
 
+import com.dango.aicodegenerate.guardrail.PromptSafetyInputGuardrail;
 import com.dango.aicodegenerate.service.AiCodeModifierService;
 import com.dango.aicodegenerate.tools.*;
 import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
@@ -137,6 +138,7 @@ public class AiCodeModifierServiceFactory {
                             mermaidDiagramTool,
                             logoGeneratorTool
                     )
+                    .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                             toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                     ))
@@ -159,6 +161,7 @@ public class AiCodeModifierServiceFactory {
                             mermaidDiagramTool,
                             logoGeneratorTool
                     )
+                    .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                             toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                     ))

@@ -1,5 +1,6 @@
 package com.dango.dangoaicodeapp.ai;
 
+import com.dango.aicodegenerate.guardrail.PromptSafetyInputGuardrail;
 import com.dango.aicodegenerate.service.AiCodeFixerService;
 import com.dango.aicodegenerate.tools.*;
 import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
@@ -119,6 +120,7 @@ public class AiCodeFixerServiceFactory {
                             fileWriteTool,
                             fileDeleteTool
                     )
+                    .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨
                     .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                             toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                     ))
@@ -128,6 +130,7 @@ public class AiCodeFixerServiceFactory {
                     .streamingChatModel(openAiStreamingChatModel)
                     .chatMemory(chatMemory)
                     .chatMemoryProvider(memoryId -> chatMemory)
+                    .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨
                     // HTML 和多文件模式不需要工具，直接输出完整代码
                     .build();
 
