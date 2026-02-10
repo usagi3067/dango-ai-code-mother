@@ -180,3 +180,18 @@ export async function updateApp(body: API.AppUpdateRequest, options?: { [key: st
     ...(options || {}),
   })
 }
+
+/**
+ * 上传 HTML 文件创建应用
+ * @param formData 包含 file 字段的 FormData
+ */
+export async function uploadHtmlFile(formData: FormData, options?: { [key: string]: any }) {
+  return request<API.BaseResponseLong>('/app/upload/html', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+    data: formData,
+    ...(options || {}),
+  })
+}
