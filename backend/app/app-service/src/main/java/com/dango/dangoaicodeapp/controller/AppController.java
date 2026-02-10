@@ -37,6 +37,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
@@ -80,6 +81,37 @@ public class AppController {
         return ResultUtils.success(appId);
     }
 
+    /**
+     * 上传 HTML 文件创建应用
+     *
+     * @param file    HTML 文件
+     * @param request 请求
+     * @return 应用 ID
+     */
+    @PostMapping("/upload/html")
+    public BaseResponse<Long> uploadHtml(
+            @RequestParam("file") MultipartFile file,
+            HttpServletRequest request) {
+        // 1. 校验文件
+        ThrowUtils.throwIf(file == null || file.isEmpty(),
+                ErrorCode.PARAMS_ERROR, "文件不能为空");
+
+        String filename = file.getOriginalFilename();
+        ThrowUtils.throwIf(filename == null || !filename.endsWith(".html"),
+                ErrorCode.PARAMS_ERROR, "仅支持上传 .html 文件");
+
+        // 2MB 限制
+        ThrowUtils.throwIf(file.getSize() > 2 * 1024 * 1024,
+                ErrorCode.PARAMS_ERROR, "文件大小不能超过 2MB");
+
+        // 2. 获取登录用户
+        User loginUser = InnerUserService.getLoginUser(request);
+
+        // 3. 创建应用
+        Long appId = appService.createAppFromHtml(file, filename, loginUser);
+
+        return ResultUtils.success(appId);
+    }
 
     /**
      * 更新应用（用户只能更新自己的应用名称和标签）
@@ -299,10 +331,11 @@ public class AppController {
 
     /**
      * 应用聊天生成代码（流式 SSE）
+     * <p>
+     * 默认使用 Agent 模式（工作流模式）生成代码
      *
      * @param appId       应用 ID
      * @param message     用户消息
-     * @param agent       是否启用 Agent 模式（工作流模式），默认 false
      * @param elementInfo 选中的元素信息（JSON 字符串，可选，用于修改模式）
      * @param request     请求对象
      * @return 生成结果流
@@ -311,7 +344,6 @@ public class AppController {
     @RateLimit(limitType = RateLimitType.USER, rate = 5, rateInterval = 60, message = "AI 对话请求过于频繁，请稍后再试")
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
                                                        @RequestParam String message,
-                                                       @RequestParam(defaultValue = "false") boolean agent,
                                                        @RequestParam(required = false) String elementInfo,
                                                        HttpServletRequest request) {
         // 参数校验
@@ -332,8 +364,8 @@ public class AppController {
             }
         }
         
-        // 调用服务生成代码（流式），传递 agent 和 elementInfo 参数
-        Flux<String> contentFlux = appService.chatToGenCode(appId, message, parsedElementInfo, loginUser, agent);
+        // 调用服务生成代码（流式），使用 Agent 模式
+        Flux<String> contentFlux = appService.chatToGenCode(appId, message, parsedElementInfo, loginUser);
         // 转换为 ServerSentEvent 格式
         return contentFlux
                 .map(chunk -> {
