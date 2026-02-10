@@ -92,39 +92,26 @@
               type="text": 文字按钮样式（无背景色）
               disabled: 禁用状态（这些功能暂未实现）
             -->
-            <a-button type="text" disabled>
-              <!-- 
-                template #icon: Vue 的具名插槽
-                用于自定义按钮的图标部分
-              -->
-              <template #icon><UploadOutlined /></template>
-              上传
-            </a-button>
+            <a-upload
+              :show-upload-list="false"
+              :before-upload="beforeUpload"
+              :custom-request="handleUpload"
+              accept=".html"
+            >
+              <a-button type="text" :loading="uploading">
+                <template #icon><UploadOutlined /></template>
+                上传
+              </a-button>
+            </a-upload>
             <a-button type="text" disabled>
               <template #icon><ThunderboltOutlined /></template>
               优化
             </a-button>
           </div>
           
-          <!-- 右侧：Agent 模式开关 + 发送按钮 -->
+          <!-- 右侧：发送按钮 -->
           <div class="input-actions-right">
-            <!-- Agent 模式开关 -->
-            <a-tooltip title="Agent 模式会自动收集素材、智能路由、生成更精细的代码">
-              <div class="agent-mode-switch">
-                <a-switch 
-                  v-model:checked="agentMode" 
-                  size="small"
-                  :disabled="creating"
-                />
-                <span class="agent-mode-label">
-                  <RobotOutlined />
-                  Agent
-                </span>
-                <a-tag v-if="agentMode" color="purple" class="agent-tag">更精细</a-tag>
-              </div>
-            </a-tooltip>
-            
-            <!-- 
+            <!--
               发送按钮
               type="primary": 主要按钮样式（蓝色/绑定主题色）
               shape="circle": 圆形按钮
@@ -132,9 +119,9 @@
               - 冒号 : 表示这是一个动态绑定（v-bind 的简写）
               - 当 creating 为 true 时，按钮显示加载动画
             -->
-            <a-button 
-              type="primary" 
-              shape="circle" 
+            <a-button
+              type="primary"
+              shape="circle"
               class="send-btn"
               :loading="creating"
               @click="handleCreateApp"
@@ -369,6 +356,7 @@ import { useRouter } from 'vue-router'
  *          message.warning('警告') - 黄色警告提示
  */
 import { message } from 'ant-design-vue'
+import type { UploadProps } from 'ant-design-vue'
 
 /**
  * 从 Ant Design Vue 图标库导入图标组件
@@ -378,11 +366,10 @@ import { message } from 'ant-design-vue'
  * - Filled: 实心风格
  * - TwoTone: 双色风格
  */
-import { 
+import {
   UploadOutlined,      // 上传图标
   ThunderboltOutlined, // 闪电图标（优化）
-  SendOutlined,        // 发送图标
-  RobotOutlined        // 机器人图标（Agent 模式）
+  SendOutlined         // 发送图标
 } from '@ant-design/icons-vue'
 
 /**
@@ -400,7 +387,7 @@ import AppCard from '@/components/AppCard.vue'
  * listMyAppVoByPage: 分页查询我的应用
  * listGoodAppVoByPage: 分页查询精选应用
  */
-import { addApp, listMyAppVoByPage, listGoodAppVoByPage } from '@/api/app/appController'
+import { addApp, listMyAppVoByPage, listGoodAppVoByPage, uploadHtmlFile } from '@/api/app/appController'
 
 /**
  * 导入环境变量配置
@@ -461,6 +448,13 @@ const promptText = ref('')
  * false: 空闲状态
  */
 const creating = ref(false)
+
+/**
+ * 上传文件的加载状态
+ * true: 正在上传中，按钮显示加载动画
+ * false: 空闲状态
+ */
+const uploading = ref(false)
 
 /**
  * 快捷标签数组
@@ -524,12 +518,6 @@ const featuredPagination = reactive({
  * 空字符串表示"全部"
  */
 const selectedTag = ref('')
-
-/**
- * Agent 模式开关
- * 开启后使用工作流生成，更精细但耗时更长
- */
-const agentMode = ref(false)
 
 // ==================== 方法定义 ====================
 
@@ -600,14 +588,13 @@ const handleCreateApp = async () => {
       
       /**
        * 路由跳转
-       * 
+       *
        * router.push(): 编程式导航
        * 模板字符串 ``: 可以嵌入变量 ${变量名}
-       * 
+       *
        * 跳转到应用对话页面，路径格式: /app/chat/应用ID
-       * agent 参数：传递 Agent 模式状态到聊天页面
        */
-      router.push(`/app/chat/${appId}?agent=${agentMode.value}`)
+      router.push(`/app/chat/${appId}`)
     } else {
       // 请求失败，显示错误信息
       message.error('创建失败：' + res.data.message)
@@ -618,6 +605,59 @@ const handleCreateApp = async () => {
   } finally {
     // 无论成功失败，都要关闭加载状态
     creating.value = false
+  }
+}
+
+/**
+ * 上传前校验
+ */
+const beforeUpload: UploadProps['beforeUpload'] = (file) => {
+  // 校验登录状态
+  if (!loginUserStore.loginUser.id) {
+    message.warning('请先登录')
+    router.push('/user/login')
+    return false
+  }
+
+  // 校验文件类型
+  const isHtml = file.name.endsWith('.html')
+  if (!isHtml) {
+    message.error('仅支持上传 .html 文件')
+    return false
+  }
+
+  // 校验文件大小 (2MB)
+  const isLt2M = file.size / 1024 / 1024 < 2
+  if (!isLt2M) {
+    message.error('文件大小不能超过 2MB')
+    return false
+  }
+
+  return true
+}
+
+/**
+ * 自定义上传行为
+ */
+const handleUpload: UploadProps['customRequest'] = async (options) => {
+  const { file } = options
+
+  uploading.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', file as File)
+
+    const res = await uploadHtmlFile(formData)
+    if (res.data.code === 0 && res.data.data) {
+      message.success('上传成功')
+      router.push(`/app/chat/${String(res.data.data)}`)
+    } else {
+      message.error('上传失败：' + res.data.message)
+    }
+  } catch (error) {
+    message.error('上传失败，请稍后重试')
+  } finally {
+    uploading.value = false
   }
 }
 
@@ -957,35 +997,6 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-/* Agent 模式开关 */
-.agent-mode-switch {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 10px;
-  background: #f5f5f5;
-  border-radius: 16px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.agent-mode-switch:hover {
-  background: #ebebeb;
-}
-
-.agent-mode-label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 12px;
-  color: #666;
-}
-
-.agent-tag {
-  margin-left: 2px;
-  font-size: 10px;
 }
 
 /* 发送按钮 */
