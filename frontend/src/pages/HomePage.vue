@@ -650,7 +650,8 @@ const handleUpload: UploadProps['customRequest'] = async (options) => {
     const res = await uploadHtmlFile(formData)
     if (res.data.code === 0 && res.data.data) {
       message.success('上传成功')
-      router.push(`/app/chat/${String(res.data.data)}`)
+      // skipAutoSend=1 表示跳过自动发送，直接预览上传的 HTML
+      router.push(`/app/chat/${String(res.data.data)}?skipAutoSend=1`)
     } else {
       message.error('上传失败：' + res.data.message)
     }
