@@ -13,6 +13,8 @@ import com.dango.dangoaicodeapp.core.AppInfoGeneratorFacade;
 import com.dango.dangoaicodeapp.core.builder.VueProjectBuilder;
 import com.dango.dangoaicodeapp.core.handler.StreamHandlerExecutor;
 import com.dango.dangoaicodeapp.mapper.AppMapper;
+import com.dango.dangoaicodeapp.monitor.MonitorContext;
+import com.dango.dangoaicodeapp.monitor.MonitorContextHolder;
 import com.dango.dangoaicodeapp.model.constant.AppConstant;
 import com.dango.dangoaicodeapp.model.dto.app.AppAddRequest;
 import com.dango.dangoaicodeapp.model.dto.app.AppQueryRequest;
@@ -174,27 +176,38 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         } catch (Exception e) {
             log.error("保存用户消息失败: {}", e.getMessage());
         }
-        // 6. 根据 agent 参数和 elementInfo 选择生成方式
+        // 6. 创建监控上下文
+        MonitorContext monitorContext = MonitorContext.builder()
+                .userId(userId.toString())
+                .appId(appId.toString())
+                .build();
+        // 设置到当前线程（用于传统模式）
+        MonitorContextHolder.setContext(monitorContext);
+        // 7. 根据 agent 参数和 elementInfo 选择生成方式
         Flux<String> codeStream;
         if (agent) {
-            // Agent 模式：使用工作流生成代码，传递 elementInfo
+            // Agent 模式：使用工作流生成代码，传递 elementInfo 和 monitorContext
             // 工作流内部已经统一输出 JSON 格式，不需要再包装
             log.info("使用 Agent 模式（工作流）生成代码, appId: {}, hasElementInfo: {}", appId, elementInfo != null);
-            codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(message, appId, elementInfo);
+            codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(message, appId, elementInfo, monitorContext);
         } else {
             // 传统模式：调用 AI 生成代码（流式）
             // 如果有 elementInfo 且非 Agent 模式，自动切换到 Agent 模式
             if (elementInfo != null) {
                 log.info("检测到 elementInfo，自动切换到 Agent 模式, appId: {}", appId);
-                codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(message, appId, elementInfo);
+                codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(message, appId, elementInfo, monitorContext);
             } else {
                 log.info("使用传统模式生成代码, appId: {}", appId);
                 // AiCodeGeneratorFacade 已经对 HTML/MULTI_FILE 进行了包装
                 codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
             }
         }
-        // 7. 收集 AI 响应内容并在完成后记录到对话历史
-        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum);
+        // 8. 收集 AI 响应内容并在完成后记录到对话历史
+        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum)
+                .doFinally(signalType -> {
+                    // 流结束时清理（无论成功/失败/取消）
+                    MonitorContextHolder.clearContext();
+                });
     }
 
     @Override

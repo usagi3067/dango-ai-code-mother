@@ -30,7 +30,7 @@ import java.time.Duration;
 public class AiCodeFixerServiceFactory {
 
     @Resource
-    private StreamingChatModel openAiStreamingChatModel;
+    private StreamingChatModel odinaryStreamingChatModel;
 
     @Resource
     private StreamingChatModel reasoningStreamingChatModel;
@@ -127,7 +127,7 @@ public class AiCodeFixerServiceFactory {
                     .build();
 
             case HTML, MULTI_FILE -> AiServices.builder(AiCodeFixerService.class)
-                    .streamingChatModel(openAiStreamingChatModel)
+                    .streamingChatModel(odinaryStreamingChatModel)
                     .chatMemory(chatMemory)
                     .chatMemoryProvider(memoryId -> chatMemory)
                     .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨

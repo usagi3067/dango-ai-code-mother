@@ -8,12 +8,15 @@ import com.dango.aicodegenerate.model.message.AiResponseMessage;
 import com.dango.dangoaicodeapp.model.entity.ElementInfo;
 import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.model.enums.OperationModeEnum;
+import com.dango.dangoaicodeapp.monitor.MonitorContext;
 import com.dango.dangoaicodeapp.workflow.node.*;
 import com.dango.dangoaicodeapp.workflow.node.concurrent.*;
 import com.dango.dangoaicodeapp.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
+import com.dango.dangoaicodecommon.trace.TracedVirtualThread;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.skywalking.apm.toolkit.trace.TraceContext;
 import org.bsc.langgraph4j.CompiledGraph;
 import org.bsc.langgraph4j.GraphRepresentation;
 import org.bsc.langgraph4j.GraphStateException;
@@ -418,6 +421,19 @@ public class CodeGenWorkflow {
      * @return 流式输出的代码内容
      */
     public Flux<String> executeWorkflowWithFlux(String originalPrompt, Long appId, ElementInfo elementInfo) {
+        return executeWorkflowWithFlux(originalPrompt, appId, elementInfo, null);
+    }
+    
+    /**
+     * 执行工作流（Flux 流式输出版本，支持 appId、elementInfo 和 monitorContext 参数）
+     * 
+     * @param originalPrompt 用户原始提示词
+     * @param appId 应用 ID
+     * @param elementInfo 选中的元素信息（用于修改模式）
+     * @param monitorContext 监控上下文（用于跨线程传递监控信息）
+     * @return 流式输出的代码内容
+     */
+    public Flux<String> executeWorkflowWithFlux(String originalPrompt, Long appId, ElementInfo elementInfo, MonitorContext monitorContext) {
         return Flux.create(sink -> {
             // 生成唯一的执行 ID
             String executionId = appId + "_" + System.currentTimeMillis();
@@ -425,23 +441,25 @@ public class CodeGenWorkflow {
             // 注册 sink 到全局注册表
             WorkflowContext.registerSink(executionId, sink);
 
-            Thread.startVirtualThread(() -> {
+            // 使用 TracedVirtualThread 自动传递 traceId
+            TracedVirtualThread.start(() -> {
                 try {
                     CompiledGraph<MessagesState<String>> workflow = createWorkflow();
                     RunnableConfig runnableConfig = createRunnableConfig();
 
-                    // 初始化 WorkflowContext，传入 appId、executionId 和 elementInfo
+                    // 初始化 WorkflowContext，传入 appId、executionId、elementInfo 和 monitorContext
                     WorkflowContext initialContext = WorkflowContext.builder()
                             .appId(appId)
                             .originalPrompt(originalPrompt)
                             .currentStep("初始化")
                             .workflowExecutionId(executionId)
                             .elementInfo(elementInfo)
+                            .monitorContext(monitorContext)
                             .build();
 
                     GraphRepresentation graph = workflow.getGraph(GraphRepresentation.Type.MERMAID);
                     log.info("工作流图:\n{}", graph.content());
-                    log.info("开始执行代码生成工作流（流式）, appId: {}, executionId: {}, hasElementInfo: {}", 
+                    log.info("开始执行代码生成工作流（流式）, appId: {}, executionId: {}, hasElementInfo: {}",
                             appId, executionId, elementInfo != null);
 
                     // 发送工作流开始消息（包装为 JSON 格式）

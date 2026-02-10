@@ -11,36 +11,44 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
+/**
+ * OpenAI 流式聊天模型配置
+ * 覆盖 LangChain4j 自动配置的 Bean，添加监控监听器
+ *
+ * @author dango
+ */
 @Configuration
-@ConfigurationProperties(prefix = "langchain4j.open-ai.chat-model")
+@ConfigurationProperties(prefix = "langchain4j.open-ai.streaming-chat-model")
 @Data
-public class ReasoningStreamingChatModelConfig {
+public class OpenAiStreamingChatModelConfig {
 
     private String baseUrl;
 
     private String apiKey;
 
+    private String modelName;
+
+    private Integer maxTokens;
+
+    private Boolean logRequests;
+
+    private Boolean logResponses;
+
     @Autowired(required = false)
     private List<ChatModelListener> chatModelListeners;
 
     /**
-     * 推理流式模型（用于 Vue 项目生成，带工具调用）
+     * 流式聊天模型（用于 HTML/MULTI_FILE 生成）
      */
     @Bean
-    public StreamingChatModel reasoningStreamingChatModel() {
-        // 为了测试方便临时修改
-        final String modelName = "deepseek-chat";
-        final int maxTokens = 8192;
-        // 生产环境使用：
-        // final String modelName = "deepseek-reasoner";
-        // final int maxTokens = 32768;
+    public StreamingChatModel odinaryStreamingChatModel() {
         var builder = OpenAiStreamingChatModel.builder()
                 .apiKey(apiKey)
                 .baseUrl(baseUrl)
-                .modelName(modelName)
-                .maxTokens(maxTokens)
-                .logRequests(true)
-                .logResponses(true);
+                .modelName(modelName != null ? modelName : "deepseek-chat")
+                .maxTokens(maxTokens != null ? maxTokens : 8192)
+                .logRequests(logRequests != null ? logRequests : true)
+                .logResponses(logResponses != null ? logResponses : true);
         // 注册监听器
         if (chatModelListeners != null && !chatModelListeners.isEmpty()) {
             builder.listeners(chatModelListeners);

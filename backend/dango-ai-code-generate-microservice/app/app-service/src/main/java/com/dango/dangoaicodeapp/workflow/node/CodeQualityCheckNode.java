@@ -45,6 +45,9 @@ public class CodeQualityCheckNode {
             QualityResult qualityResult;
 
             try {
+                // 恢复监控上下文到当前线程（用于跨线程传递监控信息）
+                context.restoreMonitorContext();
+
                 // 1. 读取并拼接代码文件内容
                 String codeContent = readAndConcatenateCodeFiles(generatedCodeDir);
 

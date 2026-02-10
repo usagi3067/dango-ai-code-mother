@@ -25,7 +25,7 @@ public class PromptSafetyInputGuardrail implements InputGuardrail {
     /**
      * 最大输入长度限制
      */
-    private static final int MAX_INPUT_LENGTH = 5000;
+    private static final int MAX_INPUT_LENGTH = 50000;
 
     /**
      * 敏感词列表

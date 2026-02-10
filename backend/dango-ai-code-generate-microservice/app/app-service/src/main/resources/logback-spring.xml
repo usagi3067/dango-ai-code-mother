@@ -5,19 +5,14 @@
     <property name="APP_NAME" value="app-service"/>
     <property name="LOG_PATH" value="logs/${APP_NAME}"/>
 
-    <!-- SkyWalking traceId 转换器 -->
-    <conversionRule conversionWord="tid" converterClass="org.apache.skywalking.apm.toolkit.log.logback.v1.x.LogbackPatternConverter"/>
-    <conversionRule conversionWord="sw_ctx" converterClass="org.apache.skywalking.apm.toolkit.log.logback.v1.x.LogbackSkyWalkingContextPatternConverter"/>
+    <!-- 日志格式 - 使用 MDC 方式 %X{tid} -->
+    <property name="CONSOLE_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) %boldMagenta([%X{tid}]) %boldCyan([${APP_NAME}]) %boldYellow([%thread]) %boldGreen(%logger{36}) - %msg%n"/>
+    <property name="FILE_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%X{tid}] [${APP_NAME}] [%thread] %logger{36} - %msg%n"/>
 
-    <!-- 彩色日志格式 - 控制台使用 -->
-    <property name="CONSOLE_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) %boldMagenta([%tid]) %boldCyan([${APP_NAME}]) %boldYellow([%thread]) %boldGreen(%logger{36}) - %msg%n"/>
-    <!-- 文件日志格式 - 不带颜色 -->
-    <property name="FILE_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%tid] [${APP_NAME}] [%thread] %logger{36} - %msg%n"/>
-
-    <!-- 控制台输出 - 带颜色 -->
+    <!-- 控制台输出 - 使用 SkyWalking MDC Layout -->
     <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.mdc.TraceIdMDCPatternLogbackLayout">
                 <Pattern>${CONSOLE_PATTERN}</Pattern>
             </layout>
         </encoder>
@@ -27,7 +22,7 @@
     <appender name="FILE_ALL" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/${APP_NAME}_all.log</file>
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.mdc.TraceIdMDCPatternLogbackLayout">
                 <Pattern>${FILE_PATTERN}</Pattern>
             </layout>
         </encoder>
@@ -43,7 +38,7 @@
     <appender name="FILE_BIZ" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/${APP_NAME}_biz.log</file>
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.mdc.TraceIdMDCPatternLogbackLayout">
                 <Pattern>${FILE_PATTERN}</Pattern>
             </layout>
         </encoder>
@@ -59,7 +54,7 @@
     <appender name="FILE_ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${LOG_PATH}/${APP_NAME}_err.log</file>
         <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
-            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.mdc.TraceIdMDCPatternLogbackLayout">
                 <Pattern>${FILE_PATTERN}</Pattern>
             </layout>
         </encoder>
@@ -72,6 +67,15 @@
             <maxHistory>60</maxHistory>
             <totalSizeCap>2GB</totalSizeCap>
         </rollingPolicy>
+    </appender>
+
+    <!-- SkyWalking gRPC 日志上报 - 将日志发送到 SkyWalking OAP -->
+    <appender name="SKYWALKING_LOG" class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.log.GRPCLogClientAppender">
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.mdc.TraceIdMDCPatternLogbackLayout">
+                <Pattern>${FILE_PATTERN}</Pattern>
+            </layout>
+        </encoder>
     </appender>
 
     <!-- 异步 Appender -->
@@ -100,6 +104,7 @@
     <springProfile name="local,dev">
         <root level="INFO">
             <appender-ref ref="ASYNC_CONSOLE"/>
+            <appender-ref ref="SKYWALKING_LOG"/>
         </root>
         <logger name="com.dango" level="DEBUG"/>
     </springProfile>
@@ -110,11 +115,13 @@
             <appender-ref ref="ASYNC_CONSOLE"/>
             <appender-ref ref="ASYNC_FILE_ALL"/>
             <appender-ref ref="FILE_ERROR"/>
+            <appender-ref ref="SKYWALKING_LOG"/>
         </root>
         <logger name="com.dango" level="INFO" additivity="false">
             <appender-ref ref="ASYNC_CONSOLE"/>
             <appender-ref ref="ASYNC_FILE_BIZ"/>
             <appender-ref ref="FILE_ERROR"/>
+            <appender-ref ref="SKYWALKING_LOG"/>
         </logger>
     </springProfile>
 

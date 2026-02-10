@@ -30,7 +30,7 @@ import java.time.Duration;
 public class AiCodeModifierServiceFactory {
 
     @Resource
-    private StreamingChatModel openAiStreamingChatModel;
+    private StreamingChatModel odinaryStreamingChatModel;
 
     @Resource
     private StreamingChatModel reasoningStreamingChatModel;
@@ -145,7 +145,7 @@ public class AiCodeModifierServiceFactory {
                     .build();
 
             case HTML, MULTI_FILE -> AiServices.builder(AiCodeModifierService.class)
-                    .streamingChatModel(openAiStreamingChatModel)
+                    .streamingChatModel(odinaryStreamingChatModel)
                     .chatMemory(chatMemory)
                     .chatMemoryProvider(memoryId -> chatMemory)
                     .tools(

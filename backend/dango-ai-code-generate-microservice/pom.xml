@@ -24,7 +24,7 @@
         <spring-cloud.version>2023.0.1</spring-cloud.version>
         <spring-cloud-alibaba.version>2023.0.1.0</spring-cloud-alibaba.version>
         <dubbo.version>3.3.0</dubbo.version>
-        <skywalking.version>9.3.0</skywalking.version>
+        <skywalking.version>9.5.0</skywalking.version>
     </properties>
 
 

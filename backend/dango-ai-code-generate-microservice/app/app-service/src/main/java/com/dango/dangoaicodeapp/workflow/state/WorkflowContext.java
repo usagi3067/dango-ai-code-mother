@@ -8,6 +8,8 @@ import com.dango.aicodegenerate.model.message.AiResponseMessage;
 import com.dango.dangoaicodeapp.model.entity.ElementInfo;
 import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.model.enums.OperationModeEnum;
+import com.dango.dangoaicodeapp.monitor.MonitorContext;
+import com.dango.dangoaicodeapp.monitor.MonitorContextHolder;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -157,6 +159,11 @@ public class WorkflowContext implements Serializable {
     @Builder.Default
     private int fixRetryCount = 0;
 
+    /**
+     * 监控上下文（用于跨线程传递监控信息）
+     */
+    private MonitorContext monitorContext;
+
     // ========== 上下文操作方法 ==========
 
     /**
@@ -251,5 +258,25 @@ public class WorkflowContext implements Serializable {
      */
     public void emitNodeError(String nodeName, String error) {
         emitNodeMessage(nodeName, "执行失败: " + error + "\n");
+    }
+
+    // ========== 监控上下文操作 ==========
+
+    /**
+     * 恢复监控上下文到当前线程的 ThreadLocal
+     * 在每个调用 AI 的节点执行前调用此方法
+     */
+    public void restoreMonitorContext() {
+        if (monitorContext != null) {
+            MonitorContextHolder.setContext(monitorContext);
+        }
+    }
+
+    /**
+     * 清除当前线程的监控上下文
+     * 在节点执行完成后调用此方法
+     */
+    public void clearMonitorContext() {
+        MonitorContextHolder.clearContext();
     }
 }
