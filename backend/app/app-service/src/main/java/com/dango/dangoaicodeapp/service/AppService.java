@@ -9,6 +9,7 @@ import com.dango.dangoaicodeuser.model.entity.User;
 
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
+import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 
 import java.util.List;
@@ -47,7 +48,9 @@ public interface AppService extends IService<App> {
      * @param message
      * @param loginUser
      * @return
+     * @deprecated 请使用 {@link #chatToGenCode(Long, String, ElementInfo, User)} 方法，默认使用 Agent 模式
      */
+    @Deprecated
     Flux<String> chatToGenCode(Long appId, String message, User loginUser);
 
     /**
@@ -57,20 +60,37 @@ public interface AppService extends IService<App> {
      * @param loginUser 登录用户
      * @param agent 是否启用 Agent 模式（工作流模式）
      * @return 生成的代码流
+     * @deprecated 请使用 {@link #chatToGenCode(Long, String, ElementInfo, User)} 方法，默认使用 Agent 模式
      */
+    @Deprecated
     Flux<String> chatToGenCode(Long appId, String message, User loginUser, boolean agent);
 
     /**
      * 根据应用id和用户消息生成代码（支持 Agent 模式和元素信息）
-     * 
+     *
      * @param appId 应用 ID
      * @param message 用户消息
      * @param elementInfo 选中的元素信息（可选，用于修改模式）
      * @param loginUser 登录用户
      * @param agent 是否启用 Agent 模式（工作流模式）
      * @return 生成的代码流
+     * @deprecated 请使用 {@link #chatToGenCode(Long, String, ElementInfo, User)} 方法，默认使用 Agent 模式
      */
+    @Deprecated
     Flux<String> chatToGenCode(Long appId, String message, ElementInfo elementInfo, User loginUser, boolean agent);
+
+    /**
+     * 根据应用id和用户消息生成代码（Agent 模式）
+     * <p>
+     * 默认使用 Agent 模式（工作流模式）生成代码
+     *
+     * @param appId 应用 ID
+     * @param message 用户消息
+     * @param elementInfo 选中的元素信息（可选，用于修改模式）
+     * @param loginUser 登录用户
+     * @return 生成的代码流
+     */
+    Flux<String> chatToGenCode(Long appId, String message, ElementInfo elementInfo, User loginUser);
 
     /**
      * 部署应用
@@ -94,4 +114,14 @@ public interface AppService extends IService<App> {
      * @return
      */
     Long createApp(AppAddRequest appAddRequest, User loginUser);
+
+    /**
+     * 通过上传 HTML 文件创建应用
+     *
+     * @param file      HTML 文件
+     * @param filename  原始文件名
+     * @param loginUser 登录用户
+     * @return 应用 ID
+     */
+    Long createAppFromHtml(MultipartFile file, String filename, User loginUser);
 }
