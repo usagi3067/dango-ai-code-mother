@@ -38,9 +38,12 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import reactor.core.publisher.Flux;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -140,19 +143,28 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     }
 
     @Override
+    @Deprecated
     public Flux<String> chatToGenCode(Long appId, String message, User loginUser) {
-        // 默认使用传统模式，无元素信息
-        return chatToGenCode(appId, message, null, loginUser, false);
+        // 委托给新方法，无元素信息
+        return chatToGenCode(appId, message, null, loginUser);
     }
 
     @Override
+    @Deprecated
     public Flux<String> chatToGenCode(Long appId, String message, User loginUser, boolean agent) {
-        // 委托给带 elementInfo 参数的方法
-        return chatToGenCode(appId, message, null, loginUser, agent);
+        // 委托给新方法
+        return chatToGenCode(appId, message, null, loginUser);
     }
 
     @Override
+    @Deprecated
     public Flux<String> chatToGenCode(Long appId, String message, ElementInfo elementInfo, User loginUser, boolean agent) {
+        // 委托给新方法
+        return chatToGenCode(appId, message, elementInfo, loginUser);
+    }
+
+    @Override
+    public Flux<String> chatToGenCode(Long appId, String message, ElementInfo elementInfo, User loginUser) {
         // 1. 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
         ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
@@ -181,27 +193,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
                 .userId(userId.toString())
                 .appId(appId.toString())
                 .build();
-        // 设置到当前线程（用于传统模式）
+        // 设置到当前线程
         MonitorContextHolder.setContext(monitorContext);
-        // 7. 根据 agent 参数和 elementInfo 选择生成方式
-        Flux<String> codeStream;
-        if (agent) {
-            // Agent 模式：使用工作流生成代码，传递 elementInfo 和 monitorContext
-            // 工作流内部已经统一输出 JSON 格式，不需要再包装
-            log.info("使用 Agent 模式（工作流）生成代码, appId: {}, hasElementInfo: {}", appId, elementInfo != null);
-            codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(message, appId, elementInfo, monitorContext);
-        } else {
-            // 传统模式：调用 AI 生成代码（流式）
-            // 如果有 elementInfo 且非 Agent 模式，自动切换到 Agent 模式
-            if (elementInfo != null) {
-                log.info("检测到 elementInfo，自动切换到 Agent 模式, appId: {}", appId);
-                codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(message, appId, elementInfo, monitorContext);
-            } else {
-                log.info("使用传统模式生成代码, appId: {}", appId);
-                // AiCodeGeneratorFacade 已经对 HTML/MULTI_FILE 进行了包装
-                codeStream = aiCodeGeneratorFacade.generateAndSaveCodeStream(message, codeGenTypeEnum, appId);
-            }
-        }
+        // 7. 使用 Agent 模式（工作流）生成代码
+        log.info("使用 Agent 模式（工作流）生成代码, appId: {}, hasElementInfo: {}", appId, elementInfo != null);
+        Flux<String> codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(message, appId, elementInfo, monitorContext);
         // 8. 收集 AI 响应内容并在完成后记录到对话历史
         return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum)
                 .doFinally(signalType -> {
@@ -313,5 +309,48 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         log.info("应用创建成功，ID: {}, 类型: {}", app.getId(), selectedCodeGenType.getValue());
         return app.getId();
+    }
+
+    @Override
+    public Long createAppFromHtml(MultipartFile file, String filename, User loginUser) {
+        try {
+            // 1. 读取 HTML 内容
+            String htmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
+
+            // 2. AI 分析生成应用名称和标签
+            AppNameAndTagResult appInfo = appInfoGeneratorFacade.generateAppInfoFromHtml(htmlContent);
+
+            // 3. 创建 App 记录
+            App app = new App();
+            app.setUserId(loginUser.getId());
+            app.setAppName(appInfo.getAppName());
+            app.setTag(appInfo.getTag());
+            app.setCodeGenType(CodeGenTypeEnum.HTML.getValue());
+            // 使用文件名作为初始提示词（便于记录来源）
+            app.setInitPrompt("上传文件：" + filename);
+
+            boolean result = this.save(app);
+            ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "创建应用失败");
+
+            Long appId = app.getId();
+
+            // 4. 创建目录并保存文件
+            String dirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + "html_" + appId;
+            File dir = new File(dirPath);
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
+
+            // 5. 保存为 index.html
+            File htmlFile = new File(dir, "index.html");
+            FileUtil.writeString(htmlContent, htmlFile, StandardCharsets.UTF_8);
+
+            log.info("HTML 应用创建成功，ID: {}, 文件: {}", appId, filename);
+            return appId;
+
+        } catch (IOException e) {
+            log.error("读取 HTML 文件失败", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件处理失败");
+        }
     }
 }
