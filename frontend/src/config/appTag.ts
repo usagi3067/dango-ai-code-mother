@@ -11,6 +11,8 @@ export enum AppTagEnum {
   MANAGEMENT_PLATFORM = 'management_platform',
   USER_APP = 'user_app',
   PERSONAL_MANAGEMENT = 'personal_management',
+  ALGORITHM = 'algorithm',
+  KNOWLEDGE = 'knowledge',
   GAME = 'game',
 }
 
@@ -53,6 +55,16 @@ export const APP_TAG_CONFIG = {
     label: '个人管理',
     value: AppTagEnum.PERSONAL_MANAGEMENT,
     color: '#faad14', // 金色 - 个人管理
+  },
+  [AppTagEnum.ALGORITHM]: {
+    label: '算法',
+    value: AppTagEnum.ALGORITHM,
+    color: '#1890ff', // 天蓝色 - 算法
+  },
+  [AppTagEnum.KNOWLEDGE]: {
+    label: '知识',
+    value: AppTagEnum.KNOWLEDGE,
+    color: '#52c41a', // 草绿色 - 知识
   },
   [AppTagEnum.GAME]: {
     label: '游戏',
