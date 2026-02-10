@@ -1,14 +1,22 @@
 # IDE
 .idea/
 .vscode/
+.kiro/
 
 # Interview materials
 面试/
 
 # macOS
 .DS_Store
-/面试/
-/.idea/
-/.kiro/
+
+# Maven wrapper (root level - legacy)
 /.mvn/
-/frontend/dango-ai-code-mother-frontend/.vscode/
+
+# Build outputs
+target/
+logs/
+tmp/
+
+# Local config
+*.local
+**/application-local.yml

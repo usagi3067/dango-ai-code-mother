@@ -50,6 +50,12 @@ create table app
     INDEX idx_tag (tag)                  -- 提升基于标签的查询性能
 ) comment '应用' collate = utf8mb4_unicode_ci;
 
+-- 添加 tag 字段（存储英文标识）
+ALTER TABLE app ADD COLUMN tag VARCHAR(32) DEFAULT 'website' COMMENT '应用标签';
+
+-- 添加索引以提高查询性能
+CREATE INDEX idx_tag ON app(tag);
+
 -- 对话历史表
 create table chat_history
 (

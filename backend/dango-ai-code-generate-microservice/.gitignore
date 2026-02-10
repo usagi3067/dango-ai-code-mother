@@ -1,9 +1,0 @@
-/user/user-service/src/main/resources/application-local.yml
-/ai/src/main/resources/application-local.yml
-/app/app-service/src/main/resources/application-local.yml
-/common/src/main/resources/application-local.yml
-/screenshot/screenshot-app/src/main/resources/application-local.yml
-/logs/
-/tmp/
-/app/app-service/logs/
-/app/app-service/tmp/
