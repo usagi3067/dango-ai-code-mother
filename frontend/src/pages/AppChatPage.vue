@@ -782,10 +782,10 @@ const loadAppInfo = async () => {
        * 2. 用户是应用所有者
        * 3. 历史已加载完成（historyLoaded === true）
        * 4. 前端消息列表为空（messages.value.length === 0）
-       * 5. 没有 skipAutoSend 参数（用于 HTML 上传后直接预览）
+       * 5. 有 autoSend=1 参数（仅首页创建新应用时传入）
        */
-      const skipAutoSend = route.query.skipAutoSend === '1'
-      if (appInfo.value.initPrompt && isOwner.value && historyLoaded.value && messages.value.length === 0 && !skipAutoSend) {
+      const autoSend = route.query.autoSend === '1'
+      if (appInfo.value.initPrompt && isOwner.value && historyLoaded.value && messages.value.length === 0 && autoSend) {
         inputText.value = appInfo.value.initPrompt
         await handleSend()
       }

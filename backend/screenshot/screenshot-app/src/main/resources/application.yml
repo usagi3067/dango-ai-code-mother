@@ -5,8 +5,8 @@ spring:
     active: local
   session:
     store-type: redis
-    # session 30 天过期
-    timeout: 2592000
+    # session 10 年过期
+    timeout: 315360000
   # mysql
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -17,10 +17,10 @@ server:
   port: 8125
   servlet:
     context-path: /api
-    # cookie 30 天过期
+    # cookie 10 年过期
     session:
       cookie:
-        max-age: 2592000
+        max-age: 315360000
 # springdoc-openapi
 springdoc:
   group-configs:

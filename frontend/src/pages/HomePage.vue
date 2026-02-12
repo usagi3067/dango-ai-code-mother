@@ -593,8 +593,9 @@ const handleCreateApp = async () => {
        * 模板字符串 ``: 可以嵌入变量 ${变量名}
        *
        * 跳转到应用对话页面，路径格式: /app/chat/应用ID
+       * autoSend=1 表示自动发送初始消息开始生成
        */
-      router.push(`/app/chat/${appId}`)
+      router.push(`/app/chat/${appId}?autoSend=1`)
     } else {
       // 请求失败，显示错误信息
       message.error('创建失败：' + res.data.message)
@@ -650,8 +651,8 @@ const handleUpload: UploadProps['customRequest'] = async (options) => {
     const res = await uploadHtmlFile(formData)
     if (res.data.code === 0 && res.data.data) {
       message.success('上传成功')
-      // skipAutoSend=1 表示跳过自动发送，直接预览上传的 HTML
-      router.push(`/app/chat/${String(res.data.data)}?skipAutoSend=1`)
+      // 上传的 HTML 不需要自动发送，直接预览
+      router.push(`/app/chat/${String(res.data.data)}`)
     } else {
       message.error('上传失败：' + res.data.message)
     }
@@ -765,13 +766,13 @@ const handleTagChange = (tag: string) => {
 
 /**
  * 跳转到应用对话页
- * 
+ *
  * @param app - 应用对象
  */
 const goToAppChat = (app: API.AppVO) => {
   // 将 ID 转为字符串，避免精度丢失
-  // 添加 view=1 参数，表示是查看模式，不自动发送消息
-  router.push(`/app/chat/${String(app.id)}?view=1`)
+  // 查看历史应用不需要自动发送
+  router.push(`/app/chat/${String(app.id)}`)
 }
 
 /**

@@ -18,6 +18,8 @@ public enum AppTagEnum {
     MANAGEMENT_PLATFORM("management_platform", "管理平台"),
     USER_APP("user_app", "用户应用"),
     PERSONAL_MANAGEMENT("personal_management", "个人管理"),
+    ALGORITHM("algorithm", "算法"),
+    KNOWLEDGE("knowledge", "知识"),
     GAME("game", "游戏");
 
     private final String text;
