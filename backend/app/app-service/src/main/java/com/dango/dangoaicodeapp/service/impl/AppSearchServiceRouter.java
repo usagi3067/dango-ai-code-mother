@@ -3,13 +3,21 @@ package com.dango.dangoaicodeapp.service.impl;
 import com.dango.dangoaicodeapp.model.dto.app.AppQueryRequest;
 import com.dango.dangoaicodeapp.model.entity.App;
 import com.dango.dangoaicodeapp.service.AppSearchService;
+import com.dango.dangoaicodeuser.model.entity.User;
 import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.util.Set;
+
+import static com.dango.dangoaicodeuser.model.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
  * 搜索服务路由层
@@ -18,6 +26,7 @@ import java.util.Set;
  *
  * @author dango
  */
+@Slf4j
 @Service
 @Primary
 public class AppSearchServiceRouter implements AppSearchService {
@@ -25,7 +34,7 @@ public class AppSearchServiceRouter implements AppSearchService {
     @Resource
     private AppMySqlSearchServiceImpl mysqlSearch;
 
-    @Resource(required = false)
+    @Autowired(required = false)
     private AppEsSearchServiceImpl esSearch;
 
     @Value("${search.engine:mysql}")
@@ -43,12 +52,36 @@ public class AppSearchServiceRouter implements AppSearchService {
 
     @Override
     public Page<App> searchApps(AppQueryRequest request) {
-        String engine = resolveEngine(request.getUserId());
+        // 从上下文获取当前登录用户
+        Long currentUserId = getCurrentUserId();
+        String engine = resolveEngine(currentUserId);
 
         if ("es".equals(engine) && esSearch != null) {
             return esSearch.searchApps(request);
         }
         return mysqlSearch.searchApps(request);
+    }
+
+    /**
+     * 从请求上下文获取当前登录用户 ID
+     *
+     * @return 用户 ID，未登录返回 null
+     */
+    private Long getCurrentUserId() {
+        try {
+            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+            if (attributes == null) {
+                return null;
+            }
+            HttpServletRequest request = attributes.getRequest();
+            Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
+            if (userObj instanceof User user) {
+                return user.getId();
+            }
+        } catch (Exception e) {
+            log.debug("获取当前登录用户失败: {}", e.getMessage());
+        }
+        return null;
     }
 
     /**

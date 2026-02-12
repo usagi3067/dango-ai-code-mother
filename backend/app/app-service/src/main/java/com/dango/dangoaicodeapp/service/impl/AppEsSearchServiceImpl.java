@@ -4,7 +4,6 @@ import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.MatchQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.RangeQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.TermQuery;
-import co.elastic.clients.json.JsonData;
 import com.dango.dangoaicodeapp.model.dto.app.AppQueryRequest;
 import com.dango.dangoaicodeapp.model.entity.App;
 import com.dango.dangoaicodeapp.model.es.AppEsDTO;
@@ -55,7 +54,7 @@ public class AppEsSearchServiceImpl implements AppSearchService {
 
         // 游标分页：id < lastId
         if (lastId != null) {
-            boolQuery.filter(RangeQuery.of(r -> r.field("id").lt(JsonData.of(lastId)))._toQuery());
+            boolQuery.filter(RangeQuery.of(r -> r.number(n -> n.field("id").lt((double) lastId)))._toQuery());
         }
 
         // 关键词搜索

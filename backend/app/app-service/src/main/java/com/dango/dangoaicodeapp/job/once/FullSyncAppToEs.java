@@ -19,7 +19,7 @@ import java.util.stream.Collectors;
  *
  * @author dango
  */
-@Component
+//@Component
 @Slf4j
 @ConditionalOnProperty(name = "search.es.sync.full-on-startup", havingValue = "true")
 public class FullSyncAppToEs implements CommandLineRunner {
