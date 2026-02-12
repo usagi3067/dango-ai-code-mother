@@ -9,10 +9,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
+import java.util.Set;
+
 /**
  * 搜索服务路由层
  * <p>
- * 支持金丝雀灰度，可按用户标识切换 MySQL 或 ES 实现。
+ * 支持金丝雀灰度，可按用户 ID 尾数切换 MySQL 或 ES 实现。
  *
  * @author dango
  */
@@ -23,39 +25,46 @@ public class AppSearchServiceRouter implements AppSearchService {
     @Resource
     private AppMySqlSearchServiceImpl mysqlSearch;
 
-    // ES 实现（后续扩展时注入）
-    // @Resource(required = false)
-    // private AppEsSearchServiceImpl esSearch;
+    @Resource(required = false)
+    private AppEsSearchServiceImpl esSearch;
 
     @Value("${search.engine:mysql}")
     private String defaultEngine;
 
+    @Value("${search.es.gray.enabled:false}")
+    private boolean grayEnabled;
+
+    /**
+     * 灰度用户 ID 尾数集合
+     * 例如配置 0,1,2 表示 ID 尾数为 0、1、2 的用户走 ES
+     */
+    @Value("${search.es.gray.user-id-suffix:}")
+    private Set<Integer> grayUserIdSuffix;
+
     @Override
     public Page<App> searchApps(AppQueryRequest request) {
-        // 优先检查用户灰度标识
-        String engine = getUserGrayEngine(request.getUserId());
-        if (engine == null) {
-            engine = defaultEngine;
+        String engine = resolveEngine(request.getUserId());
+
+        if ("es".equals(engine) && esSearch != null) {
+            return esSearch.searchApps(request);
         }
-
-        // 后续扩展 ES 时启用
-        // if ("es".equals(engine) && esSearch != null) {
-        //     return esSearch.searchApps(request);
-        // }
-
         return mysqlSearch.searchApps(request);
     }
 
     /**
-     * 从 Redis/Nacos 获取用户灰度标识
-     * <p>
-     * 可按用户 ID、用户标签、白名单等策略判断
+     * 解析搜索引擎
      *
      * @param userId 用户 ID
-     * @return 搜索引擎标识（mysql/es），null 表示走默认配置
+     * @return 搜索引擎标识（mysql/es）
      */
-    private String getUserGrayEngine(Long userId) {
-        // TODO: 后续实现灰度逻辑
-        return null;
+    private String resolveEngine(Long userId) {
+        // 灰度开启时，按用户 ID 尾数判断
+        if (grayEnabled && userId != null && grayUserIdSuffix != null && !grayUserIdSuffix.isEmpty()) {
+            int suffix = (int) (userId % 10);
+            if (grayUserIdSuffix.contains(suffix)) {
+                return "es";
+            }
+        }
+        return defaultEngine;
     }
 }
