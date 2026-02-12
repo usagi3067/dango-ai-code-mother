@@ -22,4 +22,8 @@
         LIMIT #{pageSize}
     </select>
 
+    <select id="listAppWithDelete" resultType="com.dango.dangoaicodeapp.model.entity.App">
+        SELECT * FROM app WHERE updateTime >= #{minUpdateTime}
+    </select>
+
 </mapper>

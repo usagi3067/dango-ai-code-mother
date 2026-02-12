@@ -4,6 +4,7 @@ import com.dango.dangoaicodeapp.model.entity.App;
 import com.mybatisflex.core.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -26,4 +27,12 @@ public interface AppMapper extends BaseMapper<App> {
                               @Param("searchText") String searchText,
                               @Param("lastId") Long lastId,
                               @Param("pageSize") Integer pageSize);
+
+    /**
+     * 查询指定时间后更新的应用（包括已删除的）
+     *
+     * @param minUpdateTime 最小更新时间
+     * @return 应用列表
+     */
+    List<App> listAppWithDelete(@Param("minUpdateTime") LocalDateTime minUpdateTime);
 }
