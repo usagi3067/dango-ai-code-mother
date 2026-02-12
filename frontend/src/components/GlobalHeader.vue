@@ -33,55 +33,7 @@
 
       <!-- 用户操作区域：显示用户信息或登录按钮 -->
       <div class="user-section">
-        <!-- 
-          用户登录状态显示区域
-          v-if: 条件渲染指令，只有当用户已登录时才显示
-          loginUserStore.loginUser.id: 判断用户是否有 id，有 id 说明已登录
-        -->
-        <div v-if="loginUserStore.loginUser.id" class="user-login-status">
-          <a-dropdown>
-            <!-- 
-              a-space: Ant Design 的间距组件
-              自动为子元素添加合适的间距，避免手动设置 margin
-            -->
-            <a-space>
-              <!-- 用户头像 -->
-              <UserAvatar 
-                :src="loginUserStore.loginUser.userAvatar" 
-                :name="loginUserStore.loginUser.userName"
-              />
-
-              <!-- 
-                显示用户名
-                {{ }}: Vue 的插值语法，用于在模板中显示数据
-                ??: 空值合并运算符，如果 userName 为空则显示 '无名'
-              -->
-              {{ loginUserStore.loginUser.userName ?? '无名' }}
-            </a-space>
-            <template #overlay>
-              <a-menu>
-                <a-menu-item @click="doLogout">
-                  <LogoutOutlined />
-                  退出登录
-                </a-menu-item>
-              </a-menu>
-            </template>
-          </a-dropdown>
-
-        </div>
-
-        <!-- 
-          未登录状态：显示登录按钮
-          v-else: 与上面的 v-if 配合使用，当用户未登录时显示
-        -->
-        <div v-else>
-          <!-- 
-            Ant Design 按钮组件
-            type="primary": 主要按钮样式（蓝色背景）
-            href="/user/login": 点击跳转到登录页面
-          -->
-          <a-button type="primary" href="/user/login">登录</a-button>
-        </div>
+        <UserDropdown />
       </div>
     </div>
   </a-layout-header>
@@ -111,18 +63,6 @@ import { useRouter, useRoute } from 'vue-router'
 import type { MenuProps } from 'ant-design-vue'
 
 /**
- * 导入 Ant Design Vue 的图标组件
- * LogoutOutlined: 退出登录图标
- */
-import { LogoutOutlined } from '@ant-design/icons-vue'
-
-/**
- * 导入 Ant Design Vue 的消息提示组件
- * message: 用于显示成功、错误等提示信息
- */
-import { message } from 'ant-design-vue'
-
-/**
  * 导入统一的路由配置
  * 
  * getMenuRoutes: 获取需要在菜单中显示的路由
@@ -136,26 +76,15 @@ import { message } from 'ant-design-vue'
 import { getMenuRoutes, findRouteByPath } from '@/config/routes'
 
 /**
- * 导入用户注销 API 接口
- * userLogout: 调用后端注销接口
- */
-import { userLogout } from '@/api/user/userController'
-
-/**
  * 导入 Pinia store
  * useLoginUserStore: 登录用户状态管理仓库
- * 
- * 为什么在这里导入？
- * - GlobalHeader 需要显示用户登录状态
- * - 通过 store 可以访问全局的用户信息
- * - 当用户信息变化时，组件会自动更新
  */
-import { useLoginUserStore } from '@/stores/loginUser.ts'
+import { useLoginUserStore } from '@/stores/loginUser'
 
 /**
- * 导入用户头像组件
+ * 导入用户下拉菜单组件
  */
-import UserAvatar from '@/components/UserAvatar.vue'
+import UserDropdown from '@/components/UserDropdown.vue'
 
 /**
  * 获取登录用户 store 实例
@@ -280,106 +209,6 @@ const menuItems = computed<MenuProps['items']>(() => {
  * 只需在 src/config/routes.ts 中添加路由配置即可
  * 菜单会自动生成，无需修改此文件
  */
-
-/**
- * 用户注销函数
- * 
- * 功能：退出登录，清除用户状态，跳转到登录页
- * 
- * async: 异步函数
- * - 因为需要等待网络请求完成
- * - 可以使用 await 等待 Promise
- * 
- * 执行流程：
- * 1. 调用后端注销接口
- * 2. 等待响应结果
- * 3. 判断是否成功
- * 4. 成功：清除用户状态，跳转到登录页
- * 5. 失败：显示错误提示
- */
-const doLogout = async () => {
-  /**
-   * 调用注销 API
-   * 
-   * userLogout(): 发送注销请求
-   * - 后端会清除 Session，销毁登录状态
-   * - 清除服务器端的用户会话信息
-   * 
-   * await: 等待请求完成
-   * - 暂停函数执行，等待 Promise 完成
-   * - 请求成功后继续执行后面的代码
-   * 
-   * res: 响应结果对象
-   * - res.data.code: 响应状态码（0 表示成功）
-   * - res.data.message: 响应消息
-   */
-  const res = await userLogout()
-  
-  /**
-   * 判断注销是否成功
-   * 
-   * res.data.code === 0: 后端约定的成功状态码
-   */
-  if (res.data.code === 0) {
-    /**
-     * 注销成功的处理流程
-     */
-    
-    /**
-     * 1. 清除前端的用户状态
-     * 
-     * setLoginUser: 设置用户信息为"未登录"状态
-     * - 清除用户 ID、用户名、头像等信息
-     * - 将用户名设置为 '未登录'
-     * 
-     * 为什么要清除前端状态？
-     * - 后端已经清除了 Session，但前端还保留着用户信息
-     * - 需要同步清除前端状态，确保数据一致
-     * - 否则页面上还会显示用户信息，造成混乱
-     */
-    loginUserStore.setLoginUser({
-      userName: '未登录',
-    })
-    
-    /**
-     * 2. 显示成功提示
-     * 
-     * message.success: Ant Design 的成功提示
-     * - 会在页面顶部显示绿色的成功消息
-     * - 几秒后自动消失
-     */
-    message.success('退出登录成功')
-    
-    /**
-     * 3. 跳转到登录页面
-     * 
-     * router.push: 编程式导航
-     * - path: '/user/login': 跳转到登录页面路径
-     * 
-     * 为什么要跳转到登录页？
-     * - 用户已经退出登录，不应该停留在需要登录的页面
-     * - 引导用户重新登录
-     * - 防止用户误操作
-     * 
-     * 注意：这里没有使用 replace: true
-     * - 允许用户点击后退按钮回到之前的页面
-     * - 如果之前的页面需要登录，路由守卫会再次跳转到登录页
-     */
-    await router.push('/user/login')
-  } else {
-    /**
-     * 注销失败的处理
-     * 
-     * message.error: Ant Design 的错误提示
-     * - 会在页面顶部显示红色的错误消息
-     * - 显示后端返回的具体错误信息
-     * 
-     * 错误信息格式：'退出登录失败，' + res.data.message
-     * - 例如：'退出登录失败，会话已过期'
-     */
-    message.error('退出登录失败，' + res.data.message)
-  }
-}
 </script>
 
 <style scoped>
@@ -470,16 +299,6 @@ const doLogout = async () => {
 .user-section {
   flex-shrink: 0;
   /* 不允许缩小，保持固定大小 */
-}
-
-/* 用户登录状态容器样式 */
-.user-login-status {
-  display: flex;
-  /* Flexbox 布局 */
-  align-items: center;
-  /* 垂直居中对齐 */
-  cursor: pointer;
-  /* 鼠标悬停时显示手型光标 */
 }
 
 /**

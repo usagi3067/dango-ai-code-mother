@@ -33,15 +33,7 @@
       </div>
 
       <div class="header-right">
-        <UserAvatar
-          v-if="loginUserStore.loginUser.id"
-          :src="loginUserStore.loginUser.userAvatar"
-          :name="loginUserStore.loginUser.userName"
-          :size="36"
-        />
-        <a-button v-else type="primary" @click="router.push('/user/login')">
-          登录
-        </a-button>
+        <UserDropdown :size="36" />
       </div>
     </div>
 
@@ -71,14 +63,12 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AppCard from '@/components/AppCard.vue'
-import UserAvatar from '@/components/UserAvatar.vue'
+import UserDropdown from '@/components/UserDropdown.vue'
 import { APP_TAG_OPTIONS } from '@/config/appTag'
-import { useLoginUserStore } from '@/stores/loginUser'
 import { getDeployUrl } from '@/config/env'
 import { listAppByCursor } from '@/api/app/appController'
 
 const router = useRouter()
-const loginUserStore = useLoginUserStore()
 
 // 状态
 const apps = ref<API.AppVO[]>([])
@@ -136,12 +126,29 @@ const resetAndLoad = () => {
  * 滚动监听
  */
 const handleScroll = () => {
-  const scrollTop = document.documentElement.scrollTop
-  const scrollHeight = document.documentElement.scrollHeight
-  const clientHeight = document.documentElement.clientHeight
+  const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+  const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight
+  const clientHeight = document.documentElement.clientHeight || window.innerHeight
 
-  // 距离底部 100px 时触发加载
-  if (scrollHeight - scrollTop - clientHeight < 100) {
+  // 距离底部 200px 时触发加载
+  if (scrollHeight - scrollTop - clientHeight < 200 && !loading.value && hasMore.value) {
+    loadMore()
+  }
+}
+
+/**
+ * 鼠标滚轮事件监听（处理无滚动条时的向下滚动意图）
+ */
+const handleWheel = (e: WheelEvent) => {
+  // 只处理向下滚动
+  if (e.deltaY <= 0) return
+
+  const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
+  const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight
+  const clientHeight = window.innerHeight
+
+  // 已经滚动到底部或内容不足以滚动时，触发加载
+  if (scrollHeight - scrollTop - clientHeight < 10 && !loading.value && hasMore.value) {
     loadMore()
   }
 }
@@ -164,11 +171,13 @@ const openDeployedApp = (app: API.AppVO) => {
 
 onMounted(() => {
   window.addEventListener('scroll', handleScroll)
+  window.addEventListener('wheel', handleWheel)
   loadMore()
 })
 
 onUnmounted(() => {
   window.removeEventListener('scroll', handleScroll)
+  window.removeEventListener('wheel', handleWheel)
 })
 </script>
 
