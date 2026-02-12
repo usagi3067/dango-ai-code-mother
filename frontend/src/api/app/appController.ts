@@ -154,6 +154,21 @@ export async function listGoodAppVoByPage(
   })
 }
 
+/** 游标分页获取应用列表（支持搜索和标签筛选） POST /app/list/cursor/vo */
+export async function listAppByCursor(
+  body: API.AppQueryRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponsePageAppVO>('/app/list/cursor/vo', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
 /** 此处后端没有提供注释 POST /app/my/list/page/vo */
 export async function listMyAppVoByPage(
   body: API.AppQueryRequest,

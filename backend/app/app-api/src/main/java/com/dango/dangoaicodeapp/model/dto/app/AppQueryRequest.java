@@ -55,5 +55,15 @@ public class AppQueryRequest extends PageRequest implements Serializable {
      */
     private Long userId;
 
+    /**
+     * 游标（上一批最后一条记录的 id，用于游标分页）
+     */
+    private Long lastId;
+
+    /**
+     * 搜索关键词（搜索 appName 和 initPrompt）
+     */
+    private String searchText;
+
     private static final long serialVersionUID = 1L;
 }

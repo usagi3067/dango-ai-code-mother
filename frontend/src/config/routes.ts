@@ -41,6 +41,17 @@ export const routeConfigs: RouteConfig[] = [
       showInMenu: true
     }
   },
+  // 全部案例页（独立布局）
+  {
+    path: '/cases',
+    name: 'cases',
+    component: () => import('@/pages/CasesPage.vue'),
+    meta: {
+      title: '全部案例',
+      showInMenu: false,
+      hideLayout: true
+    }
+  },
   // 应用对话页（全屏布局）
   {
     path: '/app/chat/:id',

@@ -238,15 +238,20 @@
     <div class="section featured-section">
       <div class="section-header">
         <h2 class="section-title">精选案例</h2>
-        <a-pagination
-          v-if="featuredPagination.total > 0"
-          v-model:current="featuredPagination.current"
-          v-model:pageSize="featuredPagination.pageSize"
-          :total="featuredPagination.total"
-          :show-size-changer="false"
-          size="small"
-          @change="loadFeaturedApps"
-        />
+        <div class="section-header-right">
+          <router-link to="/cases" class="view-all-link">
+            全部案例 →
+          </router-link>
+          <a-pagination
+            v-if="featuredPagination.total > 0"
+            v-model:current="featuredPagination.current"
+            v-model:pageSize="featuredPagination.pageSize"
+            :total="featuredPagination.total"
+            :show-size-changer="false"
+            size="small"
+            @change="loadFeaturedApps"
+          />
+        </div>
       </div>
       
       <!-- 
@@ -1063,6 +1068,23 @@ onMounted(() => {
   font-weight: 600;
   margin: 0;
   color: #1a1a1a;
+}
+
+.section-header-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.view-all-link {
+  color: #52c4a0;
+  font-size: 14px;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+.view-all-link:hover {
+  color: #3db389;
 }
 
 /* ==================== 标签筛选样式 ==================== */

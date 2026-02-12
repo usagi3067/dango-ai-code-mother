@@ -15,7 +15,7 @@ import com.dango.dangoaicodeapp.model.entity.ElementInfo;
 import com.dango.dangoaicodeapp.model.vo.AppVO;
 import com.dango.dangoaicodeapp.service.AppService;
 import com.dango.dangoaicodeapp.service.ChatHistoryService;
-import com.dango.dangoaicodeapp.service.ProjectDownloadService;
+import com.dango.dangoaicodeapp.service.AppSearchService;
 import com.dango.dangoaicodecommon.common.BaseResponse;
 import com.dango.dangoaicodecommon.common.DeleteRequest;
 import com.dango.dangoaicodecommon.common.ResultUtils;
@@ -65,6 +65,9 @@ public class AppController {
 
     @Resource
     private ChatHistoryService chatHistoryService;
+
+    @Resource
+    private AppSearchService appSearchService;
     /**
      * 创建应用
      *
@@ -239,6 +242,33 @@ public class AppController {
         Page<App> appPage = appService.page(Page.of(pageNum, pageSize), queryWrapper);
         // 数据封装
         Page<AppVO> appVOPage = new Page<>(pageNum, pageSize, appPage.getTotalRow());
+        List<AppVO> appVOList = appService.getAppVOList(appPage.getRecords());
+        appVOPage.setRecords(appVOList);
+        return ResultUtils.success(appVOPage);
+    }
+
+    /**
+     * 游标分页获取应用列表（支持搜索和标签筛选）
+     * <p>
+     * 用于"全部案例"页面的无限滚动加载
+     *
+     * @param appQueryRequest 查询请求（包含 lastId、searchText、tag、pageSize）
+     * @return 应用列表
+     */
+    @PostMapping("/list/cursor/vo")
+    public BaseResponse<Page<AppVO>> listAppByCursor(@RequestBody AppQueryRequest appQueryRequest) {
+        ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
+        // 限制每页最多 20 个
+        long pageSize = appQueryRequest.getPageSize() != null ? appQueryRequest.getPageSize() : 12;
+        ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR, "每页最多查询 20 个应用");
+        appQueryRequest.setPageSize(pageSize);
+
+        // 调用搜索服务（支持 MySQL/ES 切换）
+        Page<App> appPage = appSearchService.searchApps(appQueryRequest);
+
+        // 数据封装
+        Page<AppVO> appVOPage = new Page<>();
+        appVOPage.setPageSize(appPage.getPageSize());
         List<AppVO> appVOList = appService.getAppVOList(appPage.getRecords());
         appVOPage.setRecords(appVOList);
         return ResultUtils.success(appVOPage);

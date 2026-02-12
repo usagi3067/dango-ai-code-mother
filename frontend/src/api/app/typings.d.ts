@@ -29,6 +29,10 @@ declare namespace API {
     deployKey?: string
     priority?: number
     userId?: number
+    /** 游标（上一批最后一条记录的 id，用于游标分页） */
+    lastId?: number
+    /** 搜索关键词（搜索 appName 和 initPrompt） */
+    searchText?: string
   }
 
   type AppUpdateRequest = {

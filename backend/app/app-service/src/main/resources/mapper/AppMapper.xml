@@ -4,4 +4,22 @@
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.dango.dangoaicodeapp.mapper.AppMapper">
 
+    <!-- 游标分页查询应用列表 -->
+    <select id="listAppByCursor" resultType="com.dango.dangoaicodeapp.model.entity.App">
+        SELECT * FROM app
+        WHERE isDelete = 0
+        <if test="tag != null and tag != ''">
+            AND tag = #{tag}
+        </if>
+        <if test="searchText != null and searchText != ''">
+            AND (appName LIKE CONCAT('%', #{searchText}, '%')
+                 OR initPrompt LIKE CONCAT('%', #{searchText}, '%'))
+        </if>
+        <if test="lastId != null">
+            AND id &lt; #{lastId}
+        </if>
+        ORDER BY id DESC
+        LIMIT #{pageSize}
+    </select>
+
 </mapper>
