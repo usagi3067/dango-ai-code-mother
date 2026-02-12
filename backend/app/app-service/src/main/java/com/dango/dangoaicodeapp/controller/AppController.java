@@ -6,6 +6,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 
 import com.dango.dangoaicodeapp.core.AppInfoGeneratorFacade;
+import com.dango.dangoaicodeapp.service.ProjectDownloadService;
 import com.dango.dangoaicodecommon.ratelimit.annotation.RateLimit;
 import com.dango.dangoaicodecommon.ratelimit.enums.RateLimitType;
 import com.dango.dangoaicodeapp.model.constant.AppConstant;
@@ -258,10 +259,13 @@ public class AppController {
     @PostMapping("/list/cursor/vo")
     public BaseResponse<Page<AppVO>> listAppByCursor(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
-        // 限制每页最多 20 个
-        long pageSize = appQueryRequest.getPageSize() != null ? appQueryRequest.getPageSize() : 12;
+        // 限制每页最多 20 个，默认 12 个
+        int pageSize = appQueryRequest.getPageSize();
+        if (pageSize <= 0) {
+            pageSize = 12;
+            appQueryRequest.setPageSize(pageSize);
+        }
         ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR, "每页最多查询 20 个应用");
-        appQueryRequest.setPageSize(pageSize);
 
         // 调用搜索服务（支持 MySQL/ES 切换）
         Page<App> appPage = appSearchService.searchApps(appQueryRequest);

@@ -26,7 +26,7 @@ public class AppMySqlSearchServiceImpl implements AppSearchService {
         String tag = request.getTag();
         String searchText = request.getSearchText();
         Long lastId = request.getLastId();
-        Integer pageSize = request.getPageSize() != null ? request.getPageSize().intValue() : 12;
+        int pageSize = request.getPageSize() > 0 ? request.getPageSize() : 12;
 
         // 调用 Mapper 游标分页查询
         List<App> apps = appMapper.listAppByCursor(tag, searchText, lastId, pageSize);
