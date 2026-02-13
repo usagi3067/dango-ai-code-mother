@@ -183,8 +183,8 @@ public class CodeModifierNode {
 
     /**
      * 构建修改请求
-     * 包含：项目结构 + 元素信息 + 用户修改要求
-     * 
+     * 包含：项目结构 + 数据库信息 + 元素信息 + 用户修改要求
+     *
      * 注意：不传递完整代码，由 AI 自行决定读取哪些文件
      *
      * @param context 工作流上下文
@@ -199,6 +199,48 @@ public class CodeModifierNode {
             request.append("## 项目结构\n```\n")
                    .append(projectStructure)
                    .append("```\n\n");
+        }
+
+        // 添加数据库信息（如果启用了数据库）
+        if (context.isDatabaseEnabled()) {
+            request.append("## 数据库信息\n");
+            request.append("Schema: app_").append(context.getAppId()).append("\n\n");
+
+            // 优先使用最新的 Schema（SQL 执行后的）
+            String databaseSchema = context.getLatestDatabaseSchema();
+            if (StrUtil.isBlank(databaseSchema)) {
+                databaseSchema = context.getDatabaseSchema();
+            }
+
+            if (StrUtil.isNotBlank(databaseSchema)) {
+                request.append("### 表结构\n```\n")
+                       .append(databaseSchema)
+                       .append("```\n\n");
+            }
+
+            // 添加 SQL 执行结果（如果有）
+            if (context.getExecutionResults() != null && !context.getExecutionResults().isEmpty()) {
+                request.append("### 已执行的 SQL 操作\n");
+                context.getExecutionResults().forEach(result -> {
+                    String status = result.isSuccess() ? "✓" : "✗";
+                    request.append("- ").append(status).append(" ")
+                           .append(result.getSql().trim().split("\n")[0]);  // 只显示第一行
+                    if (!result.isSuccess() && StrUtil.isNotBlank(result.getError())) {
+                        request.append(" (错误: ").append(result.getError()).append(")");
+                    }
+                    request.append("\n");
+                });
+                request.append("\n");
+            }
+
+            // 添加 Supabase 客户端使用规范
+            request.append("### Supabase 客户端使用规范\n")
+                   .append("- 客户端配置文件: `src/integrations/supabase/client.js`\n")
+                   .append("- 导入方式: `import { supabase } from '@/integrations/supabase/client'`\n")
+                   .append("- 查询示例: `const { data, error } = await supabase.from('表名').select('*')`\n")
+                   .append("- 插入示例: `const { data, error } = await supabase.from('表名').insert({ ... })`\n")
+                   .append("- 更新示例: `const { data, error } = await supabase.from('表名').update({ ... }).eq('id', id)`\n")
+                   .append("- 删除示例: `const { error } = await supabase.from('表名').delete().eq('id', id)`\n\n");
         }
 
         // 添加元素信息

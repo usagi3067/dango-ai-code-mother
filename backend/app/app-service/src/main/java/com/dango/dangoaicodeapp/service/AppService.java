@@ -124,4 +124,19 @@ public interface AppService extends IService<App> {
      * @return 应用 ID
      */
     Long createAppFromHtml(MultipartFile file, String filename, User loginUser);
+
+    /**
+     * 初始化应用数据库
+     * <p>
+     * 流程：
+     * 1. 校验启用条件（codeGenType = VUE_PROJECT，项目目录存在）
+     * 2. 调用 supabase-service 创建 Schema
+     * 3. 写入 Supabase 客户端配置文件
+     * 4. 更新 package.json 添加依赖
+     * 5. 更新 app.has_database = true
+     *
+     * @param appId     应用 ID
+     * @param loginUser 登录用户
+     */
+    void initializeDatabase(Long appId, User loginUser);
 }

@@ -353,4 +353,136 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件处理失败");
         }
     }
+
+    @DubboReference
+    private com.dango.supabase.service.SupabaseService supabaseService;
+
+    @Resource
+    private com.dango.dangoaicodeapp.config.SupabaseClientConfig supabaseClientConfig;
+
+    @Override
+    public void initializeDatabase(Long appId, User loginUser) {
+        // 1. 查询应用信息
+        App app = this.getById(appId);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+
+        // 2. 权限校验：只有应用创建者可以初始化数据库
+        if (!app.getUserId().equals(loginUser.getId())) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限操作该应用");
+        }
+
+        // 3. 校验是否已启用数据库
+        if (Boolean.TRUE.equals(app.getHasDatabase())) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "该应用已启用数据库");
+        }
+
+        // 4. 校验代码生成类型（仅支持 VUE_PROJECT）
+        String codeGenType = app.getCodeGenType();
+        if (!CodeGenTypeEnum.VUE_PROJECT.getValue().equals(codeGenType)) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "仅支持 Vue 项目启用数据库");
+        }
+
+        // 5. 校验项目目录是否存在
+        String projectDir = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + codeGenType + "_" + appId;
+        File projectDirFile = new File(projectDir);
+        if (!projectDirFile.exists() || !projectDirFile.isDirectory()) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "项目目录不存在，请先生成代码");
+        }
+
+        // 6. 调用 supabase-service 创建 Schema
+        try {
+            supabaseService.createSchema(appId);
+            log.info("Schema 创建成功: app_{}", appId);
+        } catch (Exception e) {
+            log.error("创建 Schema 失败: {}", e.getMessage(), e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "创建数据库 Schema 失败: " + e.getMessage());
+        }
+
+        // 7. 写入 Supabase 客户端配置文件
+        writeSupabaseClientConfig(projectDir, appId);
+
+        // 8. 更新 package.json 添加依赖
+        updatePackageJson(projectDir);
+
+        // 9. 更新 app.has_database = true
+        App updateApp = new App();
+        updateApp.setId(appId);
+        updateApp.setHasDatabase(true);
+        updateApp.setEditTime(LocalDateTime.now());
+        boolean result = this.updateById(updateApp);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "更新应用状态失败");
+
+        log.info("应用数据库初始化成功，appId: {}", appId);
+    }
+
+    /**
+     * 写入 Supabase 客户端配置文件
+     */
+    private void writeSupabaseClientConfig(String projectDir, Long appId) {
+        // 创建目录 src/integrations/supabase
+        String supabaseDir = projectDir + File.separator + "src" + File.separator + "integrations" + File.separator + "supabase";
+        File supabaseDirFile = new File(supabaseDir);
+        if (!supabaseDirFile.exists()) {
+            supabaseDirFile.mkdirs();
+        }
+
+        // 从配置文件读取 URL 和 Key
+        String supabaseUrl = supabaseClientConfig.getUrl();
+        String supabaseAnonKey = supabaseClientConfig.getAnonKey();
+
+        // 写入 client.js
+        String clientContent = """
+            import { createClient } from '@supabase/supabase-js';
+
+            const SUPABASE_URL = "%s";
+            const SUPABASE_ANON_KEY = "%s";
+
+            // Schema 名称（每个应用独立的数据库空间）
+            export const SCHEMA_NAME = "app_%d";
+
+            // 创建 Supabase 客户端
+            // 导入方式: import { supabase } from "@/integrations/supabase/client";
+            export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                db: {
+                    schema: SCHEMA_NAME
+                }
+            });
+            """.formatted(supabaseUrl, supabaseAnonKey, appId);
+
+        File clientFile = new File(supabaseDir, "client.js");
+        FileUtil.writeString(clientContent, clientFile, StandardCharsets.UTF_8);
+        log.info("Supabase 客户端配置文件写入成功: {}", clientFile.getAbsolutePath());
+    }
+
+    /**
+     * 更新 package.json 添加 Supabase 依赖
+     */
+    private void updatePackageJson(String projectDir) {
+        File packageJsonFile = new File(projectDir, "package.json");
+        if (!packageJsonFile.exists()) {
+            log.warn("package.json 不存在，跳过依赖更新");
+            return;
+        }
+
+        String content = FileUtil.readString(packageJsonFile, StandardCharsets.UTF_8);
+
+        // 检查是否已包含 supabase 依赖
+        if (content.contains("@supabase/supabase-js")) {
+            log.info("package.json 已包含 Supabase 依赖，跳过更新");
+            return;
+        }
+
+        // 在 dependencies 中添加 supabase
+        // 简单的字符串替换方式
+        if (content.contains("\"dependencies\"")) {
+            content = content.replace(
+                    "\"dependencies\": {",
+                    "\"dependencies\": {\n    \"@supabase/supabase-js\": \"^2.49.4\","
+            );
+            FileUtil.writeString(content, packageJsonFile, StandardCharsets.UTF_8);
+            log.info("package.json 已添加 Supabase 依赖");
+        } else {
+            log.warn("package.json 中未找到 dependencies 字段");
+        }
+    }
 }

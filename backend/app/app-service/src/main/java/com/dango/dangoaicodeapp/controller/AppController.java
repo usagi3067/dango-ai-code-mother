@@ -495,5 +495,24 @@ public class AppController {
         projectDownloadService.downloadProjectAsZip(sourceDirPath, downloadFileName, response);
     }
 
+    /**
+     * 初始化应用数据库
+     * <p>
+     * 为应用创建独立的数据库 Schema，并写入 Supabase 客户端配置
+     *
+     * @param appId   应用 ID
+     * @param request 请求
+     * @return 初始化结果
+     */
+    @PostMapping("/{appId}/database")
+    public BaseResponse<Boolean> initializeDatabase(@PathVariable Long appId, HttpServletRequest request) {
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
+        // 获取当前登录用户
+        User loginUser = InnerUserService.getLoginUser(request);
+        // 调用服务初始化数据库
+        appService.initializeDatabase(appId, loginUser);
+        return ResultUtils.success(true);
+    }
+
 
 }

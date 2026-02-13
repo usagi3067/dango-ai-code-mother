@@ -38,7 +38,7 @@ import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
 /**
  * 代码生成工作流
  * 使用 LangGraph4j 的子图能力实现创建/修改模式分离
- * 
+ *
  * 工作流结构（使用子图）：
  * START → mode_router → [条件边]
  *                       ├── create_subgraph (创建模式子图)
@@ -47,13 +47,17 @@ import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
  *                       quality_check_subgraph (质检修复子图)
  *                              ↓
  *                       [条件边] → project_builder / END
- * 
+ *
  * 创建模式子图：
  * image_plan → [并发分支] → image_aggregator → prompt_enhancer → router → code_generator
- * 
- * 修改模式子图：
- * code_reader → code_modifier
- * 
+ *
+ * 修改模式子图（支持数据库操作）：
+ * code_reader → database_analyzer → [条件边] → database_operator → code_modifier
+ *                                       ↓
+ *                                 (无需SQL时跳过)
+ *                                       ↓
+ *                                 code_modifier
+ *
  * 质检修复子图：
  * code_quality_check ←→ code_fixer (循环修复)
  */
@@ -83,6 +87,8 @@ public class CodeGenWorkflow {
     
     // 修改模式子图节点
     private static final String NODE_CODE_READER = "code_reader";
+    private static final String NODE_DATABASE_ANALYZER = "database_analyzer";
+    private static final String NODE_DATABASE_OPERATOR = "database_operator";
     private static final String NODE_CODE_MODIFIER = "code_modifier";
     
     // 质检修复子图节点
@@ -93,7 +99,11 @@ public class CodeGenWorkflow {
     // 模式路由
     private static final String ROUTE_CREATE = "create";
     private static final String ROUTE_MODIFY = "modify";
-    
+
+    // 数据库操作路由
+    private static final String ROUTE_EXECUTE_SQL = "execute_sql";
+    private static final String ROUTE_SKIP_SQL = "skip_sql";
+
     // 质检子图内部路由
     private static final String ROUTE_FIX = "fix";
     private static final String ROUTE_PASS = "pass";
@@ -236,29 +246,89 @@ public class CodeGenWorkflow {
     
     /**
      * 构建修改模式子图
-     * 
+     *
      * 包含节点：
      * - 代码读取节点：读取现有项目结构
+     * - 数据库分析节点：分析是否需要数据库操作（仅启用数据库时）
+     * - 数据库操作节点：执行 SQL 语句（仅有 SQL 时）
      * - 代码修改节点：使用修改专用提示词进行增量修改
-     * 
+     *
+     * 流程：
+     * CodeReader → DatabaseAnalyzer → [条件边] → DatabaseOperator → CodeModifier
+     *                                     ↓
+     *                               (无需SQL时直接跳过)
+     *                                     ↓
+     *                               CodeModifier
+     *
      * @return 修改模式子图
      */
     private StateGraph<MessagesState<String>> buildModifyModeSubGraph() throws GraphStateException {
+        // 获取 DatabaseOperatorNode Bean（因为它需要 Dubbo 注入）
+        DatabaseOperatorNode databaseOperatorNode = com.dango.dangoaicodecommon.utils.SpringContextUtil
+                .getBean(DatabaseOperatorNode.class);
+
         return new MessagesStateGraph<String>()
                 // 代码读取节点
                 .addNode(NODE_CODE_READER, CodeReaderNode.create())
-                
+
+                // 数据库分析节点
+                .addNode(NODE_DATABASE_ANALYZER, DatabaseAnalyzerNode.create())
+
+                // 数据库操作节点（使用实例方法，因为需要 Dubbo 注入）
+                .addNode(NODE_DATABASE_OPERATOR, databaseOperatorNode.create())
+
                 // 代码修改节点
                 .addNode(NODE_CODE_MODIFIER, CodeModifierNode.create())
-                
+
                 // 入口边
                 .addEdge(START, NODE_CODE_READER)
-                
-                // 读取后修改
-                .addEdge(NODE_CODE_READER, NODE_CODE_MODIFIER)
-                
+
+                // 读取后进行数据库分析
+                .addEdge(NODE_CODE_READER, NODE_DATABASE_ANALYZER)
+
+                // 数据库分析后的条件边：根据 sqlStatements 决定是否执行 SQL
+                .addConditionalEdges(NODE_DATABASE_ANALYZER,
+                        edge_async(this::routeAfterDatabaseAnalysis),
+                        Map.of(
+                                ROUTE_EXECUTE_SQL, NODE_DATABASE_OPERATOR,
+                                ROUTE_SKIP_SQL, NODE_CODE_MODIFIER
+                        ))
+
+                // 数据库操作完成后进入代码修改
+                .addEdge(NODE_DATABASE_OPERATOR, NODE_CODE_MODIFIER)
+
                 // 出口
                 .addEdge(NODE_CODE_MODIFIER, END);
+    }
+
+    /**
+     * 数据库分析后的路由逻辑
+     *
+     * 判断逻辑：
+     * 1. 数据库未启用 → 跳过 SQL 执行
+     * 2. sqlStatements 为空 → 跳过 SQL 执行
+     * 3. 否则 → 执行 SQL
+     *
+     * @param state 消息状态
+     * @return 路由目标（"execute_sql" 或 "skip_sql"）
+     */
+    private String routeAfterDatabaseAnalysis(MessagesState<String> state) {
+        WorkflowContext context = WorkflowContext.getContext(state);
+
+        // 数据库未启用，跳过
+        if (!context.isDatabaseEnabled()) {
+            log.info("数据库未启用，跳过 SQL 执行");
+            return ROUTE_SKIP_SQL;
+        }
+
+        // 没有需要执行的 SQL，跳过
+        if (context.getSqlStatements() == null || context.getSqlStatements().isEmpty()) {
+            log.info("无需执行 SQL，跳过数据库操作节点");
+            return ROUTE_SKIP_SQL;
+        }
+
+        log.info("有 {} 条 SQL 需要执行，路由到数据库操作节点", context.getSqlStatements().size());
+        return ROUTE_EXECUTE_SQL;
     }
     
     /**
