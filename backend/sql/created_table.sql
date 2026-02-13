@@ -70,3 +70,7 @@ create table chat_history
     INDEX idx_createTime (createTime),             -- 提升基于时间的查询性能
     INDEX idx_appId_createTime (appId, createTime) -- 游标查询核心索引
 ) comment '对话历史' collate = utf8mb4_unicode_ci;
+
+use dango_ai_code_mother;
+-- 添加数据库启用字段
+ALTER TABLE app ADD COLUMN hasDatabase TINYINT(1) DEFAULT 0 COMMENT '是否启用数据库';

@@ -110,4 +110,10 @@ public class App implements Serializable {
     @Column(value = "isDelete", isLogicDelete = true)
     private Integer isDelete;
 
+    /**
+     * 是否启用数据库
+     */
+    @Column("hasDatabase")
+    private Boolean hasDatabase;
+
 }

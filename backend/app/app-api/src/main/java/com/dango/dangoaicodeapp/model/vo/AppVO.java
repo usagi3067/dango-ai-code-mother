@@ -74,5 +74,10 @@ public class AppVO implements Serializable {
      */
     private UserVO user;
 
+    /**
+     * 是否启用数据库
+     */
+    private Boolean hasDatabase;
+
     private static final long serialVersionUID = 1L;
 }

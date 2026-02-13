@@ -164,6 +164,34 @@ public class WorkflowContext implements Serializable {
      */
     private MonitorContext monitorContext;
 
+    // ========== 数据库相关字段 ==========
+
+    /**
+     * 是否启用数据库
+     */
+    @Builder.Default
+    private boolean databaseEnabled = false;
+
+    /**
+     * 初始数据库表结构（进入工作流前获取）
+     */
+    private String databaseSchema;
+
+    /**
+     * DatabaseAnalyzer 输出：待执行的 SQL 语句列表
+     */
+    private List<SqlStatement> sqlStatements;
+
+    /**
+     * DatabaseOperator 输出：SQL 执行结果
+     */
+    private List<SqlExecutionResult> executionResults;
+
+    /**
+     * DatabaseOperator 输出：执行后的最新表结构
+     */
+    private String latestDatabaseSchema;
+
     // ========== 上下文操作方法 ==========
 
     /**
