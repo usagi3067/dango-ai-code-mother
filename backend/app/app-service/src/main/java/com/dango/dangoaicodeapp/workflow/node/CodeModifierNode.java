@@ -61,9 +61,19 @@ public class CodeModifierNode {
             context.emitNodeMessage(NODE_NAME, "正在分析修改需求...\n");
 
             try {
+                // 检查是否有 SQL 执行失败
+                if (context.isDatabaseEnabled() && context.hasSqlExecutionFailure()) {
+                    log.warn("检测到 SQL 执行失败，跳过代码修改");
+                    context.emitNodeMessage(NODE_NAME, "检测到数据库操作失败，跳过代码修改\n");
+                    context.setErrorMessage("数据库操作失败，无法进行代码修改");
+                    context.emitNodeComplete(NODE_NAME);
+                    context.setCurrentStep(NODE_NAME);
+                    return WorkflowContext.saveContext(context);
+                }
+
                 // 恢复监控上下文到当前线程（用于跨线程传递监控信息）
                 context.restoreMonitorContext();
-                
+
                 // 构建修改请求（包含项目结构、元素信息和用户修改要求）
                 String modifyRequest = buildModifyRequest(context);
                 
@@ -201,7 +211,7 @@ public class CodeModifierNode {
 
     /**
      * 构建修改请求
-     * 包含：项目结构 + 数据库信息 + 元素信息 + 用户修改要求
+     * 包含：项目结构 + 数据库信息 + 修改指导 + 元素信息 + 用户修改要求
      *
      * 注意：不传递完整代码，由 AI 自行决定读取哪些文件
      *
@@ -211,7 +221,7 @@ public class CodeModifierNode {
     public static String buildModifyRequest(WorkflowContext context) {
         StringBuilder request = new StringBuilder();
 
-        // 添加项目结构（而非完整代码）
+        // 1. 添加项目结构（而非完整代码）
         String projectStructure = context.getProjectStructure();
         if (StrUtil.isNotBlank(projectStructure)) {
             request.append("## 项目结构\n```\n")
@@ -219,7 +229,7 @@ public class CodeModifierNode {
                    .append("```\n\n");
         }
 
-        // 添加数据库信息（如果启用了数据库）
+        // 2. 添加数据库信息（如果启用了数据库）
         if (context.isDatabaseEnabled()) {
             request.append("## 数据库信息\n");
             request.append("Schema: app_").append(context.getAppId()).append("\n\n");
@@ -236,32 +246,52 @@ public class CodeModifierNode {
                        .append("```\n\n");
             }
 
-            // 添加 SQL 执行结果（如果有）
-            if (context.getExecutionResults() != null && !context.getExecutionResults().isEmpty()) {
-                request.append("### 已执行的 SQL 操作\n");
-                context.getExecutionResults().forEach(result -> {
-                    String status = result.isSuccess() ? "✓" : "✗";
-                    request.append("- ").append(status).append(" ")
-                           .append(result.getSql().trim().split("\n")[0]);  // 只显示第一行
-                    if (!result.isSuccess() && StrUtil.isNotBlank(result.getError())) {
-                        request.append(" (错误: ").append(result.getError()).append(")");
-                    }
-                    request.append("\n");
-                });
-                request.append("\n");
-            }
-
-            // 添加 Supabase 客户端使用规范
-            request.append("### Supabase 客户端使用规范\n")
-                   .append("- 客户端配置文件: `src/integrations/supabase/client.js`\n")
-                   .append("- 导入方式: `import { supabase } from '@/integrations/supabase/client'`\n")
-                   .append("- 查询示例: `const { data, error } = await supabase.from('表名').select('*')`\n")
-                   .append("- 插入示例: `const { data, error } = await supabase.from('表名').insert({ ... })`\n")
-                   .append("- 更新示例: `const { data, error } = await supabase.from('表名').update({ ... }).eq('id', id)`\n")
-                   .append("- 删除示例: `const { error } = await supabase.from('表名').delete().eq('id', id)`\n\n");
+            // 添加 Supabase 客户端配置说明
+            request.append("### Supabase 客户端配置\n")
+                   .append("**重要**：Supabase 客户端已由系统自动配置，位于 `src/integrations/supabase/client.js`\n\n")
+                   .append("**你只能使用这个客户端，绝对不能修改它**\n\n")
+                   .append("**正确的使用方式**：\n")
+                   .append("```javascript\n")
+                   .append("// 1. 导入客户端\n")
+                   .append("import { supabase } from '@/integrations/supabase/client'\n\n")
+                   .append("// 2. 使用客户端进行数据库操作\n")
+                   .append("// 查询\n")
+                   .append("const { data, error } = await supabase.from('表名').select('*')\n\n")
+                   .append("// 插入\n")
+                   .append("const { data, error } = await supabase.from('表名').insert({ 字段: 值 })\n\n")
+                   .append("// 更新\n")
+                   .append("const { data, error } = await supabase.from('表名').update({ 字段: 新值 }).eq('id', id)\n\n")
+                   .append("// 删除\n")
+                   .append("const { error } = await supabase.from('表名').delete().eq('id', id)\n")
+                   .append("```\n\n");
         }
 
-        // 添加元素信息
+        // 3. 添加修改指导（新增）
+        List<com.dango.aicodegenerate.model.FileModificationGuide> guides = context.getFileModificationGuides();
+        if (guides != null && !guides.isEmpty()) {
+            request.append("## 修改指导\n");
+            request.append("ModificationPlanner 已分析项目并制定了以下修改计划，请按照指导执行：\n\n");
+
+            for (int i = 0; i < guides.size(); i++) {
+                com.dango.aicodegenerate.model.FileModificationGuide guide = guides.get(i);
+                request.append(String.format("### %d. %s (%s)\n", i + 1, guide.getPath(), guide.getType()));
+
+                if (StrUtil.isNotBlank(guide.getReason())) {
+                    request.append("**原因**: ").append(guide.getReason()).append("\n\n");
+                }
+
+                request.append("**操作步骤**:\n");
+                List<String> operations = guide.getOperations();
+                if (operations != null) {
+                    for (String operation : operations) {
+                        request.append("- ").append(operation).append("\n");
+                    }
+                }
+                request.append("\n");
+            }
+        }
+
+        // 4. 添加元素信息（如果有）
         ElementInfo elementInfo = context.getElementInfo();
         if (elementInfo != null) {
             request.append("## 选中元素信息\n")
@@ -269,24 +299,67 @@ public class CodeModifierNode {
                    .append("\n");
         }
 
-        // 添加用户修改要求
-        String originalPrompt = context.getOriginalPrompt();
-        if (StrUtil.isNotBlank(originalPrompt)) {
-            request.append("## 修改要求\n")
-                   .append(originalPrompt)
-                   .append("\n\n");
+        // 5. 添加用户修改要求（如果没有修改指导，则使用原始修改要求）
+        if (guides == null || guides.isEmpty()) {
+            String modifyRequirement = buildModifyRequirement(context);
+            if (StrUtil.isNotBlank(modifyRequirement)) {
+                request.append("## 修改要求\n")
+                       .append(modifyRequirement)
+                       .append("\n\n");
+            }
         }
 
-        // 添加工具使用提示
+        // 6. 添加工具使用提示
         request.append("## 操作指南\n")
-               .append("1. 使用【文件读取工具】查看需要修改的文件内容\n")
-               .append("2. 根据修改要求，使用对应的工具进行修改：\n")
+               .append("1. 如果有修改指导，请严格按照指导中的步骤执行\n")
+               .append("2. 使用【文件读取工具】查看需要修改的文件内容\n")
+               .append("3. 根据修改要求，使用对应的工具进行修改：\n")
                .append("   - 【文件修改工具】：修改现有文件的部分内容\n")
                .append("   - 【文件写入工具】：创建新文件或完全重写文件\n")
                .append("   - 【文件删除工具】：删除不需要的文件\n")
                .append("   - 【图片搜索工具】：搜索替换图片素材\n");
 
+        // 7. 添加重要约束
+        request.append("\n## 重要约束\n");
+
+        if (context.isDatabaseEnabled()) {
+            request.append("### 数据库客户端保护\n")
+                   .append("- **绝对禁止修改** `src/integrations/supabase/` 目录下的任何文件\n")
+                   .append("- **绝对禁止读取** `src/integrations/supabase/client.js` 文件（不需要查看，直接使用即可）\n")
+                   .append("- **绝对禁止创建** 新的 Supabase 客户端配置文件\n")
+                   .append("- **只能使用** 已有的客户端：`import { supabase } from '@/integrations/supabase/client'`\n")
+                   .append("- 原因：客户端配置包含正确的 URL、Key 和 Schema，由系统自动生成和管理\n\n");
+        }
+
+        request.append("### 其他约束\n")
+               .append("- **禁止创建** `.sql` 文件（数据库操作已由系统完成）\n")
+               .append("- **禁止创建** `.md` 文件（不需要文档）\n")
+               .append("- **禁止创建** 测试页面或调试页面（如 DatabaseTest.vue）\n")
+               .append("- **只修改业务代码**，让应用使用数据库存储数据，用户不应感知到数据库的存在\n");
+
         return request.toString();
+    }
+
+    /**
+     * 构建修改要求
+     * 针对数据库初始化场景，重写修改要求
+     *
+     * @param context 工作流上下文
+     * @return 修改要求字符串
+     */
+    private static String buildModifyRequirement(WorkflowContext context) {
+        // 如果是数据库初始化场景（有成功执行的 SQL），重写修改要求
+        if (context.isDatabaseEnabled() && context.hasSqlExecutionSuccess()) {
+            return "数据库表已创建完成，请修改前端代码，将原有的本地存储（localStorage/内存）改为使用 Supabase 数据库存储。\n"
+                    + "具体要求：\n"
+                    + "1. 找到应用中存储数据的地方（如文章、用户信息等）\n"
+                    + "2. 将本地存储改为调用 Supabase API 进行增删改查\n"
+                    + "3. 保持原有的用户界面和交互逻辑不变\n"
+                    + "4. 用户不应感知到数据库的存在，只是数据能够持久化保存";
+        }
+
+        // 否则使用原始的修改要求
+        return context.getOriginalPrompt();
     }
 
     /**
