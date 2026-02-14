@@ -158,12 +158,12 @@ public class ModificationPlannerNode {
             context.emitNodeMessage(NODE_NAME,
                 String.format("\nSQL 操作计划（共 %d 条）：\n", sqlStatements.size()));
 
-            // 统计 SQL 类型
+            // 统计 SQL 类型（添加 null 检查）
             long ddlCount = sqlStatements.stream()
-                .filter(stmt -> "DDL".equalsIgnoreCase(stmt.getType()))
+                .filter(stmt -> stmt != null && "DDL".equalsIgnoreCase(stmt.getType()))
                 .count();
             long dmlCount = sqlStatements.stream()
-                .filter(stmt -> "DML".equalsIgnoreCase(stmt.getType()))
+                .filter(stmt -> stmt != null && "DML".equalsIgnoreCase(stmt.getType()))
                 .count();
 
             if (ddlCount > 0) {
@@ -173,10 +173,14 @@ public class ModificationPlannerNode {
                 context.emitNodeMessage(NODE_NAME, String.format("  - DML 操作：%d 条\n", dmlCount));
             }
 
-            // 输出每条 SQL 的描述
+            // 输出每条 SQL 的描述（添加 null 检查）
             for (SqlStatementItem stmt : sqlStatements) {
-                context.emitNodeMessage(NODE_NAME,
-                    String.format("  - [%s] %s\n", stmt.getType(), stmt.getDescription()));
+                if (stmt != null) {
+                    String type = stmt.getType() != null ? stmt.getType() : "UNKNOWN";
+                    String description = stmt.getDescription() != null ? stmt.getDescription() : "无描述";
+                    context.emitNodeMessage(NODE_NAME,
+                        String.format("  - [%s] %s\n", type, description));
+                }
             }
         } else {
             context.emitNodeMessage(NODE_NAME, "\nSQL 操作计划：无需数据库操作\n");
@@ -188,15 +192,15 @@ public class ModificationPlannerNode {
             context.emitNodeMessage(NODE_NAME,
                 String.format("\n代码修改计划（共 %d 个文件）：\n", filesToModify.size()));
 
-            // 统计文件修改类型
+            // 统计文件修改类型（添加 null 检查）
             long modifyCount = filesToModify.stream()
-                .filter(file -> "MODIFY".equalsIgnoreCase(file.getType()))
+                .filter(file -> file != null && "MODIFY".equalsIgnoreCase(file.getType()))
                 .count();
             long createCount = filesToModify.stream()
-                .filter(file -> "CREATE".equalsIgnoreCase(file.getType()))
+                .filter(file -> file != null && "CREATE".equalsIgnoreCase(file.getType()))
                 .count();
             long deleteCount = filesToModify.stream()
-                .filter(file -> "DELETE".equalsIgnoreCase(file.getType()))
+                .filter(file -> file != null && "DELETE".equalsIgnoreCase(file.getType()))
                 .count();
 
             if (modifyCount > 0) {
@@ -209,10 +213,15 @@ public class ModificationPlannerNode {
                 context.emitNodeMessage(NODE_NAME, String.format("  - 删除文件：%d 个\n", deleteCount));
             }
 
-            // 输出每个文件的修改说明
+            // 输出每个文件的修改说明（添加 null 检查）
             for (FileModificationGuide file : filesToModify) {
-                context.emitNodeMessage(NODE_NAME,
-                    String.format("  - [%s] %s: %s\n", file.getType(), file.getPath(), file.getReason()));
+                if (file != null) {
+                    String type = file.getType() != null ? file.getType() : "UNKNOWN";
+                    String path = file.getPath() != null ? file.getPath() : "未知路径";
+                    String reason = file.getReason() != null ? file.getReason() : "无说明";
+                    context.emitNodeMessage(NODE_NAME,
+                        String.format("  - [%s] %s: %s\n", type, path, reason));
+                }
             }
         } else {
             context.emitNodeMessage(NODE_NAME, "\n代码修改计划：无需修改代码\n");
