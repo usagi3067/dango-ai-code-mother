@@ -233,10 +233,11 @@ public class WorkflowContext implements Serializable {
     // ========== ModificationPlanner 辅助方法 ==========
 
     /**
-     * 获取 SQL 语句列表
+     * 获取规划的 SQL 语句列表
      * 从 modificationPlan 中提取，如果为空则返回空列表
+     * 注意：此方法返回的是 ModificationPlanner 规划的 SQL，而非 DatabaseAnalyzer 输出的 sqlStatements 字段
      */
-    public List<SqlStatement> getSqlStatements() {
+    public List<SqlStatement> getPlannedSqlStatements() {
         if (modificationPlan == null || modificationPlan.getSqlStatements() == null) {
             return Collections.emptyList();
         }
