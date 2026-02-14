@@ -8,6 +8,7 @@ import dev.langchain4j.service.UserMessage;
 /**
  * AI 修改规划服务接口
  * 负责分析用户需求，输出数据库操作计划和代码修改计划
+ * 配置了只读工具（文件读取），AI 可自行调用
  *
  * @author dango
  */
