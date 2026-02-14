@@ -23,8 +23,17 @@
 如果需要数据库操作：
 - 检查现有表结构，避免重复建表
 - 可以读取项目代码，理解业务逻辑和数据模型
-- 设计合理的���结构和 SQL 语句
+- 设计合理的表结构和 SQL 语句
 - 按执行顺序输出 SQL 列表（DDL 在前，DML 在后）
+
+**SQL 设计规范**：
+- **禁止使用外键约束**：不要使用 FOREIGN KEY 或 REFERENCES，表之间的关联通过应用层代码处理
+- **SQL 执行顺序**：确保 SQL 语句按正确顺序排列（DDL 在前，DML 在后）
+- **简洁设计**：只创建当前需求必需的表，不要过度设计
+- **表名规范**：使用小写字母和下划线
+- **主键类型**：推荐使用 SERIAL（自增整数）
+- **时间字段**：推荐使用 TIMESTAMP DEFAULT NOW()
+- **关联字段**：使用普通字段类型（如 user_id INTEGER），不要添加外键约束
 
 ### 第三步：制定代码修改计划
 分析需要修改的文件：
@@ -40,11 +49,35 @@
 
 ## 输出要求
 
-使用 LangChain4j 结构化输出，字段说明：
+使用 LangChain4j 结构化输出，返回 JSON 格式：
+
+```json
+{
+  "analysis": "规划说明，简要描述分析结果",
+  "strategy": "修改策略，说明整体修改思路",
+  "sqlStatements": [
+    {
+      "type": "DDL",
+      "sql": "CREATE TABLE favorites (...)",
+      "description": "创建收藏表"
+    }
+  ],
+  "filesToModify": [
+    {
+      "path": "src/pages/Index.vue",
+      "type": "MODIFY",
+      "operations": ["在 template 中添加收藏按钮", "在 script 中添加收藏方法"],
+      "reason": "需要添加收藏功能的 UI 和逻辑"
+    }
+  ]
+}
+```
+
+字段说明：
 - `analysis`: 规划说明，简要描述分析结果
 - `strategy`: 修改策略，说明整体修改思路
-- `sqlStatements`: SQL 语句列表，如果不需要数据库操作则为空数组
-- `filesToModify`: 需要修改的文件列表，包含路径、类型和具体操作
+- `sqlStatements`: SQL 语句列表，每个包含 type、sql、description
+- `filesToModify`: 文件修改列表，每个包含 path、type、operations、reason
 
 ## 注意事项
 1. **SQL 语句**：不要在 SQL 中硬编码 Schema 名，执行时会自动添加
