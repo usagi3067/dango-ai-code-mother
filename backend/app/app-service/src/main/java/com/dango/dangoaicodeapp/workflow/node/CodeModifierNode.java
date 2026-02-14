@@ -2,7 +2,9 @@ package com.dango.dangoaicodeapp.workflow.node;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
+import com.dango.aicodegenerate.extractor.ToolArgumentsExtractor;
 import com.dango.aicodegenerate.model.message.AiResponseMessage;
+import com.dango.aicodegenerate.model.message.StreamMessage;
 import com.dango.aicodegenerate.model.message.ToolExecutedMessage;
 import com.dango.aicodegenerate.model.message.ToolRequestMessage;
 import com.dango.aicodegenerate.service.AiCodeModifierService;
@@ -18,6 +20,9 @@ import org.bsc.langgraph4j.prebuilt.MessagesState;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -88,7 +93,10 @@ public class CodeModifierNode {
                 // 使用 CountDownLatch 等待流式生成完成
                 CountDownLatch latch = new CountDownLatch(1);
                 AtomicReference<Throwable> errorRef = new AtomicReference<>();
-                
+
+                // 为每个工具调用维护一个 extractor
+                Map<String, ToolArgumentsExtractor> extractors = new ConcurrentHashMap<>();
+
                 // 订阅 TokenStream，实时输出到前端
                 // 注意：必须注册所有回调，包括工具调用相关的回调，否则会导致 NPE
                 tokenStream
@@ -98,9 +106,19 @@ public class CodeModifierNode {
                             context.emit(JSONUtil.toJsonStr(aiResponseMessage));
                         })
                         .onPartialToolExecutionRequest((index, toolExecutionRequest) -> {
-                            // 处理工具调用请求（流式输出工具调用信息）
-                            ToolRequestMessage toolRequestMessage = new ToolRequestMessage(toolExecutionRequest);
-                            context.emit(JSONUtil.toJsonStr(toolRequestMessage));
+                            String toolId = toolExecutionRequest.id();
+                            String toolName = toolExecutionRequest.name();
+                            String delta = toolExecutionRequest.arguments();
+
+                            ToolArgumentsExtractor extractor = extractors.computeIfAbsent(
+                                toolId,
+                                id -> new ToolArgumentsExtractor(id, toolName)
+                            );
+
+                            List<StreamMessage> messages = extractor.process(delta);
+                            for (StreamMessage msg : messages) {
+                                context.emit(JSONUtil.toJsonStr(msg));
+                            }
                         })
                         .onToolExecuted(toolExecution -> {
                             // 处理工具执行结果
