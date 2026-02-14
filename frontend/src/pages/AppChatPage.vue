@@ -958,8 +958,50 @@ const handleSend = async () => {
     }
     
     /**
+     * 消息缓冲区 - 用于节流更新
+     * 累积多条消息后批量更新，避免频繁 DOM 操作导致页面卡顿
+     */
+    let messageBuffer = ''
+
+    /**
+     * 刷新定时器 - 用于批量更新消息
+     */
+    let flushTimer: number | null = null
+
+    /**
+     * 刷新缓冲区消息到 UI
+     * 每隔 100ms 刷新一次，而不是每条消息都刷新
+     */
+    const flushMessageBuffer = () => {
+      if (!messageBuffer) return
+
+      // 追加缓冲区内容
+      messages.value[aiMessageIndex].content += messageBuffer
+      messageBuffer = ''
+
+      // 只在需要时滚动到底部（减少 scrollToBottom 调用频率）
+      scrollToBottom()
+
+      // 清除定时器
+      flushTimer = null
+    }
+
+    /**
+     * 将内容添加到缓冲区（带节流）
+     * @param content 要添加的内容
+     */
+    const bufferContent = (content: string) => {
+      messageBuffer += content
+
+      // 如果没有定时器，创建一个
+      if (!flushTimer) {
+        flushTimer = window.setTimeout(flushMessageBuffer, 100)
+      }
+    }
+
+    /**
      * 监听消息事件
-     * 
+     *
      * 每当服务器发送一条数据，就会触发这个回调
      * event.data 包含服务器发送的数据
      */
@@ -967,21 +1009,19 @@ const handleSend = async () => {
       try {
         /**
          * 解析服务器返回的 JSON 数据
-         * 
+         *
          * 后端返回格式: { "d": "内容片段" }
          * d 字段包含 AI 生成的内容片段
          */
         const data = JSON.parse(event.data)
-        
+
         if (data && data.d) {
           // 修改模式下过滤掉创建模式特有的进度消息
           if (shouldFilterMessage(data.d)) {
             return
           }
-          // 将内容片段追加到 AI 消息中
-          messages.value[aiMessageIndex].content += data.d
-          // 滚动到底部
-          scrollToBottom()
+          // 使用缓冲区节流更新，而不是直接追加
+          bufferContent(data.d)
         }
       } catch (e) {
         // 如果解析失败，尝试直接使用原始数据
@@ -990,8 +1030,8 @@ const handleSend = async () => {
           if (shouldFilterMessage(event.data)) {
             return
           }
-          messages.value[aiMessageIndex].content += event.data
-          scrollToBottom()
+          // 使用缓冲区节流更新
+          bufferContent(event.data)
         }
       }
     }
@@ -1031,6 +1071,13 @@ const handleSend = async () => {
       if (eventSource.readyState === EventSource.CONNECTING) {
         // 正常关闭：服务器发送完数据后关闭连接
         streamCompleted = true
+
+        // 刷新缓冲区中的剩余消息
+        if (flushTimer) {
+          clearTimeout(flushTimer)
+          flushMessageBuffer()
+        }
+
         isGenerating.value = false
         isModifyModeGeneration.value = false
         messages.value[aiMessageIndex].loading = false
@@ -1050,6 +1097,11 @@ const handleSend = async () => {
         }, 1000)
       } else {
         // 真正的错误：显示错误信息
+        // 先刷新缓冲区，保留已接收的内容
+        if (flushTimer) {
+          clearTimeout(flushTimer)
+          flushMessageBuffer()
+        }
         handleStreamError(new Error('SSE 连接错误'), aiMessageIndex)
         eventSource.close()
       }
@@ -1065,6 +1117,13 @@ const handleSend = async () => {
      */
     eventSource.addEventListener('done', () => {
       streamCompleted = true
+
+      // 刷新缓冲区中的剩余消息
+      if (flushTimer) {
+        clearTimeout(flushTimer)
+        flushMessageBuffer()
+      }
+
       eventSource.close()
       messages.value[aiMessageIndex].loading = false
       isGenerating.value = false

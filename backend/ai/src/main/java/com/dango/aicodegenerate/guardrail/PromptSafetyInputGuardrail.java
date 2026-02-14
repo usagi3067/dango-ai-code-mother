@@ -44,20 +44,20 @@ public class PromptSafetyInputGuardrail implements InputGuardrail {
      * 注入攻击模式
      */
     private static final List<Pattern> INJECTION_PATTERNS = Arrays.asList(
-            // 忽略指令类攻击
-            Pattern.compile("(?i)ignore\\s+(?:previous|above|all)\\s+(?:instructions?|commands?|prompts?)"),
-            // 遗忘指令类攻击
-            Pattern.compile("(?i)(?:forget|disregard)\\s+(?:everything|all)\\s+(?:above|before)"),
-            // 角色扮演类攻击
-            Pattern.compile("(?i)(?:pretend|act|behave)\\s+(?:as|like)\\s+(?:if|you\\s+are)"),
-            // 系统提示注入
-            Pattern.compile("(?i)system\\s*:\\s*you\\s+are"),
-            // 新指令注入
-            Pattern.compile("(?i)new\\s+(?:instructions?|commands?|prompts?)\\s*:"),
-            // DAN 类越狱攻击
-            Pattern.compile("(?i)(?:DAN|do\\s+anything\\s+now)"),
-            // 开发者模式攻击
-            Pattern.compile("(?i)(?:developer|dev)\\s+mode\\s+(?:enabled|on|activated)")
+//            // 忽略指令类攻击
+//            Pattern.compile("(?i)ignore\\s+(?:previous|above|all)\\s+(?:instructions?|commands?|prompts?)"),
+//            // 遗忘指令类攻击
+//            Pattern.compile("(?i)(?:forget|disregard)\\s+(?:everything|all)\\s+(?:above|before)"),
+//            // 角色扮演类攻击
+//            Pattern.compile("(?i)(?:pretend|act|behave)\\s+(?:as|like)\\s+(?:if|you\\s+are)"),
+//            // 系统提示注入
+//            Pattern.compile("(?i)system\\s*:\\s*you\\s+are"),
+//            // 新指令注入
+//            Pattern.compile("(?i)new\\s+(?:instructions?|commands?|prompts?)\\s*:"),
+//            // DAN 类越狱攻击
+//            Pattern.compile("(?i)(?:DAN|do\\s+anything\\s+now)"),
+//            // 开发者模式攻击
+//            Pattern.compile("(?i)(?:developer|dev)\\s+mode\\s+(?:enabled|on|activated)")
     );
 
     @Override

@@ -61,11 +61,11 @@ public class ModeRouterNode {
 
     /**
      * 判断操作模式
-     * 
+     *
      * 判断逻辑：
      * 1. 如果 context 中有 elementInfo，则为修改模式
-     * 2. 如果应用没有历史代码，则为创建模式
-     * 3. 否则默认为创建模式
+     * 2. 如果应用有历史代码，则为修改模式
+     * 3. 如果应用没有历史代码，则为创建模式
      *
      * @param context 工作流上下文
      * @return 操作模式枚举
@@ -77,14 +77,13 @@ public class ModeRouterNode {
             return OperationModeEnum.MODIFY;
         }
 
-        // 2. 检查是否有历史代码
-        if (!hasExistingCode(context.getAppId())) {
-            log.info("未检测到历史代码，使用创建模式");
-            return OperationModeEnum.CREATE;
+        // 2. 检查是否有历史代码：有则修改，无则创建
+        if (hasExistingCode(context.getAppId())) {
+            log.info("检测到历史代码，使用修改模式");
+            return OperationModeEnum.MODIFY;
         }
 
-        // 3. 默认使用创建模式
-        log.info("默认使用创建模式");
+        log.info("未检测到历史代码，使用创建模式");
         return OperationModeEnum.CREATE;
     }
 

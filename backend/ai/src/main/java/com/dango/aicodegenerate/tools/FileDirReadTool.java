@@ -71,20 +71,13 @@ public class FileDirReadTool extends BaseTool{
             structure.append("项目目录结构:\n");
             // 使用 Hutool 递归获取所有文件
             List<File> allFiles = FileUtil.loopFiles(targetDir, file -> !shouldIgnore(file.getName()));
-            // 按路径深度和名称排序显示
+            // 按路径排序显示，使用相对路径格式
             allFiles.stream()
-                    .sorted((f1, f2) -> {
-                        int depth1 = getRelativeDepth(targetDir, f1);
-                        int depth2 = getRelativeDepth(targetDir, f2);
-                        if (depth1 != depth2) {
-                            return Integer.compare(depth1, depth2);
-                        }
-                        return f1.getPath().compareTo(f2.getPath());
-                    })
+                    .sorted((f1, f2) -> f1.getPath().compareTo(f2.getPath()))
                     .forEach(file -> {
-                        int depth = getRelativeDepth(targetDir, file);
-                        String indent = "  ".repeat(depth);
-                        structure.append(indent).append(file.getName());
+                        // 获取相对路径
+                        String relativePath = targetDir.toPath().relativize(file.toPath()).toString();
+                        structure.append("- ").append(relativePath).append("\n");
                     });
             return structure.toString();
 
@@ -93,15 +86,6 @@ public class FileDirReadTool extends BaseTool{
             log.error(errorMessage, e);
             return errorMessage;
         }
-    }
-
-    /**
-     * 计算文件相对于根目录的深度
-     */
-    private int getRelativeDepth(File root, File file) {
-        Path rootPath = root.toPath();
-        Path filePath = file.toPath();
-        return rootPath.relativize(filePath).getNameCount() - 1;
     }
 
     /**

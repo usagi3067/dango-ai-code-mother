@@ -254,7 +254,7 @@ public class CodeGenWorkflow {
      * - 代码修改节点：使用修改专用提示词进行增量修改
      *
      * 流程：
-     * CodeReader → DatabaseAnalyzer → [条件边] → DatabaseOperator → CodeModifier
+     * CodeReader → ModificationPlanner → [条件边] → DatabaseOperator → CodeModifier
      *                                     ↓
      *                               (无需SQL时直接跳过)
      *                                     ↓

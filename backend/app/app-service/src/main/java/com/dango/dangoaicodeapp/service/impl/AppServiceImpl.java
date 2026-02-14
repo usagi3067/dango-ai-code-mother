@@ -188,17 +188,34 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         } catch (Exception e) {
             log.error("保存用户消息失败: {}", e.getMessage());
         }
-        // 6. 创建监控上下文
+        // 6. 检查数据库是否启用，如果启用则查询当前 Schema
+        boolean databaseEnabled = Boolean.TRUE.equals(app.getHasDatabase());
+        String databaseSchema = null;
+        if (databaseEnabled) {
+            try {
+                List<com.dango.supabase.dto.TableSchemaDTO> tables = supabaseService.getSchema(appId);
+                if (tables != null && !tables.isEmpty()) {
+                    databaseSchema = formatTableSchemas(tables);
+                    log.info("应用 {} 已启用数据库，当前有 {} 个表", appId, tables.size());
+                }
+            } catch (Exception e) {
+                log.error("查询数据库 Schema 失败: {}", e.getMessage(), e);
+                // Schema 查询失败不影响工作流执行，只是数据库功能不可用
+            }
+        }
+        // 7. 创建监控上下文
         MonitorContext monitorContext = MonitorContext.builder()
                 .userId(userId.toString())
                 .appId(appId.toString())
                 .build();
         // 设置到当前线程
         MonitorContextHolder.setContext(monitorContext);
-        // 7. 使用 Agent 模式（工作流）生成代码
-        log.info("使用 Agent 模式（工作流）生成代码, appId: {}, hasElementInfo: {}", appId, elementInfo != null);
-        Flux<String> codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(message, appId, elementInfo, monitorContext);
-        // 8. 收集 AI 响应内容并在完成后记录到对话历史
+        // 8. 使用 Agent 模式（工作流）生成代码
+        log.info("使用 Agent 模式（工作流）生成代码, appId: {}, hasElementInfo: {}, databaseEnabled: {}",
+                appId, elementInfo != null, databaseEnabled);
+        Flux<String> codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(
+                message, appId, elementInfo, databaseEnabled, databaseSchema, monitorContext);
+        // 9. 收集 AI 响应内容并在完成后记录到对话历史
         return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum)
                 .doFinally(signalType -> {
                     // 流结束时清理（无论成功/失败/取消）
@@ -484,5 +501,42 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         } else {
             log.warn("package.json 中未找到 dependencies 字段");
         }
+    }
+
+    /**
+     * 格式化表结构为字符串
+     * 用于传递给工作流上下文
+     *
+     * @param tables 表结构列表（扁平结构，每行代表一个列）
+     * @return 格式化后的字符串
+     */
+    private String formatTableSchemas(List<com.dango.supabase.dto.TableSchemaDTO> tables) {
+        if (tables == null || tables.isEmpty()) {
+            return "";
+        }
+
+        // 按表名分组
+        Map<String, List<com.dango.supabase.dto.TableSchemaDTO>> tableMap = tables.stream()
+                .collect(Collectors.groupingBy(com.dango.supabase.dto.TableSchemaDTO::getTableName));
+
+        StringBuilder sb = new StringBuilder();
+        for (Map.Entry<String, List<com.dango.supabase.dto.TableSchemaDTO>> entry : tableMap.entrySet()) {
+            String tableName = entry.getKey();
+            List<com.dango.supabase.dto.TableSchemaDTO> columns = entry.getValue();
+
+            sb.append("表 ").append(tableName).append(":\n");
+            for (com.dango.supabase.dto.TableSchemaDTO column : columns) {
+                sb.append("  - ").append(column.getColumnName())
+                        .append(": ").append(column.getDataType());
+                if (Boolean.TRUE.equals(column.getIsNullable())) {
+                    sb.append(" (nullable)");
+                }
+                if (StrUtil.isNotBlank(column.getColumnDefault())) {
+                    sb.append(" DEFAULT ").append(column.getColumnDefault());
+                }
+                sb.append("\n");
+            }
+        }
+        return sb.toString();
     }
 }

@@ -113,7 +113,7 @@ public class AiCodeModifierServiceFactory {
                 .builder()
                 .id(appId)
                 .chatMemoryStore(redisChatMemoryStore)
-                .maxMessages(20)
+                .maxMessages(50)
                 .build();
 
         // 从数据库加载历史对话到记忆中

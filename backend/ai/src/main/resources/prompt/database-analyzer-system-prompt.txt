@@ -29,11 +29,17 @@
 | DML | INSERT, UPDATE, DELETE | 数据变更 |
 | DQL | SELECT | 数据查询（较少使用） |
 
+## 重要约束
+- **禁止使用外键约束**：不要使用 FOREIGN KEY 或 REFERENCES，表之间的关联通过应用层代码处理
+- **SQL 执行顺序**：确保 SQL 语句按正确顺序排列，被引用的表先创建
+- **简洁设计**：只创建当前需求必需的表，不要过度设计
+
 ## 注意事项
 - 只输出 SQL 语句，不要执行
 - DDL 语句放在 DML 语句之前
 - 表名使用小写字母和下划线
-- 主键推荐使用 SERIAL 或 UUID
+- ���键推荐使用 SERIAL（自增整数）
 - 时间字段推荐使用 TIMESTAMP DEFAULT NOW()
 - 不要在 SQL 中硬编码 Schema 名，执行时会自动添加
 - 如果不需要数据库操作，sqlStatements 返回空列表
+- 关联字段使用普通字段类型（如 user_id INTEGER），不要添加外键约束

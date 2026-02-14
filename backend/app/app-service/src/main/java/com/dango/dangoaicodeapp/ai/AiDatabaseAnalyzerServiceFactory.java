@@ -45,12 +45,14 @@ public class AiDatabaseAnalyzerServiceFactory {
     public AiDatabaseAnalyzerService createAnalyzerService(long appId) {
         log.info("为 appId: {} 创建数据库分析服务实例", appId);
 
-        // 为数据库分析创建独立的对话记忆（短期记忆，仅用于工具调用）
+        // 为数据库分析创建独立的对话记忆
+        // 注意：工具调用会消耗大量消息（每次调用 = AI请求 + 工具结果 = 2条消息）
+        // 设置足够大的窗口以支持多次工具调用
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory
                 .builder()
                 .id(appId)
                 .chatMemoryStore(redisChatMemoryStore)
-                .maxMessages(10)  // 分析任务不需要太长的记忆
+                .maxMessages(50)  // 支持约 20+ 次工具调用
                 .build();
 
         return AiServices.builder(AiDatabaseAnalyzerService.class)

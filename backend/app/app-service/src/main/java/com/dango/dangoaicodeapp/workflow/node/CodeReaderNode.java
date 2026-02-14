@@ -120,22 +120,30 @@ public class CodeReaderNode {
         structure.append("项目目录结构:\n");
 
         // 使用 Hutool 递归获取所有文件，应用过滤规则
-        List<File> allFiles = FileUtil.loopFiles(targetDir, file -> !shouldIgnore(file.getName()));
+        // 注意：过滤器需要同时过滤目录和文件，防止进入 node_modules 等目录
+        List<File> allFiles = FileUtil.loopFiles(targetDir, file -> {
+            // 检查文件本身是否应该忽略
+            if (shouldIgnore(file.getName())) {
+                return false;
+            }
+            // 检查文件的父目录链是否包含应该忽略的目录
+            File parent = file.getParentFile();
+            while (parent != null && !parent.equals(targetDir)) {
+                if (shouldIgnore(parent.getName())) {
+                    return false;
+                }
+                parent = parent.getParentFile();
+            }
+            return true;
+        });
 
-        // 按路径深度和名称排序显示（与 FileDirReadTool 一致）
+        // 按路径排序显示，使用相对路径格式
         allFiles.stream()
-                .sorted((f1, f2) -> {
-                    int depth1 = getRelativeDepth(targetDir, f1);
-                    int depth2 = getRelativeDepth(targetDir, f2);
-                    if (depth1 != depth2) {
-                        return Integer.compare(depth1, depth2);
-                    }
-                    return f1.getPath().compareTo(f2.getPath());
-                })
+                .sorted((f1, f2) -> f1.getPath().compareTo(f2.getPath()))
                 .forEach(file -> {
-                    int depth = getRelativeDepth(targetDir, file);
-                    String indent = "  ".repeat(depth);
-                    structure.append(indent).append("- ").append(file.getName()).append("\n");
+                    // 获取相对路径
+                    String relativePath = targetDir.toPath().relativize(file.toPath()).toString();
+                    structure.append("- ").append(relativePath).append("\n");
                 });
 
         return structure.toString();
@@ -174,16 +182,6 @@ public class CodeReaderNode {
 
         return null;
     }
-
-    /**
-     * 计算文件相对于根目录的深度（与 FileDirReadTool 一致）
-     */
-    private static int getRelativeDepth(File root, File file) {
-        Path rootPath = root.toPath();
-        Path filePath = file.toPath();
-        return rootPath.relativize(filePath).getNameCount() - 1;
-    }
-
     /**
      * 判断是否应该忽略该文件或目录（与 FileDirReadTool 一致）
      */
