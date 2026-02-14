@@ -52,7 +52,7 @@ import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
  * image_plan → [并发分支] → image_aggregator → prompt_enhancer → router → code_generator
  *
  * 修改模式子图（支持数据库操作）：
- * code_reader → database_analyzer → [条件边] → database_operator → code_modifier
+ * code_reader → modification_planner → [条件边] → database_operator → code_modifier
  *                                       ↓
  *                                 (无需SQL时跳过)
  *                                       ↓
@@ -87,7 +87,7 @@ public class CodeGenWorkflow {
     
     // 修改模式子图节点
     private static final String NODE_CODE_READER = "code_reader";
-    private static final String NODE_DATABASE_ANALYZER = "database_analyzer";
+    private static final String NODE_MODIFICATION_PLANNER = "modification_planner";
     private static final String NODE_DATABASE_OPERATOR = "database_operator";
     private static final String NODE_CODE_MODIFIER = "code_modifier";
     
@@ -271,8 +271,8 @@ public class CodeGenWorkflow {
                 // 代码读取节点
                 .addNode(NODE_CODE_READER, CodeReaderNode.create())
 
-                // 数据库分析节点
-                .addNode(NODE_DATABASE_ANALYZER, DatabaseAnalyzerNode.create())
+                // 修改规划节点
+                .addNode(NODE_MODIFICATION_PLANNER, ModificationPlannerNode.create())
 
                 // 数据库操作节点（使用实例方法，因为需要 Dubbo 注入）
                 .addNode(NODE_DATABASE_OPERATOR, databaseOperatorNode.create())
@@ -283,12 +283,12 @@ public class CodeGenWorkflow {
                 // 入口边
                 .addEdge(START, NODE_CODE_READER)
 
-                // 读取后进行数据库分析
-                .addEdge(NODE_CODE_READER, NODE_DATABASE_ANALYZER)
+                // 读取后进行修改规划
+                .addEdge(NODE_CODE_READER, NODE_MODIFICATION_PLANNER)
 
-                // 数据库分析后的条件边：根据 sqlStatements 决定是否执行 SQL
-                .addConditionalEdges(NODE_DATABASE_ANALYZER,
-                        edge_async(this::routeAfterDatabaseAnalysis),
+                // 修改规划后的条件边：根据 sqlStatements 决定是否执行 SQL
+                .addConditionalEdges(NODE_MODIFICATION_PLANNER,
+                        edge_async(this::routeAfterModificationPlanning),
                         Map.of(
                                 ROUTE_EXECUTE_SQL, NODE_DATABASE_OPERATOR,
                                 ROUTE_SKIP_SQL, NODE_CODE_MODIFIER
@@ -302,32 +302,34 @@ public class CodeGenWorkflow {
     }
 
     /**
-     * 数据库分析后的路由逻辑
+     * 修改规划后的路由逻辑
      *
      * 判断逻辑：
-     * 1. 数据库未启用 → 跳过 SQL 执行
-     * 2. sqlStatements 为空 → 跳过 SQL 执行
+     * 1. 修改规划为空 → 跳过 SQL 执行
+     * 2. 规划中的 SQL 语句为空 → 跳过 SQL 执行
      * 3. 否则 → 执行 SQL
      *
      * @param state 消息状态
      * @return 路由目标（"execute_sql" 或 "skip_sql"）
      */
-    private String routeAfterDatabaseAnalysis(MessagesState<String> state) {
+    private String routeAfterModificationPlanning(MessagesState<String> state) {
         WorkflowContext context = WorkflowContext.getContext(state);
 
-        // 数据库未启用，跳过
-        if (!context.isDatabaseEnabled()) {
-            log.info("数据库未启用，跳过 SQL 执行");
+        // 修改规划为空，跳过
+        if (context.getModificationPlan() == null) {
+            log.info("修改规划为空，跳过 SQL 执行");
             return ROUTE_SKIP_SQL;
         }
 
         // 没有需要执行的 SQL，跳过
-        if (context.getSqlStatements() == null || context.getSqlStatements().isEmpty()) {
+        if (context.getModificationPlan().getSqlStatements() == null
+            || context.getModificationPlan().getSqlStatements().isEmpty()) {
             log.info("无需执行 SQL，跳过数据库操作节点");
             return ROUTE_SKIP_SQL;
         }
 
-        log.info("有 {} 条 SQL 需要执行，路由到数据库操作节点", context.getSqlStatements().size());
+        log.info("有 {} 条 SQL 需要执行，路由到数据库操作节点",
+            context.getModificationPlan().getSqlStatements().size());
         return ROUTE_EXECUTE_SQL;
     }
     
@@ -493,10 +495,10 @@ public class CodeGenWorkflow {
     public Flux<String> executeWorkflowWithFlux(String originalPrompt, Long appId, ElementInfo elementInfo) {
         return executeWorkflowWithFlux(originalPrompt, appId, elementInfo, null);
     }
-    
+
     /**
      * 执行工作流（Flux 流式输出版本，支持 appId、elementInfo 和 monitorContext 参数）
-     * 
+     *
      * @param originalPrompt 用户原始提示词
      * @param appId 应用 ID
      * @param elementInfo 选中的元素信息（用于修改模式）
@@ -504,6 +506,22 @@ public class CodeGenWorkflow {
      * @return 流式输出的代码内容
      */
     public Flux<String> executeWorkflowWithFlux(String originalPrompt, Long appId, ElementInfo elementInfo, MonitorContext monitorContext) {
+        return executeWorkflowWithFlux(originalPrompt, appId, elementInfo, false, null, monitorContext);
+    }
+
+    /**
+     * 执行工作流（Flux 流式输出版本，完整参数版本）
+     *
+     * @param originalPrompt 用户原始提示词
+     * @param appId 应用 ID
+     * @param elementInfo 选中的元素信息（用于修改模式）
+     * @param databaseEnabled 是否启用数据库
+     * @param databaseSchema 数据库表结构（如果启用）
+     * @param monitorContext 监控上下文（用于跨线程传递监控信息）
+     * @return 流式输出的代码内容
+     */
+    public Flux<String> executeWorkflowWithFlux(String originalPrompt, Long appId, ElementInfo elementInfo,
+                                                boolean databaseEnabled, String databaseSchema, MonitorContext monitorContext) {
         return Flux.create(sink -> {
             // 生成唯一的执行 ID
             String executionId = appId + "_" + System.currentTimeMillis();
@@ -517,20 +535,22 @@ public class CodeGenWorkflow {
                     CompiledGraph<MessagesState<String>> workflow = createWorkflow();
                     RunnableConfig runnableConfig = createRunnableConfig();
 
-                    // 初始化 WorkflowContext，传入 appId、executionId、elementInfo 和 monitorContext
+                    // 初始化 WorkflowContext，传入 appId、executionId、elementInfo、databaseEnabled、databaseSchema 和 monitorContext
                     WorkflowContext initialContext = WorkflowContext.builder()
                             .appId(appId)
                             .originalPrompt(originalPrompt)
                             .currentStep("初始化")
                             .workflowExecutionId(executionId)
                             .elementInfo(elementInfo)
+                            .databaseEnabled(databaseEnabled)
+                            .databaseSchema(databaseSchema)
                             .monitorContext(monitorContext)
                             .build();
 
                     GraphRepresentation graph = workflow.getGraph(GraphRepresentation.Type.MERMAID);
                     log.info("工作流图:\n{}", graph.content());
-                    log.info("开始执行代码生成工作流（流式）, appId: {}, executionId: {}, hasElementInfo: {}",
-                            appId, executionId, elementInfo != null);
+                    log.info("开始执行代码生成工作流（流式）, appId: {}, executionId: {}, hasElementInfo: {}, databaseEnabled: {}",
+                            appId, executionId, elementInfo != null, databaseEnabled);
 
                     // 发送工作流开始消息（包装为 JSON 格式）
                     String modeHint = elementInfo != null ? "（修改模式）" : "（创建模式）";
