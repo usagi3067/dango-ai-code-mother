@@ -2,9 +2,11 @@ package com.dango.dangoaicodeapp.core;
 
 import cn.hutool.json.JSONUtil;
 
+import com.dango.aicodegenerate.extractor.ToolArgumentsExtractor;
 import com.dango.aicodegenerate.model.HtmlCodeResult;
 import com.dango.aicodegenerate.model.MultiFileCodeResult;
 import com.dango.aicodegenerate.model.message.AiResponseMessage;
+import com.dango.aicodegenerate.model.message.StreamMessage;
 import com.dango.aicodegenerate.model.message.ToolExecutedMessage;
 import com.dango.aicodegenerate.model.message.ToolRequestMessage;
 import com.dango.aicodegenerate.service.AiCodeGeneratorService;
@@ -24,6 +26,9 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
 import java.io.File;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * AI 代码生成外观类，组合生成和保存功能
@@ -138,13 +143,29 @@ public class AiCodeGeneratorFacade {
      */
     private Flux<String> processTokenStream(TokenStream tokenStream) {
         return Flux.create(sink -> {
+            // 为每个工具调用维护一个 extractor
+            Map<String, ToolArgumentsExtractor> extractors = new ConcurrentHashMap<>();
+
             tokenStream.onPartialResponse((String partialResponse) -> {
                         AiResponseMessage aiResponseMessage = new AiResponseMessage(partialResponse);
                         sink.next(JSONUtil.toJsonStr(aiResponseMessage));
                     })
                     .onPartialToolExecutionRequest((index, toolExecutionRequest) -> {
-                        ToolRequestMessage toolRequestMessage = new ToolRequestMessage(toolExecutionRequest);
-                        sink.next(JSONUtil.toJsonStr(toolRequestMessage));
+                        String toolId = toolExecutionRequest.id();
+                        String toolName = toolExecutionRequest.name();
+                        String delta = toolExecutionRequest.arguments();
+
+                        // 获取或创建 extractor
+                        ToolArgumentsExtractor extractor = extractors.computeIfAbsent(
+                            toolId,
+                            id -> new ToolArgumentsExtractor(id, toolName)
+                        );
+
+                        // 处理 delta，获取需要发送的消息
+                        List<StreamMessage> messages = extractor.process(delta);
+                        for (StreamMessage msg : messages) {
+                            sink.next(JSONUtil.toJsonStr(msg));
+                        }
                     })
                     .onToolExecuted((ToolExecution toolExecution) -> {
                         ToolExecutedMessage toolExecutedMessage = new ToolExecutedMessage(toolExecution);
