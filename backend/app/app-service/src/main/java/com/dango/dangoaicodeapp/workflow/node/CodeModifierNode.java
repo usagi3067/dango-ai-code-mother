@@ -299,14 +299,12 @@ public class CodeModifierNode {
                    .append("\n");
         }
 
-        // 5. 添加用户修改要求（如果没有修改指导，则使用原始修改要求）
-        if (guides == null || guides.isEmpty()) {
-            String modifyRequirement = buildModifyRequirement(context);
-            if (StrUtil.isNotBlank(modifyRequirement)) {
-                request.append("## 修改要求\n")
-                       .append(modifyRequirement)
-                       .append("\n\n");
-            }
+        // 5. 添加用户修改要求
+        String modifyRequirement = buildModifyRequirement(context);
+        if (StrUtil.isNotBlank(modifyRequirement)) {
+            request.append("## 修改要求\n")
+                   .append(modifyRequirement)
+                   .append("\n\n");
         }
 
         // 6. 添加工具使用提示
