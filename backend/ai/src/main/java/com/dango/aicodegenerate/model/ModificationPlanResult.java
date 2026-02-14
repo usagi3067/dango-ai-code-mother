@@ -1,12 +1,13 @@
 package com.dango.aicodegenerate.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import dev.langchain4j.model.output.structured.Description;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serial;
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -17,19 +18,19 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ModificationPlanResult {
+public class ModificationPlanResult implements Serializable {
+    @Serial
+    private static final long serialVersionUID = 1L;
 
-    @JsonPropertyDescription("规划说明，简要描述分析结果")
+    @Description("规划说明，简要描述分析结果")
     private String analysis;
 
-    @JsonPropertyDescription("修改策略，说明整体修改思路")
+    @Description("修改策略，说明整体修改思路")
     private String strategy;
 
-    @JsonPropertyDescription("SQL 语句列表，如果不需要数据库操作则为空数组")
-    @JsonProperty("sqlStatements")
+    @Description("SQL 语句列表，如果不需要数据库操作则为空数组")
     private List<SqlStatementItem> sqlStatements;
 
-    @JsonPropertyDescription("需要修改的文件列表，包含路径、类型和具体操作")
-    @JsonProperty("filesToModify")
+    @Description("需要修改的文件列表，包含路径、类型和具体操作")
     private List<FileModificationGuide> filesToModify;
 }

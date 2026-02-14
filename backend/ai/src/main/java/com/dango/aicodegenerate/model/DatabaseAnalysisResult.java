@@ -36,36 +36,4 @@ public class DatabaseAnalysisResult implements Serializable {
      */
     @Description("待执行的 SQL 语句列表，如果不需要数据库操作则为空列表")
     private List<SqlStatementItem> sqlStatements;
-
-    /**
-     * SQL 语句项
-     */
-    @Data
-    @Builder
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Description("单条 SQL 语句")
-    public static class SqlStatementItem implements Serializable {
-
-        @Serial
-        private static final long serialVersionUID = 1L;
-
-        /**
-         * SQL 类型
-         */
-        @Description("SQL 类型：DDL（CREATE/ALTER/DROP TABLE）、DML（INSERT/UPDATE/DELETE）、DQL（SELECT）")
-        private String type;
-
-        /**
-         * SQL 语句
-         */
-        @Description("完整的 SQL 语句，不要包含 Schema 名前缀")
-        private String sql;
-
-        /**
-         * 说明
-         */
-        @Description("这条 SQL 的作用说明")
-        private String description;
-    }
 }
