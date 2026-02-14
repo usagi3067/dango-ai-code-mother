@@ -1,9 +1,12 @@
 package com.dango.dangoaicodeapp.workflow.state;
 
 import cn.hutool.json.JSONUtil;
+import com.dango.aicodegenerate.model.FileModificationGuide;
 import com.dango.aicodegenerate.model.ImageCollectionPlan;
 import com.dango.aicodegenerate.model.ImageResource;
+import com.dango.aicodegenerate.model.ModificationPlanResult;
 import com.dango.aicodegenerate.model.QualityResult;
+import com.dango.aicodegenerate.model.SqlStatementItem;
 import com.dango.aicodegenerate.model.message.AiResponseMessage;
 import com.dango.dangoaicodeapp.model.entity.ElementInfo;
 import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
@@ -19,9 +22,11 @@ import reactor.core.publisher.FluxSink;
 
 import java.io.Serial;
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.stream.Collectors;
 
 /**
  * 工作流上下文 - 存储所有状态信息
@@ -191,6 +196,76 @@ public class WorkflowContext implements Serializable {
      * DatabaseOperator 输出：执行后的最新表结构
      */
     private String latestDatabaseSchema;
+
+    // ========== ModificationPlanner 相关字段 ==========
+
+    /**
+     * ModificationPlanner 输出：完整的修改规划
+     */
+    private ModificationPlanResult modificationPlan;
+
+    // ========== 数据库操作辅助方法 ==========
+
+    /**
+     * 检查是否有 SQL 执行失败
+     *
+     * @return true 如果有任何 SQL 执行失败
+     */
+    public boolean hasSqlExecutionFailure() {
+        if (executionResults == null || executionResults.isEmpty()) {
+            return false;
+        }
+        return executionResults.stream().anyMatch(result -> !result.isSuccess());
+    }
+
+    /**
+     * 检查是否有成功执行的 SQL（即数据库有变更）
+     *
+     * @return true 如果有任何 SQL 执行成功
+     */
+    public boolean hasSqlExecutionSuccess() {
+        if (executionResults == null || executionResults.isEmpty()) {
+            return false;
+        }
+        return executionResults.stream().anyMatch(SqlExecutionResult::isSuccess);
+    }
+
+    // ========== ModificationPlanner 辅助方法 ==========
+
+    /**
+     * 获取 SQL 语句列表
+     * 从 modificationPlan 中提取，如果为空则返回空列表
+     */
+    public List<SqlStatement> getSqlStatements() {
+        if (modificationPlan == null || modificationPlan.getSqlStatements() == null) {
+            return Collections.emptyList();
+        }
+        return convertToSqlStatements(modificationPlan.getSqlStatements());
+    }
+
+    /**
+     * 将 SqlStatementItem 转换为 SqlStatement
+     */
+    private List<SqlStatement> convertToSqlStatements(List<SqlStatementItem> items) {
+        return items.stream()
+            .map(item -> SqlStatement.builder()
+                .type(item.getType())
+                .sql(item.getSql())
+                .description(item.getDescription())
+                .build())
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * 获取文件修改指导列表
+     * 从 modificationPlan 中提取，如果为空则返回空列表
+     */
+    public List<FileModificationGuide> getFileModificationGuides() {
+        if (modificationPlan == null || modificationPlan.getFilesToModify() == null) {
+            return Collections.emptyList();
+        }
+        return modificationPlan.getFilesToModify();
+    }
 
     // ========== 上下文操作方法 ==========
 
