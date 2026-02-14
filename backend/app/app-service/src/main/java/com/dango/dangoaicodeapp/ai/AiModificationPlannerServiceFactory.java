@@ -1,5 +1,6 @@
 package com.dango.dangoaicodeapp.ai;
 
+import com.dango.aicodegenerate.guardrail.PromptSafetyInputGuardrail;
 import com.dango.aicodegenerate.service.AiModificationPlannerService;
 import com.dango.aicodegenerate.tools.FileDirReadTool;
 import com.dango.aicodegenerate.tools.FileReadTool;
@@ -64,6 +65,7 @@ public class AiModificationPlannerServiceFactory {
                         fileDirReadTool,
                         fileReadTool
                 )
+                .inputGuardrails(new PromptSafetyInputGuardrail())
                 .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                         toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                 ))
