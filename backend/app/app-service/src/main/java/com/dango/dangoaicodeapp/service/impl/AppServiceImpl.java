@@ -71,6 +71,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     private VueProjectBuilder vueProjectBuilder;
     @Resource
     private AppInfoGeneratorFacade appInfoGeneratorFacade;
+    @Resource
+    private com.dango.dangoaicodeapp.core.scaffold.HtmlToVueConverterService htmlToVueConverterService;
 
     @Override
     public AppVO getAppVO(App app) {
@@ -341,18 +343,10 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
             Long appId = app.getId();
 
-            // 4. 创建目录并保存文件
-            String dirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + "html_" + appId;
-            File dir = new File(dirPath);
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
+            // 4. 创建 Vue 项目脚手架并保存 HTML 内容为 src/legacy.html
+            htmlToVueConverterService.convert(appId, htmlContent);
 
-            // 5. 保存为 index.html
-            File htmlFile = new File(dir, "index.html");
-            FileUtil.writeString(htmlContent, htmlFile, StandardCharsets.UTF_8);
-
-            log.info("HTML 应用创建成功，ID: {}, 文件: {}", appId, filename);
+            log.info("HTML 上传应用创建成功，ID: {}, 文件: {}", appId, filename);
             return appId;
 
         } catch (IOException e) {

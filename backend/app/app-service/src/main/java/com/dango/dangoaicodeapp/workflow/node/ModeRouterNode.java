@@ -66,6 +66,8 @@ public class ModeRouterNode {
      * 2. 如果应用有历史代码，则为修改模式
      * 3. 如果应用没有历史代码，则为创建模式
      *
+     * 附加检测：如果项目中存在 src/legacy.html，标记需要 HTML 转 Vue 转换
+     *
      * @param context 工作流上下文
      * @return 操作模式枚举
      */
@@ -73,12 +75,14 @@ public class ModeRouterNode {
         // 1. 检查是否有元素信息（由 Controller 层设置）
         if (context.getElementInfo() != null) {
             log.info("检测到 elementInfo，使用修改模式");
+            checkHtmlConversion(context);
             return OperationModeEnum.MODIFY;
         }
 
         // 2. 检查是否有历史代码：有则修改，无则创建
         if (hasExistingCode(context.getAppId())) {
             log.info("检测到历史代码，使用修改模式");
+            checkHtmlConversion(context);
             return OperationModeEnum.MODIFY;
         }
 
@@ -88,7 +92,7 @@ public class ModeRouterNode {
 
     /**
      * 检查应用是否有现有代码
-     * 检查代码输出目录是否存在（html_appId、multi_file_appId、vue_project_appId）
+     * 检查 vue_project_appId 目录是否存在
      *
      * @param appId 应用 ID
      * @return 是否存在现有代码
@@ -106,6 +110,31 @@ public class ModeRouterNode {
         }
 
         return false;
+    }
+
+    /**
+     * 检查是否存在 legacy.html（上传的 HTML 文件），如果存在则标记需要转换
+     */
+    private static void checkHtmlConversion(WorkflowContext context) {
+        if (hasLegacyHtml(context.getAppId())) {
+            log.info("检测到 src/legacy.html，标记需要 HTML 转 Vue 转换");
+            context.setHtmlConversionRequired(true);
+        }
+    }
+
+    /**
+     * 检查项目中是否存在 src/legacy.html
+     *
+     * @param appId 应用 ID
+     * @return 是否存在 legacy.html
+     */
+    public static boolean hasLegacyHtml(Long appId) {
+        if (appId == null || appId <= 0) {
+            return false;
+        }
+        String baseDir = System.getProperty("user.dir") + "/tmp/code_output";
+        Path legacyHtml = Path.of(baseDir, "vue_project_" + appId, "src", "legacy.html");
+        return Files.exists(legacyHtml);
     }
 
     /**

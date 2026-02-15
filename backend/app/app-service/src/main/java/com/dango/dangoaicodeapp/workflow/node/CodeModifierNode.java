@@ -322,6 +322,22 @@ public class CodeModifierNode {
         // 7. 添加重要约束
         request.append("\n## 重要约束\n");
 
+        // 7.1 HTML 转 Vue 转换指引（如果需要）
+        if (context.isHtmlConversionRequired()) {
+            request.append("### HTML 转 Vue 转换\n")
+                   .append("项目中存在 `src/legacy.html`，这是用户上传的原始 HTML 文件。\n")
+                   .append("**你必须**：\n")
+                   .append("1. 使用【文件读取工具】读取 `src/legacy.html` 的完整内容\n")
+                   .append("2. 将 HTML 内容拆分为 Vue 组件结构：\n")
+                   .append("   - 页面布局 → `src/App.vue`\n")
+                   .append("   - 独立功能区块 → `src/components/*.vue`\n")
+                   .append("   - 页面路由 → `src/router/index.js` + `src/pages/*.vue`\n")
+                   .append("   - 全局样式 → `src/styles/global.css`\n")
+                   .append("3. 保留原始 HTML 的所有功能和样式\n")
+                   .append("4. 转换完成后，使用【文件删除工具】删除 `src/legacy.html`\n")
+                   .append("5. 同时执行用户的修改要求（如果有）\n\n");
+        }
+
         if (context.isDatabaseEnabled()) {
             request.append("### 数据库客户端保护\n")
                    .append("- **绝对禁止修改** `src/integrations/supabase/` 目录下的任何文件\n")

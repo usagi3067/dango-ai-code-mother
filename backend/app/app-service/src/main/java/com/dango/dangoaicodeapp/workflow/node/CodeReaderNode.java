@@ -161,23 +161,11 @@ public class CodeReaderNode {
             return null;
         }
 
-        // 如果指定了代码生成类型，直接使用
-        if (codeGenType != null) {
-            String dirName = codeGenType.getValue() + "_" + appId;
-            Path projectPath = Paths.get(CODE_OUTPUT_ROOT_DIR, dirName);
-            if (Files.exists(projectPath)) {
-                return projectPath;
-            }
-        }
-
-        // 否则尝试查找所有可能的代码类型目录
-        for (CodeGenTypeEnum type : CodeGenTypeEnum.values()) {
-            String dirName = type.getValue() + "_" + appId;
-            Path projectPath = Paths.get(CODE_OUTPUT_ROOT_DIR, dirName);
-            if (Files.exists(projectPath)) {
-                log.info("找到项目目录: {}", projectPath);
-                return projectPath;
-            }
+        // 统一使用 vue_project_ 目录
+        String dirName = "vue_project_" + appId;
+        Path projectPath = Paths.get(CODE_OUTPUT_ROOT_DIR, dirName);
+        if (Files.exists(projectPath)) {
+            return projectPath;
         }
 
         return null;
