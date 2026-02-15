@@ -93,12 +93,8 @@ public class CodeModifierNode {
                 AiCodeModifierServiceFactory modifierServiceFactory = SpringContextUtil.getBean(AiCodeModifierServiceFactory.class);
                 AiCodeModifierService modifierService = modifierServiceFactory.getModifierService(appId, generationType);
                 
-                // 根据代码生成类型选择对应的修改方法
-                TokenStream tokenStream = switch (generationType) {
-                    case HTML -> modifierService.modifyHtmlCodeStream(appId, modifyRequest);
-                    case MULTI_FILE -> modifierService.modifyMultiFileCodeStream(appId, modifyRequest);
-                    case VUE_PROJECT -> modifierService.modifyVueProjectCodeStream(appId, modifyRequest);
-                };
+                // 调用修改方法
+                TokenStream tokenStream = modifierService.modifyVueProjectCodeStream(appId, modifyRequest);
                 
                 // 使用 CountDownLatch 等待流式生成完成
                 CountDownLatch latch = new CountDownLatch(1);
@@ -183,21 +179,7 @@ public class CodeModifierNode {
      * 检查现有项目目录来确定类型
      */
     private static CodeGenTypeEnum inferGenerationType(Long appId) {
-        String baseDir = System.getProperty("user.dir") + File.separator + "tmp" + File.separator + "code_output";
-        
-        // 按优先级检查各种类型的目录
-        if (new File(baseDir, "vue_project_" + appId).exists()) {
-            return CodeGenTypeEnum.VUE_PROJECT;
-        }
-        if (new File(baseDir, "multi_file_" + appId).exists()) {
-            return CodeGenTypeEnum.MULTI_FILE;
-        }
-        if (new File(baseDir, "html_" + appId).exists()) {
-            return CodeGenTypeEnum.HTML;
-        }
-        
-        // 默认返回 HTML 类型
-        return CodeGenTypeEnum.HTML;
+        return CodeGenTypeEnum.VUE_PROJECT;
     }
     
     /**

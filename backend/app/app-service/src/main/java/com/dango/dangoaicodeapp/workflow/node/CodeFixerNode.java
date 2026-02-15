@@ -105,12 +105,8 @@ public class CodeFixerNode {
                 AiCodeFixerServiceFactory fixerServiceFactory = SpringContextUtil.getBean(AiCodeFixerServiceFactory.class);
                 AiCodeFixerService fixerService = fixerServiceFactory.getFixerService(appId, generationType);
                 
-                // 根据代码生成类型选择对应的修复方法
-                TokenStream tokenStream = switch (generationType) {
-                    case HTML -> fixerService.fixHtmlCodeStream(appId, fixRequest);
-                    case MULTI_FILE -> fixerService.fixMultiFileCodeStream(appId, fixRequest);
-                    case VUE_PROJECT -> fixerService.fixVueProjectCodeStream(appId, fixRequest);
-                };
+                // 调用修复方法
+                TokenStream tokenStream = fixerService.fixVueProjectCodeStream(appId, fixRequest);
                 
                 // 使用 CountDownLatch 等待流式生成完成
                 CountDownLatch latch = new CountDownLatch(1);

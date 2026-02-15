@@ -23,7 +23,6 @@ class CodeFixerNodeTest {
     @Test
     @DisplayName("构建修复请求 - 包含所有信息")
     void testBuildFixRequestWithAllInfo() {
-        // 准备测试数据
         QualityResult qualityResult = QualityResult.builder()
                 .isValid(false)
                 .errors(Arrays.asList(
@@ -40,22 +39,20 @@ class CodeFixerNodeTest {
                 .appId(100L)
                 .originalPrompt("创建一个带有导航栏的首页")
                 .qualityResult(qualityResult)
-                .generationType(CodeGenTypeEnum.HTML)
+                .generationType(CodeGenTypeEnum.VUE_PROJECT)
                 .build();
 
-        // 执行测试
         String request = CodeFixerNode.buildFixRequest(context);
 
-        // 验证结果
         assertNotNull(request);
         assertTrue(request.contains("## 原始需求"));
         assertTrue(request.contains("创建一个带有导航栏的首页"));
-        assertTrue(request.contains("## 代码存在以下问题，请修复"));
+        assertTrue(request.contains("## 构建错误"));
         assertTrue(request.contains("缺少闭合标签 </div>"));
         assertTrue(request.contains("CSS 属性 'colr' 拼写错误"));
         assertTrue(request.contains("## 修复建议"));
         assertTrue(request.contains("添加 </div> 闭合标签"));
-        assertTrue(request.contains("## 修复指南（HTML 单文件模式）"));
+        assertTrue(request.contains("## 修复指南（Vue 工程模式"));
     }
 
     @Test
@@ -76,7 +73,7 @@ class CodeFixerNodeTest {
 
         assertNotNull(request);
         assertTrue(request.contains("## 原始需求"));
-        assertTrue(request.contains("## 代码存在以下问题，请修复"));
+        assertTrue(request.contains("## 构建错误"));
         assertTrue(request.contains("未定义变量 'userName'"));
         assertFalse(request.contains("## 修复建议"));
         assertTrue(request.contains("## 修复指南"));
@@ -99,8 +96,8 @@ class CodeFixerNodeTest {
 
         assertNotNull(request);
         assertTrue(request.contains("## 原始需求"));
-        assertTrue(request.contains("## 代码存在以下问题，请修复"));
-        assertTrue(request.contains("代码质量检查未通过，请检查并修复潜在问题"));
+        assertTrue(request.contains("## 构建错误"));
+        assertTrue(request.contains("构建未通过，请检查并修复编译错误"));
         assertTrue(request.contains("## 修复指南"));
     }
 
@@ -116,8 +113,8 @@ class CodeFixerNodeTest {
 
         assertNotNull(request);
         assertTrue(request.contains("## 原始需求"));
-        assertTrue(request.contains("## 代码存在以下问题，请修复"));
-        assertTrue(request.contains("代码质量检查未通过，请检查并修复潜在问题"));
+        assertTrue(request.contains("## 构建错误"));
+        assertTrue(request.contains("构建未通过，请检查并修复编译错误"));
     }
 
     @Test
@@ -137,7 +134,7 @@ class CodeFixerNodeTest {
 
         assertNotNull(request);
         assertFalse(request.contains("## 原始需求"));
-        assertTrue(request.contains("## 代码存在以下问题，请修复"));
+        assertTrue(request.contains("## 构建错误"));
         assertTrue(request.contains("HTML 结构不完整"));
     }
 
@@ -159,7 +156,7 @@ class CodeFixerNodeTest {
         String request = CodeFixerNode.buildFixRequest(context);
 
         assertNotNull(request);
-        assertTrue(request.contains("代码质量检查未通过，请检查并修复潜在问题"));
+        assertTrue(request.contains("构建未通过，请检查并修复编译错误"));
         assertTrue(request.contains("## 修复建议"));
         assertTrue(request.contains("建议添加响应式设计"));
     }
@@ -287,7 +284,7 @@ class CodeFixerNodeTest {
                 .appId(100L)
                 .originalPrompt("创建一个产品展示页面")
                 .qualityResult(qualityResult)
-                .generationType(CodeGenTypeEnum.HTML)
+                .generationType(CodeGenTypeEnum.VUE_PROJECT)
                 .build();
 
         String request = CodeFixerNode.buildFixRequest(context);
@@ -301,56 +298,6 @@ class CodeFixerNodeTest {
         assertTrue(request.contains("1. 在文件开头添加 <!DOCTYPE html>"));
         assertTrue(request.contains("2. 为所有 img 标签添加 alt 属性"));
         assertTrue(request.contains("3. 删除未使用的 CSS 类或添加对应的 HTML 元素"));
-    }
-
-    // ========== 不同代码生成类型的测试 ==========
-
-    @Test
-    @DisplayName("构建修复请求 - HTML 单文件模式")
-    void testBuildFixRequestForHtmlType() {
-        QualityResult qualityResult = QualityResult.builder()
-                .isValid(false)
-                .errors(List.of("HTML 结构不完整"))
-                .build();
-
-        WorkflowContext context = WorkflowContext.builder()
-                .appId(100L)
-                .originalPrompt("创建一个登录页面")
-                .qualityResult(qualityResult)
-                .generationType(CodeGenTypeEnum.HTML)
-                .build();
-
-        String request = CodeFixerNode.buildFixRequest(context);
-
-        assertNotNull(request);
-        assertTrue(request.contains("## 修复指南（HTML 单文件模式）"));
-        assertTrue(request.contains("单个 HTML 文件"));
-        assertTrue(request.contains("内联 CSS 和 JS"));
-        assertTrue(request.contains("最多输出 1 个 HTML 代码块"));
-    }
-
-    @Test
-    @DisplayName("构建修复请求 - 多文件模式")
-    void testBuildFixRequestForMultiFileType() {
-        QualityResult qualityResult = QualityResult.builder()
-                .isValid(false)
-                .errors(List.of("CSS 文件引用错误"))
-                .build();
-
-        WorkflowContext context = WorkflowContext.builder()
-                .appId(100L)
-                .originalPrompt("创建一个博客页面")
-                .qualityResult(qualityResult)
-                .generationType(CodeGenTypeEnum.MULTI_FILE)
-                .build();
-
-        String request = CodeFixerNode.buildFixRequest(context);
-
-        assertNotNull(request);
-        assertTrue(request.contains("## 修复指南（多文件模式）"));
-        assertTrue(request.contains("确定问题所在的文件（HTML/CSS/JS）"));
-        assertTrue(request.contains("必须输出 3 个代码块"));
-        assertTrue(request.contains("HTML + CSS + JavaScript"));
     }
 
     @Test
@@ -371,8 +318,7 @@ class CodeFixerNodeTest {
         String request = CodeFixerNode.buildFixRequest(context);
 
         assertNotNull(request);
-        assertTrue(request.contains("## 修复指南（Vue 工程模式）"));
-        assertTrue(request.contains("【目录读取工具】"));
+        assertTrue(request.contains("## 修复指南（Vue 工程模式"));
         assertTrue(request.contains("【文件读取工具】"));
         assertTrue(request.contains("【文件修改工具】"));
         assertTrue(request.contains("【文件写入工具】"));
@@ -380,46 +326,23 @@ class CodeFixerNodeTest {
     }
 
     @Test
-    @DisplayName("获取输出格式指南 - HTML 类型")
-    void testGetOutputFormatGuideForHtml() {
-        String guide = CodeFixerNode.getOutputFormatGuide(CodeGenTypeEnum.HTML);
-
-        assertNotNull(guide);
-        assertTrue(guide.contains("HTML 单文件模式"));
-        assertTrue(guide.contains("最多输出 1 个 HTML 代码块"));
-    }
-
-    @Test
-    @DisplayName("获取输出格式指南 - Multi-File 类型")
-    void testGetOutputFormatGuideForMultiFile() {
-        String guide = CodeFixerNode.getOutputFormatGuide(CodeGenTypeEnum.MULTI_FILE);
-
-        assertNotNull(guide);
-        assertTrue(guide.contains("多文件模式"));
-        assertTrue(guide.contains("必须输出 3 个代码块"));
-    }
-
-    @Test
-    @DisplayName("获取输出格式指南 - Vue Project 类型")
-    void testGetOutputFormatGuideForVueProject() {
+    @DisplayName("获取输出格式指南 - 统一返回 Vue 工程模式指南")
+    void testGetOutputFormatGuideAlwaysReturnsVueGuide() {
         String guide = CodeFixerNode.getOutputFormatGuide(CodeGenTypeEnum.VUE_PROJECT);
-
         assertNotNull(guide);
         assertTrue(guide.contains("Vue 工程模式"));
         assertTrue(guide.contains("必须使用工具进行修复"));
+
+        // 即使传入其他类型，也返回 Vue 工程模式指南
+        String guideForHtml = CodeFixerNode.getOutputFormatGuide(CodeGenTypeEnum.HTML);
+        assertEquals(guide, guideForHtml);
+
+        String guideForNull = CodeFixerNode.getOutputFormatGuide(null);
+        assertEquals(guide, guideForNull);
     }
 
     @Test
-    @DisplayName("获取输出格式指南 - null 类型默认为 HTML")
-    void testGetOutputFormatGuideForNullType() {
-        String guide = CodeFixerNode.getOutputFormatGuide(null);
-
-        assertNotNull(guide);
-        assertTrue(guide.contains("HTML 单文件模式"));
-    }
-
-    @Test
-    @DisplayName("构建修复请求 - 无代码生成类型默认为 HTML")
+    @DisplayName("构建修复请求 - 无代码生成类型默认使用 Vue 指南")
     void testBuildFixRequestWithoutGenerationType() {
         QualityResult qualityResult = QualityResult.builder()
                 .isValid(false)
@@ -430,13 +353,11 @@ class CodeFixerNodeTest {
                 .appId(100L)
                 .originalPrompt("创建一个页面")
                 .qualityResult(qualityResult)
-                // 不设置 generationType
                 .build();
 
         String request = CodeFixerNode.buildFixRequest(context);
 
         assertNotNull(request);
-        // 默认应该使用 HTML 模式的指南
-        assertTrue(request.contains("## 修复指南（HTML 单文件模式）"));
+        assertTrue(request.contains("## 修复指南（Vue 工程模式"));
     }
 }

@@ -40,7 +40,7 @@ public class CodeGeneratorNode {
 
             // 构造用户消息（包含原始提示词和可能的错误修复信息）
             String userMessage = buildUserMessage(context);
-            CodeGenTypeEnum generationType = context.getGenerationType();
+            CodeGenTypeEnum generationType = CodeGenTypeEnum.VUE_PROJECT;
             Long appId = context.getAppId();
 
             // 判断是否是修复模式

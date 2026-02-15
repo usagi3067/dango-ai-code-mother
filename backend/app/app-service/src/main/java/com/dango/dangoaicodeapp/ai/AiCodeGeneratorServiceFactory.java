@@ -6,32 +6,24 @@ import com.dango.aicodegenerate.service.AiCodeGeneratorService;
 import com.dango.aicodegenerate.tools.ToolManager;
 import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.service.ChatHistoryService;
-import com.dango.dangoaicodecommon.exception.BusinessException;
-import com.dango.dangoaicodecommon.exception.ErrorCode;
+
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-import dev.langchain4j.model.chat.ChatModel;
+
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 
-@Configuration
+@Component
 @Slf4j
 public class AiCodeGeneratorServiceFactory {
-
-    @Resource
-    private ChatModel chatModel;
-
-    @Resource
-    private StreamingChatModel odinaryStreamingChatModel;
 
     @Resource
     private StreamingChatModel reasoningStreamingChatModel;
@@ -64,13 +56,6 @@ public class AiCodeGeneratorServiceFactory {
             .build();
 
     /**
-     * 根据 appId 获取服务（带缓存）这个方法是为了兼容历史逻辑
-     */
-    public AiCodeGeneratorService getAiCodeGeneratorService(long appId) {
-        return getAiCodeGeneratorService(appId, CodeGenTypeEnum.HTML);
-    }
-
-    /**
      * 根据 appId 和代码生成类型获取服务（带缓存）
      */
     public AiCodeGeneratorService getAiCodeGeneratorService(long appId, CodeGenTypeEnum codeGenType) {
@@ -93,38 +78,18 @@ public class AiCodeGeneratorServiceFactory {
                 .build();
         // 从数据库加载历史对话到记忆中
         chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
-        return switch (codeGenType) {
-            case VUE_PROJECT -> AiServices.builder(AiCodeGeneratorService.class)
-                    .streamingChatModel(reasoningStreamingChatModel)
-                    .chatMemory(chatMemory)
-                    .chatMemoryProvider(memoryId -> chatMemory)
-                    .tools(toolManager.getAllTools())
-                    .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨
-                    .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
-                            toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
-                    ))
-                    .build();
-            // HTML 和多文件生成使用默认模型
-            case HTML, MULTI_FILE -> AiServices.builder(AiCodeGeneratorService.class)
-                    .chatModel(chatModel)
-                    .streamingChatModel(odinaryStreamingChatModel)
-                    .chatMemory(chatMemory)
-                    .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨
-                    .build();
-            default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
-                    "不支持的代码生成类型: " + codeGenType.getValue());
-
-        };
+        return AiServices.builder(AiCodeGeneratorService.class)
+                .streamingChatModel(reasoningStreamingChatModel)
+                .chatMemory(chatMemory)
+                .chatMemoryProvider(memoryId -> chatMemory)
+                .tools(toolManager.getAllTools())
+                .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨
+                .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
+                        toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
+                ))
+                .build();
     }
 
-
-    /**
-     * 默认提供一个 Bean
-     */
-    @Bean
-    public AiCodeGeneratorService aiCodeGeneratorService() {
-        return getAiCodeGeneratorService(0L);
-    }
 
     /**
      * 构建缓存键

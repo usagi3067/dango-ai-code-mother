@@ -1,6 +1,5 @@
 package com.dango.dangoaicodeapp.workflow.node;
 
-import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.model.enums.OperationModeEnum;
 import com.dango.dangoaicodeapp.workflow.state.WorkflowContext;
 import lombok.extern.slf4j.Slf4j;
@@ -100,14 +99,10 @@ public class ModeRouterNode {
         }
 
         String baseDir = System.getProperty("user.dir") + "/tmp/code_output";
-        
-        // 检查所有可能的代码类型目录
-        for (CodeGenTypeEnum codeGenType : CodeGenTypeEnum.values()) {
-            Path codePath = Path.of(baseDir, codeGenType.getValue() + "_" + appId);
-            if (Files.exists(codePath)) {
-                log.debug("找到现有代码目录: {}", codePath);
-                return true;
-            }
+        Path codePath = Path.of(baseDir, "vue_project_" + appId);
+        if (Files.exists(codePath)) {
+            log.debug("找到现有代码目录: {}", codePath);
+            return true;
         }
 
         return false;

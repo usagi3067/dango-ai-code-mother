@@ -13,26 +13,6 @@ import dev.langchain4j.service.UserMessage;
 public interface AiCodeModifierService {
 
     /**
-     * 修改 HTML 单文件代码（流式）
-     *
-     * @param appId 应用 ID（用于记忆管理）
-     * @param modifyRequest 修改请求（包含项目结构、元素信息、修改要求）
-     * @return 修改过程的流式响应
-     */
-    @SystemMessage(fromResource = "prompt/codegen-modify-html-system-prompt.txt")
-    TokenStream modifyHtmlCodeStream(@MemoryId long appId, @UserMessage String modifyRequest);
-
-    /**
-     * 修改多文件项目代码（流式）
-     *
-     * @param appId 应用 ID（用于记忆管理）
-     * @param modifyRequest 修改请求（包含项目结构、元素信息、修改要求）
-     * @return 修改过程的流式响应
-     */
-    @SystemMessage(fromResource = "prompt/codegen-modify-multi-file-system-prompt.txt")
-    TokenStream modifyMultiFileCodeStream(@MemoryId long appId, @UserMessage String modifyRequest);
-
-    /**
      * 修改 Vue 项目代码（流式）
      *
      * @param appId 应用 ID（用于记忆管理）

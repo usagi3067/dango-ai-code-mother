@@ -45,7 +45,7 @@ import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
  *                       END
  *
  * 创建模式子图：
- * image_plan → [并发分支] → image_aggregator → prompt_enhancer → router → code_generator
+ * image_plan → [并发分支] → image_aggregator → prompt_enhancer → code_generator
  *
  * 修改模式子图（支持数据库操作）：
  * code_reader → modification_planner → [条件边] → database_operator → code_modifier
@@ -77,7 +77,6 @@ public class CodeGenWorkflow {
     private static final String NODE_LOGO_COLLECTOR = "logo_collector";
     private static final String NODE_IMAGE_AGGREGATOR = "image_aggregator";
     private static final String NODE_PROMPT_ENHANCER = "prompt_enhancer";
-    private static final String NODE_ROUTER = "router";
     private static final String NODE_CODE_GENERATOR = "code_generator";
     
     // 修改模式子图节点
@@ -176,7 +175,6 @@ public class CodeGenWorkflow {
      * - 并发图片收集节点（内容图片、插画、架构图、Logo）
      * - 图片聚合节点
      * - 提示词增强节点
-     * - 路由节点
      * - 代码生成节点
      * 
      * @return 创建模式子图
@@ -197,7 +195,6 @@ public class CodeGenWorkflow {
                 
                 // 后续处理节点
                 .addNode(NODE_PROMPT_ENHANCER, PromptEnhancerNode.create())
-                .addNode(NODE_ROUTER, RouterNode.create())
                 .addNode(NODE_CODE_GENERATOR, CodeGeneratorNode.create())
                 
                 // 入口边
@@ -217,8 +214,7 @@ public class CodeGenWorkflow {
                 
                 // 串行流程
                 .addEdge(NODE_IMAGE_AGGREGATOR, NODE_PROMPT_ENHANCER)
-                .addEdge(NODE_PROMPT_ENHANCER, NODE_ROUTER)
-                .addEdge(NODE_ROUTER, NODE_CODE_GENERATOR)
+                .addEdge(NODE_PROMPT_ENHANCER, NODE_CODE_GENERATOR)
                 
                 // 出口
                 .addEdge(NODE_CODE_GENERATOR, END);

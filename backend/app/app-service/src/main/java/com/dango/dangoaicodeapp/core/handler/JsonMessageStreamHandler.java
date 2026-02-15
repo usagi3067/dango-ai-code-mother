@@ -9,7 +9,6 @@ import com.dango.aicodegenerate.tools.BaseTool;
 import com.dango.aicodegenerate.tools.ToolManager;
 import com.dango.dangoaicodeapp.core.builder.VueProjectBuilder;
 import com.dango.dangoaicodeapp.model.constant.AppConstant;
-import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.service.ChatHistoryService;
 import com.dango.dangoaicodeuser.model.entity.User;
 import jakarta.annotation.Resource;
@@ -25,7 +24,7 @@ import java.util.Set;
 
 /**
  * JSON 消息流处理器
- * 统一处理所有代码生成类型（HTML、MULTI_FILE、VUE_PROJECT）的流式响应
+ * 统一处理 VUE_PROJECT 类型的流式响应
  * 支持 AI_RESPONSE、TOOL_REQUEST、TOOL_EXECUTED 三种消息类型
  */
 @Slf4j
@@ -40,19 +39,17 @@ public class JsonMessageStreamHandler {
 
     /**
      * 处理 JSON 格式的流式消息
-     * 统一处理所有代码生成类型
      * 注意：AppController 会将输出包装为 {d: "..."} 格式，这里不需要再包装
      *
      * @param originFlux         原始流
      * @param chatHistoryService 聊天历史服务
      * @param appId              应用ID
      * @param loginUser          登录用户
-     * @param codeGenType        代码生成类型
      * @return 处理后的流
      */
     public Flux<String> handle(Flux<String> originFlux,
                                ChatHistoryService chatHistoryService,
-                               long appId, User loginUser, CodeGenTypeEnum codeGenType) {
+                               long appId, User loginUser) {
         // 收集数据用于生成后端记忆格式
         StringBuilder chatHistoryStringBuilder = new StringBuilder();
         // 用于跟踪已经见过的工具ID，判断是否是第一次调用
@@ -73,12 +70,10 @@ public class JsonMessageStreamHandler {
                     String aiResponse = chatHistoryStringBuilder.toString();
                     chatHistoryService.saveAiMessage(appId, loginUser.getId(), aiResponse);
 
-                    // 只有 VUE_PROJECT 类型才需要同步构建 Vue 项目
+                    // 同步构建 Vue 项目
                     // 使用同步构建确保用户在 AI 回复完成时能立即预览到最新的构建结果
-                    if (codeGenType == CodeGenTypeEnum.VUE_PROJECT) {
-                        String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
-                        vueProjectBuilder.buildProject(projectPath);
-                    }
+                    String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
+                    vueProjectBuilder.buildProject(projectPath);
                 })
                 .doOnError(error -> {
                     // 如果AI回复失败，也要记录错误消息

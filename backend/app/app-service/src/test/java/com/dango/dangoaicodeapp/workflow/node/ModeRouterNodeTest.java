@@ -94,44 +94,10 @@ class ModeRouterNodeTest {
     }
 
     @Test
-    @DisplayName("hasExistingCode 应正确检测 HTML 代码目录")
-    void testHasExistingCodeForHtml() throws IOException {
-        // 准备：创建 HTML 代码目录
-        Long appId = 123L;
-        Path codeOutputDir = tempDir.resolve("tmp/code_output");
-        Files.createDirectories(codeOutputDir);
-        Path htmlDir = codeOutputDir.resolve("html_" + appId);
-        Files.createDirectories(htmlDir);
-
-        // 执行：检查是否有现有代码
-        boolean hasCode = ModeRouterNode.hasExistingCode(appId);
-
-        // 验证：应该检测到代码
-        assertTrue(hasCode);
-    }
-
-    @Test
-    @DisplayName("hasExistingCode 应正确检测多文件代码目录")
-    void testHasExistingCodeForMultiFile() throws IOException {
-        // 准备：创建多文件代码目录
-        Long appId = 456L;
-        Path codeOutputDir = tempDir.resolve("tmp/code_output");
-        Files.createDirectories(codeOutputDir);
-        Path multiFileDir = codeOutputDir.resolve("multi_file_" + appId);
-        Files.createDirectories(multiFileDir);
-
-        // 执行：检查是否有现有代码
-        boolean hasCode = ModeRouterNode.hasExistingCode(appId);
-
-        // 验证：应该检测到代码
-        assertTrue(hasCode);
-    }
-
-    @Test
     @DisplayName("hasExistingCode 应正确检测 Vue 项目代码目录")
     void testHasExistingCodeForVueProject() throws IOException {
         // 准备：创建 Vue 项目代码目录
-        Long appId = 789L;
+        Long appId = 123L;
         Path codeOutputDir = tempDir.resolve("tmp/code_output");
         Files.createDirectories(codeOutputDir);
         Path vueDir = codeOutputDir.resolve("vue_project_" + appId);
@@ -142,6 +108,23 @@ class ModeRouterNodeTest {
 
         // 验证：应该检测到代码
         assertTrue(hasCode);
+    }
+
+    @Test
+    @DisplayName("hasExistingCode 对于非 vue_project 目录应返回 false")
+    void testHasExistingCodeIgnoresNonVueProjectDirs() throws IOException {
+        // 准备：创建 HTML 代码目录（旧类型，不再检测）
+        Long appId = 456L;
+        Path codeOutputDir = tempDir.resolve("tmp/code_output");
+        Files.createDirectories(codeOutputDir);
+        Path htmlDir = codeOutputDir.resolve("html_" + appId);
+        Files.createDirectories(htmlDir);
+
+        // 执行：检查是否有现有代码
+        boolean hasCode = ModeRouterNode.hasExistingCode(appId);
+
+        // 验证：不应该检测到代码（只检查 vue_project_ 目录）
+        assertFalse(hasCode);
     }
 
     @Test

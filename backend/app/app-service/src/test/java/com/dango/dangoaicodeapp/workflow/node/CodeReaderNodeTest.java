@@ -40,16 +40,16 @@ class CodeReaderNodeTest {
     }
 
     @Test
-    @DisplayName("读取 HTML 单文件项目结构")
-    void testReadHtmlSingleFileProjectStructure() throws IOException {
+    @DisplayName("读取 Vue 项目结构")
+    void testReadVueProjectStructure() throws IOException {
         Long appId = 100L;
         Path codeOutputDir = tempDir.resolve("tmp/code_output");
         Files.createDirectories(codeOutputDir);
-        Path htmlDir = codeOutputDir.resolve("html_" + appId);
-        Files.createDirectories(htmlDir);
-        Files.writeString(htmlDir.resolve("index.html"), "<!DOCTYPE html>");
+        Path vueDir = codeOutputDir.resolve("vue_project_" + appId);
+        Files.createDirectories(vueDir);
+        Files.writeString(vueDir.resolve("index.html"), "<!DOCTYPE html>");
 
-        String structure = CodeReaderNode.readProjectStructure(appId, CodeGenTypeEnum.HTML);
+        String structure = CodeReaderNode.readProjectStructure(appId, CodeGenTypeEnum.VUE_PROJECT);
 
         assertNotNull(structure);
         assertTrue(structure.contains("index.html"));
@@ -57,40 +57,42 @@ class CodeReaderNodeTest {
     }
 
     @Test
-    @DisplayName("读取多文件项目结构")
-    void testReadMultiFileProjectStructure() throws IOException {
+    @DisplayName("读取 Vue 项目多文件结构")
+    void testReadVueProjectMultiFileStructure() throws IOException {
         Long appId = 200L;
         Path codeOutputDir = tempDir.resolve("tmp/code_output");
         Files.createDirectories(codeOutputDir);
-        Path multiFileDir = codeOutputDir.resolve("multi_file_" + appId);
-        Files.createDirectories(multiFileDir);
-        
-        Files.writeString(multiFileDir.resolve("index.html"), "<!DOCTYPE html>");
-        Files.writeString(multiFileDir.resolve("style.css"), "body {}");
-        Files.writeString(multiFileDir.resolve("script.js"), "console.log('hello');");
+        Path vueDir = codeOutputDir.resolve("vue_project_" + appId);
+        Files.createDirectories(vueDir);
 
-        String structure = CodeReaderNode.readProjectStructure(appId, CodeGenTypeEnum.MULTI_FILE);
+        Files.writeString(vueDir.resolve("index.html"), "<!DOCTYPE html>");
+        Files.writeString(vueDir.resolve("package.json"), "{}");
+        Path srcDir = vueDir.resolve("src");
+        Files.createDirectories(srcDir);
+        Files.writeString(srcDir.resolve("App.vue"), "<template></template>");
+
+        String structure = CodeReaderNode.readProjectStructure(appId, CodeGenTypeEnum.VUE_PROJECT);
 
         assertNotNull(structure);
         assertTrue(structure.contains("index.html"));
-        assertTrue(structure.contains("style.css"));
-        assertTrue(structure.contains("script.js"));
+        assertTrue(structure.contains("package.json"));
+        assertTrue(structure.contains("App.vue"));
     }
 
     @Test
     @DisplayName("文件不存在时返回 null")
     void testReadProjectStructureWhenNotExists() {
         Long appId = 999L;
-        String structure = CodeReaderNode.readProjectStructure(appId, CodeGenTypeEnum.HTML);
+        String structure = CodeReaderNode.readProjectStructure(appId, CodeGenTypeEnum.VUE_PROJECT);
         assertNull(structure);
     }
 
     @Test
     @DisplayName("无效 appId 时返回 null")
     void testReadProjectStructureWithInvalidAppId() {
-        assertNull(CodeReaderNode.readProjectStructure(null, CodeGenTypeEnum.HTML));
-        assertNull(CodeReaderNode.readProjectStructure(0L, CodeGenTypeEnum.HTML));
-        assertNull(CodeReaderNode.readProjectStructure(-1L, CodeGenTypeEnum.HTML));
+        assertNull(CodeReaderNode.readProjectStructure(null, CodeGenTypeEnum.VUE_PROJECT));
+        assertNull(CodeReaderNode.readProjectStructure(0L, CodeGenTypeEnum.VUE_PROJECT));
+        assertNull(CodeReaderNode.readProjectStructure(-1L, CodeGenTypeEnum.VUE_PROJECT));
     }
 
     @Test
@@ -149,19 +151,19 @@ class CodeReaderNodeTest {
         Long appId = 500L;
         Path codeOutputDir = tempDir.resolve("tmp/code_output");
         Files.createDirectories(codeOutputDir);
-        Path htmlDir = codeOutputDir.resolve("html_" + appId);
-        Files.createDirectories(htmlDir);
+        Path vueDir = codeOutputDir.resolve("vue_project_" + appId);
+        Files.createDirectories(vueDir);
 
-        Path projectPath = CodeReaderNode.getProjectPath(appId, CodeGenTypeEnum.HTML);
+        Path projectPath = CodeReaderNode.getProjectPath(appId, CodeGenTypeEnum.VUE_PROJECT);
 
         assertNotNull(projectPath);
-        assertTrue(projectPath.toString().contains("html_" + appId));
+        assertTrue(projectPath.toString().contains("vue_project_" + appId));
     }
 
     @Test
     @DisplayName("getProjectPath 对于不存在的项目应返回 null")
     void testGetProjectPathNotExists() {
-        Path projectPath = CodeReaderNode.getProjectPath(999L, CodeGenTypeEnum.HTML);
+        Path projectPath = CodeReaderNode.getProjectPath(999L, CodeGenTypeEnum.VUE_PROJECT);
         assertNull(projectPath);
     }
 }

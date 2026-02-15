@@ -20,34 +20,34 @@
 
 | Task | 描述 | 状态 | 设计文档对应 |
 |------|------|------|------------|
-| 1 | 创建 Vue 项目模板文件 + 验证可构建 | pending | 改动 2 - 模板内容 |
-| 2 | 创建 VueProjectScaffoldService | pending | 改动 2 - 新增服务 |
-| 3 | CodeGeneratorNode 调用脚手架 | pending | 改动 2 - 执行时机 |
+| 1 | 创建 Vue 项目模板文件 + 验证可构建 | ✅ done | 改动 2 - 模板内容 |
+| 2 | 创建 VueProjectScaffoldService | ✅ done | 改动 2 - 新增服务 |
+| 3 | CodeGeneratorNode 调用脚手架 | ✅ done | 改动 2 - 执行时机 |
 
 ### Phase B: 构建驱动修复循环 (Task 4-6)
 对应设计文档「改动 3：构建驱动修复循环」
 
 | Task | 描述 | 状态 | 设计文档对应 |
 |------|------|------|------------|
-| 4 | VueProjectBuilder 增强构建错误捕获 | pending | 改动 3 - 复用 VueProjectBuilder |
-| 5 | 创建 BuildCheckNode | pending | 改动 3 - 新增节点 |
-| 6 | CodeGenWorkflow 用构建检查替换质量检查子图 | pending | 改动 3 - 改造后的质检子图 |
+| 4 | VueProjectBuilder 增强构建错误捕获 | ✅ done | 改动 3 - 复用 VueProjectBuilder |
+| 5 | 创建 BuildCheckNode | ✅ done | 改动 3 - 新增节点 |
+| 6 | CodeGenWorkflow 用构建检查替换质量检查子图 | ✅ done | 改动 3 - 改造后的质检子图 |
 
 ### Phase C: Prompt 优化 + 适配 (Task 7-10)
 对应设计文档「改动 4：Prompt 优化」
 
 | Task | 描述 | 状态 | 设计文档对应 |
 |------|------|------|------------|
-| 7 | 更新 Vue 项目生成 Prompt | pending | 改动 4 - codegen-vue-project |
-| 8 | 更新 Vue 项目修复 Prompt | pending | 改动 4 - codegen-fix-vue-project |
-| 9 | 更新 Vue 项目修改 Prompt | pending | 改动 4 - codegen-modify-vue-project |
-| 10 | CodeFixerNode 适配构建错误 | pending | 改动 3 - 修改节点 CodeFixerNode |
+| 7 | 更新 Vue 项目生成 Prompt | ✅ done | 改动 4 - codegen-vue-project |
+| 8 | 更新 Vue 项目修复 Prompt | ✅ done | 改动 4 - codegen-fix-vue-project |
+| 9 | 更新 Vue 项目修改 Prompt | ✅ done | 改动 4 - codegen-modify-vue-project |
+| 10 | CodeFixerNode 适配构建错误 | ✅ done | 改动 3 - 修改节点 CodeFixerNode |
 
 ### Phase D: 收尾 (Task 11)
 
 | Task | 描述 | 状态 |
 |------|------|------|
-| 11 | 最终验证 + 提交 | pending |
+| 11 | 最终验证 + 提交 | ✅ done |
 
 ## 依赖关系
 - Task 2 → Task 1（模板文件必须先存在）

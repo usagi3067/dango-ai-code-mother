@@ -5,8 +5,7 @@ import com.dango.aicodegenerate.service.AiCodeFixerService;
 import com.dango.aicodegenerate.tools.*;
 import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.service.ChatHistoryService;
-import com.dango.dangoaicodecommon.exception.BusinessException;
-import com.dango.dangoaicodecommon.exception.ErrorCode;
+
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
@@ -28,9 +27,6 @@ import java.time.Duration;
 @Component
 @Slf4j
 public class AiCodeFixerServiceFactory {
-
-    @Resource
-    private StreamingChatModel odinaryStreamingChatModel;
 
     @Resource
     private StreamingChatModel reasoningStreamingChatModel;
@@ -107,36 +103,23 @@ public class AiCodeFixerServiceFactory {
         chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
 
         // 根据代码生成类型选择不同的模型和工具配置
-        return switch (codeGenType) {
-            case VUE_PROJECT -> AiServices.builder(AiCodeFixerService.class)
-                    .streamingChatModel(reasoningStreamingChatModel)
-                    .chatMemory(chatMemory)
-                    .chatMemoryProvider(memoryId -> chatMemory)
-                    .tools(
-                            // 文件操作工具（修复时需要读取和修改文件）
-                            fileDirReadTool,
-                            fileReadTool,
-                            fileModifyTool,
-                            fileWriteTool,
-                            fileDeleteTool
-                    )
-                    .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨
-                    .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
-                            toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
-                    ))
-                    .build();
-
-            case HTML, MULTI_FILE -> AiServices.builder(AiCodeFixerService.class)
-                    .streamingChatModel(odinaryStreamingChatModel)
-                    .chatMemory(chatMemory)
-                    .chatMemoryProvider(memoryId -> chatMemory)
-                    .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨
-                    // HTML 和多文件模式不需要工具，直接输出完整代码
-                    .build();
-
-            default -> throw new BusinessException(ErrorCode.SYSTEM_ERROR,
-                    "不支持的代码生成类型: " + codeGenType.getValue());
-        };
+        return AiServices.builder(AiCodeFixerService.class)
+                .streamingChatModel(reasoningStreamingChatModel)
+                .chatMemory(chatMemory)
+                .chatMemoryProvider(memoryId -> chatMemory)
+                .tools(
+                        // 文件操作工具（修复时需要读取和修改文件）
+                        fileDirReadTool,
+                        fileReadTool,
+                        fileModifyTool,
+                        fileWriteTool,
+                        fileDeleteTool
+                )
+                .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨
+                .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
+                        toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
+                ))
+                .build();
     }
 
     /**

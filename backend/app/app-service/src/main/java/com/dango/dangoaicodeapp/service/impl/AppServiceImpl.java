@@ -7,8 +7,7 @@ import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 
 import com.dango.aicodegenerate.model.AppNameAndTagResult;
-import com.dango.aicodegenerate.service.AiCodeGenTypeRoutingService;
-import com.dango.dangoaicodeapp.core.AiCodeGeneratorFacade;
+
 import com.dango.dangoaicodeapp.core.AppInfoGeneratorFacade;
 import com.dango.dangoaicodeapp.core.builder.VueProjectBuilder;
 import com.dango.dangoaicodeapp.core.handler.StreamHandlerExecutor;
@@ -65,15 +64,11 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     @DubboReference
     private InnerScreenshotService innerScreenshotService;
     @Resource
-    private AiCodeGeneratorFacade aiCodeGeneratorFacade;
-    @Resource
     private ChatHistoryService chatHistoryService;
     @Resource
     private StreamHandlerExecutor streamHandlerExecutor;
     @Resource
     private VueProjectBuilder vueProjectBuilder;
-    @Resource
-    private AiCodeGenTypeRoutingService aiCodeGenTypeRoutingService;
     @Resource
     private AppInfoGeneratorFacade appInfoGeneratorFacade;
 
@@ -216,7 +211,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         Flux<String> codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(
                 message, appId, elementInfo, databaseEnabled, databaseSchema, monitorContext);
         // 9. 收集 AI 响应内容并在完成后记录到对话历史
-        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser, codeGenTypeEnum)
+        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser)
                 .doFinally(signalType -> {
                     // 流结束时清理（无论成功/失败/取消）
                     MonitorContextHolder.clearContext();
@@ -250,19 +245,15 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         if (!sourceDir.exists() || !sourceDir.isDirectory()) {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "应用代码不存在，请先生成代码");
         }
-        // 7. Vue项目特殊处理： 执行构建
-        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenType);
-        if (codeGenTypeEnum == CodeGenTypeEnum.VUE_PROJECT) {
-            // Vue 项目需要构建
-            boolean buildSuccess = vueProjectBuilder.buildProject(sourceDirPath);
-            ThrowUtils.throwIf(!buildSuccess, ErrorCode.SYSTEM_ERROR, "Vue 项目构建失败，请检查代码和依赖");
-            // 检查 dist 目录是否存在
-            File distDir = new File(sourceDirPath, "dist");
-            ThrowUtils.throwIf(!distDir.exists(), ErrorCode.SYSTEM_ERROR, "Vue 项目构建完成但未生成 dist 目录");
-            // 将 dist 目录作为部署源
-            sourceDir = distDir;
-            log.info("Vue 项目构建成功，将部署 dist 目录: {}", distDir.getAbsolutePath());
-        }
+        // 7. 执行 Vue 项目构建
+        boolean buildSuccess = vueProjectBuilder.buildProject(sourceDirPath);
+        ThrowUtils.throwIf(!buildSuccess, ErrorCode.SYSTEM_ERROR, "Vue 项目构建失败，请检查代码和依赖");
+        // 检查 dist 目录是否存在
+        File distDir = new File(sourceDirPath, "dist");
+        ThrowUtils.throwIf(!distDir.exists(), ErrorCode.SYSTEM_ERROR, "Vue 项目构建完成但未生成 dist 目录");
+        // 将 dist 目录作为部署源
+        sourceDir = distDir;
+        log.info("Vue 项目构建成功，将部署 dist 目录: {}", distDir.getAbsolutePath());
         // 8. 复制文件到部署目录
         String deployDirPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
         try {
@@ -318,13 +309,12 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         AppNameAndTagResult appInfo = appInfoGeneratorFacade.generateAppInfo(initPrompt);
         app.setAppName(appInfo.getAppName());
         app.setTag(appInfo.getTag());
-        // 使用 AI 智能选择代码生成类型
-        CodeGenTypeEnum selectedCodeGenType = aiCodeGenTypeRoutingService.routeCodeGenType(initPrompt);
-        app.setCodeGenType(selectedCodeGenType.getValue());
+        // 统一使用 VUE_PROJECT 类型
+        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
         // 插入数据库
         boolean result = this.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
-        log.info("应用创建成功，ID: {}, 类型: {}", app.getId(), selectedCodeGenType.getValue());
+        log.info("应用创建成功，ID: {}, 类型: {}", app.getId(), CodeGenTypeEnum.VUE_PROJECT.getValue());
         return app.getId();
     }
 
@@ -342,7 +332,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             app.setUserId(loginUser.getId());
             app.setAppName(appInfo.getAppName());
             app.setTag(appInfo.getTag());
-            app.setCodeGenType(CodeGenTypeEnum.HTML.getValue());
+            app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
             // 使用文件名作为初始提示词（便于记录来源）
             app.setInitPrompt("上传文件：" + filename);
 
