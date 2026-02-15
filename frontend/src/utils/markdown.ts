@@ -59,7 +59,11 @@ renderer.code = ({ text, lang }: { text: string; lang?: string }) => {
 
 // 自定义行内代码渲染
 renderer.codespan = ({ text }: { text: string }) => {
-  return `<code class="hljs-inline">${text}</code>`
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+  return `<code class="hljs-inline">${escaped}</code>`
 }
 
 // 配置 marked

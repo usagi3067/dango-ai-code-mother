@@ -167,11 +167,15 @@
                       这里用于渲染 Markdown 转换后的 HTML
                     -->
                     <div class="markdown-content" v-html="renderMarkdown(msg.content)"></div>
-                    <!-- 
+                    <!--
                       打字光标效果
                       当消息正在加载时显示闪烁的光标
                     -->
                     <span v-if="msg.loading" class="typing-cursor">|</span>
+                    <!-- 思考中指示器 -->
+                    <span v-if="isThinking" class="thinking-indicator">
+                      {{ thinkingTime }}·thinking
+                    </span>
                   </div>
                 </div>
               </template>
@@ -476,6 +480,7 @@ import '@/styles/markdown.css'
  */
 import { VisualEditor, type ElementInfo } from '@/utils/visualEditor'
 
+
 // ==================== 路由相关 ====================
 
 /**
@@ -552,6 +557,57 @@ const inputText = ref('')
  * - 预览区显示状态
  */
 const isGenerating = ref(false)
+
+/**
+ * 思考中状态
+ * 超过 5 秒没有响应时显示
+ */
+const isThinking = ref(false)
+const thinkingStartTime = ref(0)
+const thinkingTime = ref('0s')
+let thinkingTimer: ReturnType<typeof setInterval> | null = null
+const THINKING_TIMEOUT_MS = 5000
+
+// 格式化思考时间
+const formatThinkingTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60)
+  const secs = seconds % 60
+  if (mins > 0) return `${mins}m ${secs}s`
+  return `${secs}s`
+}
+
+// 启动思考计时器
+const startThinkingTimer = () => {
+  thinkingStartTime.value = Date.now()
+  isThinking.value = false
+
+  if (thinkingTimer) clearInterval(thinkingTimer)
+  thinkingTimer = setInterval(() => {
+    const elapsed = Date.now() - thinkingStartTime.value
+    if (elapsed >= THINKING_TIMEOUT_MS) {
+      isThinking.value = true
+    }
+    thinkingTime.value = formatThinkingTime(Math.floor(elapsed / 1000))
+  }, 1000)
+}
+
+// 停止思考计时器
+const stopThinkingTimer = () => {
+  if (thinkingTimer) {
+    clearInterval(thinkingTimer)
+    thinkingTimer = null
+  }
+  isThinking.value = false
+  thinkingStartTime.value = 0
+  thinkingTime.value = '0s'
+}
+
+// 重置思考计时器（收到输出时调用）
+const resetThinkingTimer = () => {
+  thinkingStartTime.value = Date.now()
+  isThinking.value = false
+  thinkingTime.value = '0s'
+}
 
 /**
  * 当前生成是否为修改模式
@@ -642,6 +698,12 @@ const historyCount = ref(0)
  * 用于确保在历史加载完成后才判断是否自动发送
  */
 const historyLoaded = ref(false)
+
+/**
+ * 思考中指示器组件引用
+ * 用于在收到新消息时重置计时器
+ */
+// const thinkingIndicatorRef = ref<any>(null)
 
 /**
  * 将 ChatHistoryVO 转换为 Message 格式
@@ -917,7 +979,10 @@ const handleSend = async () => {
      * - 用于保持登录状态
      */
     const eventSource = new EventSource(url, { withCredentials: true })
-    
+
+    // 启动思考计时器
+    startThinkingTimer()
+
     /**
      * 流式传输完成标志
      * 用于区分正常关闭和异常错误
@@ -992,6 +1057,9 @@ const handleSend = async () => {
      */
     const bufferContent = (content: string) => {
       messageBuffer += content
+
+      // 收到输出时重置思考计时器
+      resetThinkingTimer()
 
       // 如果没有定时器，创建一个
       if (!flushTimer) {
@@ -1081,6 +1149,10 @@ const handleSend = async () => {
         isGenerating.value = false
         isModifyModeGeneration.value = false
         messages.value[aiMessageIndex].loading = false
+
+        // 停止思考计时器
+        stopThinkingTimer()
+
         eventSource.close()
         
         // 生成完成，重置滚动状态
@@ -1128,7 +1200,10 @@ const handleSend = async () => {
       messages.value[aiMessageIndex].loading = false
       isGenerating.value = false
       isModifyModeGeneration.value = false
-      
+
+      // 停止思考计时器
+      stopThinkingTimer()
+
       // 生成完成，重置滚动状态
       userScrolledAway.value = false
       
@@ -1709,6 +1784,21 @@ watch(() => route.params.id, (newId) => {
 @keyframes blink {
   0%, 50% { opacity: 1; }
   51%, 100% { opacity: 0; }
+}
+
+/* 思考中指示器 */
+.thinking-indicator {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 12px;
+  color: #999;
+  vertical-align: middle;
+  animation: thinking-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes thinking-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 /* ==================== 输入区 ==================== */
