@@ -656,8 +656,8 @@ const handleUpload: UploadProps['customRequest'] = async (options) => {
     const res = await uploadHtmlFile(formData)
     if (res.data.code === 0 && res.data.data) {
       message.success('上传成功')
-      // 上传的 HTML 不需要自动发送，直接预览
-      router.push(`/app/chat/${String(res.data.data)}`)
+      // 跳转到对话页并自动发起 HTML 转 Vue 转换
+      router.push(`/app/chat/${String(res.data.data)}?autoSend=1`)
     } else {
       message.error('上传失败：' + res.data.message)
     }

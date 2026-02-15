@@ -335,8 +335,8 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             app.setAppName(appInfo.getAppName());
             app.setTag(appInfo.getTag());
             app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
-            // 使用文件名作为初始提示词（便于记录来源）
-            app.setInitPrompt("上传文件：" + filename);
+            // 设置转换指令作为初始提示词，上传后自动触发 AI 转换
+            app.setInitPrompt("请将上传的 HTML 文件转换为 Vue 项目，保留原始页面的所有功能和样式");
 
             boolean result = this.save(app);
             ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "创建应用失败");
