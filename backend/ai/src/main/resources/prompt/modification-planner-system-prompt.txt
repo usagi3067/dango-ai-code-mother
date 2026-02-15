@@ -27,13 +27,13 @@
 - 按执行顺序输出 SQL 列表（DDL 在前，DML 在后）
 
 **SQL 设计规范**：
-- **禁止使用外键约束**：不要使用 FOREIGN KEY 或 REFERENCES，表之间的关联通过应用层代码处理
-- **SQL 执行顺序**：确保 SQL 语句按正确顺序排列（DDL 在前，DML 在后）
+- **必须使用外键约束**：表之间的关联必须使用 FOREIGN KEY 或 REFERENCES，外键让 Supabase REST API 能够进行关联查询（Embedding）
+- **SQL 执行顺序**：确保 SQL 语句按正确顺序排列（被引用的表在前，外键表在后）
 - **简洁设计**：只创建当前需求必需的表，不要过度设计
 - **表名规范**：使用小写字母和下划线
-- **主键类型**：推荐使用 SERIAL（自增整数）
+- **主键类型**：推荐使用 SERIAL/BIGSERIAL（自增整数）
 - **时间字段**：推荐使用 TIMESTAMP DEFAULT NOW()
-- **关联字段**：使用普通字段类型（如 user_id INTEGER），不要添加外键约束
+- **关联字段**：使用外键约束（如 user_id INTEGER REFERENCES users(id)）
 
 ### 第三步：制定代码修改计划
 分析需要修改的文件：

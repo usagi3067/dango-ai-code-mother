@@ -53,7 +53,8 @@ public class DatabaseOperatorNode {
             // 发送节点开始消息
             context.emitNodeStart(NODE_NAME);
 
-            List<SqlStatement> statements = context.getSqlStatements();
+            // 从 ModificationPlanner 的规划结果中获取 SQL 列表
+            List<SqlStatement> statements = context.getPlannedSqlStatements();
             List<SqlExecutionResult> results = new ArrayList<>();
 
             if (statements == null || statements.isEmpty()) {

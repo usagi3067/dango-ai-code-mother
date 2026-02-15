@@ -40,12 +40,14 @@ public class SupabaseServiceImpl implements SupabaseService {
         String createSchemaSql = String.format("CREATE SCHEMA IF NOT EXISTS %s", schemaName);
         managementClient.executeSql(createSchemaSql);
 
-        // 2. 授权 anon 角色访问 Schema
+        // 2. 授权 anon 角色访问 Schema（表和序列）
         String grantSql = String.format("""
                 GRANT USAGE ON SCHEMA %s TO anon;
-                ALTER DEFAULT PRIVILEGES IN SCHEMA %s
-                GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO anon
-                """, schemaName, schemaName);
+                GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA %s TO anon;
+                GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA %s TO anon;
+                ALTER DEFAULT PRIVILEGES IN SCHEMA %s GRANT ALL PRIVILEGES ON TABLES TO anon;
+                ALTER DEFAULT PRIVILEGES IN SCHEMA %s GRANT USAGE, SELECT ON SEQUENCES TO anon;
+                """, schemaName, schemaName, schemaName, schemaName, schemaName);
         managementClient.executeSql(grantSql);
 
         // 3. 暴露 Schema 到 REST API
