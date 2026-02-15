@@ -30,12 +30,13 @@ import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
 
 /**
  * 代码修复节点
- * 根据质检错误信息进行针对性修复
- * 
+ * 根据真实编译器（npm run build）输出的构建错误进行针对性修复
+ *
  * 功能说明：
- * - 从 WorkflowContext 获取质检结果中的错误列表和修复建议
+ * - 从 WorkflowContext 获取 BuildCheckNode 提取的构建错误信息
  * - 构建修复请求，调用 AI 服务进行代码修复
- * - 支持多次循环修复直到质检通过或达到最大重试次数
+ * - 支持多次循环修复直到构建通过或达到最大重试次数
+ * - 禁止修改模板基础设施文件（package.json、vite.config.js、src/main.js、index.html）
  *
  * @author dango
  */
@@ -94,9 +95,9 @@ public class CodeFixerNode {
                 Long appId = context.getAppId();
                 CodeGenTypeEnum generationType = context.getGenerationType();
                 
-                // 如果没有设置代码生成类型，默认使用 HTML
+                // 如果没有设置代码生成类型，默认使用 VUE_PROJECT
                 if (generationType == null) {
-                    generationType = CodeGenTypeEnum.HTML;
+                    generationType = CodeGenTypeEnum.VUE_PROJECT;
                     context.setGenerationType(generationType);
                 }
 
@@ -191,8 +192,8 @@ public class CodeFixerNode {
 
     /**
      * 构建修复请求
-     * 包含：原始需求 + 错误信息 + 修复建议
-     * 根据不同的代码生成类型，添加不同的输出格式说明
+     * 包含：原始需求 + 构建错误信息 + 修复建议 + 输出格式指南
+     * 错误信息来自真实的 npm run build 编译器输出
      *
      * @param context 工作流上下文
      * @return 修复请求字符串
@@ -211,15 +212,15 @@ public class CodeFixerNode {
         // 获取质量检查结果
         QualityResult qualityResult = context.getQualityResult();
         
-        // 添加错误信息
-        request.append("## 代码存在以下问题，请修复\n");
+        // 添加构建错误信息
+        request.append("## 构建错误（来自 npm run build 编译器输出）\n");
         if (qualityResult != null && CollUtil.isNotEmpty(qualityResult.getErrors())) {
             List<String> errors = qualityResult.getErrors();
             for (int i = 0; i < errors.size(); i++) {
                 request.append(String.format("%d. %s\n", i + 1, errors.get(i)));
             }
         } else {
-            request.append("- 代码质量检查未通过，请检查并修复潜在问题\n");
+            request.append("- 构建未通过，请检查并修复编译错误\n");
         }
         request.append("\n");
 
@@ -242,50 +243,37 @@ public class CodeFixerNode {
 
     /**
      * 根据代码生成类型获取输出格式指南
+     * Phase 1 阶段统一使用 VUE_PROJECT 的修复指南
      *
      * @param generationType 代码生成类型
      * @return 输出格式指南字符串
      */
     public static String getOutputFormatGuide(CodeGenTypeEnum generationType) {
-        if (generationType == null) {
-            generationType = CodeGenTypeEnum.HTML;
-        }
+        return """
+                ## 修复指南（Vue 工程模式 - 构建错误修复）
 
-        return switch (generationType) {
-            case HTML -> """
-                    ## 修复指南（HTML 单文件模式）
-                    1. 仔细阅读上述错误列表，理解每个问题的具体原因
-                    2. 参考修复建议，确定修复方案
-                    3. 按照问题的严重程度依次修复
-                    4. 确保修复不会引入新的问题
-                    5. 输出完整的修复后代码（单个 HTML 文件，包含内联 CSS 和 JS）
-                    
-                    **重要**: 最多输出 1 个 HTML 代码块，否则会导致保存错误！
-                    """;
-            case MULTI_FILE -> """
-                    ## 修复指南（多文件模式）
-                    1. 仔细阅读上述错误列表，理解每个问题的具体原因
-                    2. 确定问题所在的文件（HTML/CSS/JS）
-                    3. 参考修复建议，确定修复方案
-                    4. 按照问题的严重程度依次修复
-                    5. 确保修复不会引入新的问题
-                    6. 输出完整的三个文件代码
-                    
-                    **重要**: 必须输出 3 个代码块（HTML + CSS + JavaScript），每种语言只能有 1 个代码块！
-                    """;
-            case VUE_PROJECT -> """
-                    ## 修复指南（Vue 工程模式）
-                    1. 仔细阅读上述错误列表，理解每个问题的具体原因
-                    2. 使用【目录读取工具】了解当前项目结构
-                    3. 使用【文件读取工具】查看需要修复的文件内容
-                    4. 根据错误信息，使用对应的工具进行修复：
-                       - 【文件修改工具】：修改现有文件的部分内容
-                       - 【文件写入工具】：创建新文件或完全重写文件
-                    5. 确保修复不会引入新的问题
-                    
-                    **重要**: 必须使用工具进行修复，不要直接输出代码块！
-                    """;
-        };
+                以上错误信息来自真实的 `npm run build` 编译器输出，请根据编译器给出的具体文件路径和错误信息进行针对性修复。
+
+                ### 修复步骤
+                1. 仔细阅读编译器错误，定位出错的文件和行号
+                2. 使用【文件读取工具】查看出错文件的内容
+                3. 根据编译器错误信息，使用对应的工具进行修复：
+                   - 【文件修改工具】：修改现有文件的部分内容
+                   - 【文件写入工具】：创建新文件或完全重写文件
+                4. 确保修复不会引入新的问题
+
+                ### 禁止修改的文件
+                以下文件是项目模板的基础设施文件，已经过验证，**严禁修改**：
+                - `package.json`
+                - `vite.config.js`
+                - `src/main.js`
+                - `index.html`
+
+                ### 重要约束
+                - 必须使用工具进行修复，不要直接输出代码块
+                - 只修复编译器报告的具体错误，不要做无关的重构
+                - 所有组件导入路径使用 `@` 别名（如 `@/components/Xxx.vue`）
+                """;
     }
 
     /**
