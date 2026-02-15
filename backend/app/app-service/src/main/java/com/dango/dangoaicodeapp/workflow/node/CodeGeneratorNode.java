@@ -3,6 +3,7 @@ package com.dango.dangoaicodeapp.workflow.node;
 import cn.hutool.core.util.StrUtil;
 import com.dango.aicodegenerate.model.QualityResult;
 import com.dango.dangoaicodeapp.core.AiCodeGeneratorFacade;
+import com.dango.dangoaicodeapp.core.scaffold.VueProjectScaffoldService;
 import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.utils.SpringContextUtil;
@@ -57,7 +58,12 @@ public class CodeGeneratorNode {
                 
                 // 获取 AI 代码生成外观服务
                 AiCodeGeneratorFacade codeGeneratorFacade = SpringContextUtil.getBean(AiCodeGeneratorFacade.class);
-                
+
+                // 复制模板脚手架到项目目录（创建模式时）
+                VueProjectScaffoldService scaffoldService = SpringContextUtil.getBean(VueProjectScaffoldService.class);
+                scaffoldService.scaffold(appId);
+                context.emitNodeMessage(NODE_NAME, "项目模板已就绪\n");
+
                 // 使用流式生成，实时输出代码内容
                 Flux<String> codeStream = codeGeneratorFacade.generateAndSaveCodeStream(
                         userMessage, generationType, appId);
