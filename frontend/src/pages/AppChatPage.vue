@@ -143,36 +143,25 @@
             :class="['message-item', msg.role]"
           >
             <div class="message-content">
-              <!-- 
-                用户消息：显示在右侧
-                v-if: 条件渲染
-              -->
+              <!-- 用户消息：显示在右侧，带头像 -->
               <template v-if="msg.role === 'user'">
                 <div class="message-text user-message">
-                  {{ msg.content }}
+                  <div class="user-bubble">{{ msg.content }}</div>
+                  <UserAvatar
+                    :src="loginUserStore.loginUser.userAvatar"
+                    :name="loginUserStore.loginUser.userName"
+                    :size="32"
+                  />
                 </div>
               </template>
-              
+
               <!-- AI 消息：显示在左侧，带头像 -->
               <template v-else>
                 <div class="message-text ai-message">
-                  <div class="ai-avatar">
-                    <img src="@/assets/logo.png" alt="AI" />
-                  </div>
+                  <div class="ai-avatar">AI</div>
                   <div class="ai-content">
-                    <!-- 
-                      v-html: 渲染 HTML 内容
-                      【安全警告】v-html 可能导致 XSS 攻击
-                      只能用于可信的内容，不要用于用户输入
-                      这里用于渲染 Markdown 转换后的 HTML
-                    -->
                     <div class="markdown-content" v-html="renderMarkdown(msg.content)"></div>
-                    <!--
-                      打字光标效果
-                      当消息正在加载时显示闪烁的光标
-                    -->
                     <span v-if="msg.loading" class="typing-cursor">|</span>
-                    <!-- 思考中指示器 -->
                     <span v-if="isThinking" class="thinking-indicator">
                       {{ thinkingTime }}·thinking
                     </span>
@@ -464,6 +453,7 @@ import { getCodeGenTypeLabel } from '@/config/codeGenType'
  * 用于获取当前登录用户信息
  */
 import { useLoginUserStore } from '@/stores/loginUser'
+import UserAvatar from '@/components/UserAvatar.vue'
 
 /**
  * 导入 Markdown 渲染工具
@@ -1732,18 +1722,20 @@ watch(() => route.params.id, (newId) => {
   justify-content: flex-end;
 }
 
-/* 用户消息气泡 */
+/* 用户消息容器 */
 .user-message {
-  background: #f0f0f0;
-  padding: 12px 16px;
-  /* 
-   * border-radius: 四个角的圆角
-   * 顺序: 左上 右上 右下 左下
-   * 用户消息右下角是尖角
-   */
-  border-radius: 12px 12px 4px 12px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
   max-width: 80%;
-  word-break: break-word;  /* 长单词换行 */
+}
+
+/* 用户消息气泡 */
+.user-bubble {
+  background: #e8f5e9;
+  padding: 12px 16px;
+  border-radius: 12px 12px 4px 12px;
+  word-break: break-word;
 }
 
 /* AI 消息容器 */
@@ -1756,19 +1748,25 @@ watch(() => route.params.id, (newId) => {
 .ai-avatar {
   width: 32px;
   height: 32px;
-  flex-shrink: 0;  /* 不缩小 */
-}
-
-.ai-avatar img {
-  width: 100%;
-  height: 100%;
-  border-radius: 50%;  /* 圆形 */
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  flex-shrink: 0;
 }
 
 /* AI 消息内容 */
 .ai-content {
   flex: 1;
+  background: #f8f7ff;
+  border-radius: 12px 12px 12px 4px;
+  padding: 12px 16px;
   line-height: 1.6;
+  min-width: 0;
 }
 
 /* 打字光标动画 */
