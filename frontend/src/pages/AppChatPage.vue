@@ -1735,6 +1735,10 @@ watch(() => route.params.id, (newId) => {
   max-width: 80%;
 }
 
+.user-message :deep(.ant-avatar) {
+  flex-shrink: 0;
+}
+
 /* 用户消息气泡 */
 .user-bubble {
   background: #e8f5e9;
