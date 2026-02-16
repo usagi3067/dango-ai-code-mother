@@ -529,8 +529,7 @@ public class CodeGenWorkflow {
                             appId, executionId, elementInfo != null, databaseEnabled);
 
                     // 发送工作流开始消息（包装为 JSON 格式）
-                    String modeHint = elementInfo != null ? "（修改模式）" : "（创建模式）";
-                    String startMessage = "[工作流] 开始处理请求..." + modeHint + "\n";
+                    String startMessage = "[工作流] 开始处理请求...\n";
                     sink.next(JSONUtil.toJsonStr(new AiResponseMessage(startMessage)));
 
                     int stepCounter = 1;
