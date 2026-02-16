@@ -83,7 +83,8 @@ export const routeConfigs: RouteConfig[] = [
     meta: {
       title: '用户登录',
       showInMenu: false,
-      access: ACCESS_ENUM.NOT_LOGIN
+      access: ACCESS_ENUM.NOT_LOGIN,
+      hideLayout: true
     }
   },
   // 用户注册页面
@@ -94,7 +95,8 @@ export const routeConfigs: RouteConfig[] = [
     meta: {
       title: '用户注册',
       showInMenu: false,
-      access: ACCESS_ENUM.NOT_LOGIN
+      access: ACCESS_ENUM.NOT_LOGIN,
+      hideLayout: true
     }
   },
   // 无权限页面
