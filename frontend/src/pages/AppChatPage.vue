@@ -1722,6 +1722,11 @@ watch(() => route.params.id, (newId) => {
   justify-content: flex-end;
 }
 
+.message-item.user .message-content {
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* 用户消息容器 */
 .user-message {
   display: flex;
