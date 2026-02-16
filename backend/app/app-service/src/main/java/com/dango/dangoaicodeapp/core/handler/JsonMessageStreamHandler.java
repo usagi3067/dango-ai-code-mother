@@ -7,8 +7,6 @@ import cn.hutool.json.JSONUtil;
 import com.dango.aicodegenerate.model.message.*;
 import com.dango.aicodegenerate.tools.BaseTool;
 import com.dango.aicodegenerate.tools.ToolManager;
-import com.dango.dangoaicodeapp.core.builder.VueProjectBuilder;
-import com.dango.dangoaicodeapp.model.constant.AppConstant;
 import com.dango.dangoaicodeapp.service.ChatHistoryService;
 import com.dango.dangoaicodeuser.model.entity.User;
 import jakarta.annotation.Resource;
@@ -30,9 +28,6 @@ import java.util.Set;
 @Slf4j
 @Component
 public class JsonMessageStreamHandler {
-
-    @Resource
-    private VueProjectBuilder vueProjectBuilder;
 
     @Resource
     private ToolManager toolManager;
@@ -66,14 +61,9 @@ public class JsonMessageStreamHandler {
                 })
                 .filter(StrUtil::isNotEmpty) // 过滤空字串
                 .doOnComplete(() -> {
-                    // 流式响应完成后，添加 AI 消息到对话历史
+                    // 流式响应完成后，保存 AI 消息到对话历史
                     String aiResponse = chatHistoryStringBuilder.toString();
                     chatHistoryService.saveAiMessage(appId, loginUser.getId(), aiResponse);
-
-                    // 同步构建 Vue 项目
-                    // 使用同步构建确保用户在 AI 回复完成时能立即预览到最新的构建结果
-                    String projectPath = AppConstant.CODE_OUTPUT_ROOT_DIR + "/vue_project_" + appId;
-                    vueProjectBuilder.buildProject(projectPath);
                 })
                 .doOnError(error -> {
                     // 如果AI回复失败，也要记录错误消息
