@@ -15,8 +15,8 @@
         <!-- 默认内容：模拟 AI 对话卡片 -->
         <div class="preview-card">
           <div class="chat-message user-message">
-            <div class="message-bubble user-bubble">帮我生成一个待办事项应用</div>
             <div class="message-avatar user-avatar">U</div>
+            <div class="message-bubble user-bubble">帮我生成一个待办事项应用</div>
           </div>
           <div class="chat-message">
             <div class="message-avatar ai-avatar">AI</div>
