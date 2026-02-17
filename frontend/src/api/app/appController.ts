@@ -197,11 +197,11 @@ export async function updateApp(body: API.AppUpdateRequest, options?: { [key: st
 }
 
 /**
- * 上传 HTML 文件创建应用
- * @param formData 包含 file 字段的 FormData
+ * 上传 Vue 项目文件夹创建应用
+ * @param formData 包含 files 和 paths 字段的 FormData
  */
-export async function uploadHtmlFile(formData: FormData, options?: { [key: string]: any }) {
-  return request<API.BaseResponseLong>('/app/upload/html', {
+export async function uploadVueProject(formData: FormData, options?: { [key: string]: any }) {
+  return request<API.BaseResponseLong>('/app/upload/vue-project', {
     method: 'POST',
     headers: {
       'Content-Type': 'multipart/form-data',

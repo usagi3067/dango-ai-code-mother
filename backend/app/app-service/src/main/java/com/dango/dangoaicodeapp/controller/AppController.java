@@ -86,33 +86,37 @@ public class AppController {
     }
 
     /**
-     * 上传 HTML 文件创建应用
+     * 上传 Vue 项目文件夹创建应用
      *
-     * @param file    HTML 文件
+     * @param files   项目文件数组
+     * @param paths   每个文件对应的相对路径
      * @param request 请求
      * @return 应用 ID
      */
-    @PostMapping("/upload/html")
-    public BaseResponse<Long> uploadHtml(
-            @RequestParam("file") MultipartFile file,
+    @PostMapping("/upload/vue-project")
+    public BaseResponse<Long> uploadVueProject(
+            @RequestParam("files") MultipartFile[] files,
+            @RequestParam("paths") String[] paths,
             HttpServletRequest request) {
-        // 1. 校验文件
-        ThrowUtils.throwIf(file == null || file.isEmpty(),
+        // 1. 校验参数
+        ThrowUtils.throwIf(files == null || files.length == 0,
                 ErrorCode.PARAMS_ERROR, "文件不能为空");
+        ThrowUtils.throwIf(paths == null || paths.length != files.length,
+                ErrorCode.PARAMS_ERROR, "文件路径数量不匹配");
 
-        String filename = file.getOriginalFilename();
-        ThrowUtils.throwIf(filename == null || !filename.endsWith(".html"),
-                ErrorCode.PARAMS_ERROR, "仅支持上传 .html 文件");
+        // 2. 校验总大小（50MB 限制）
+        long totalSize = 0;
+        for (MultipartFile file : files) {
+            totalSize += file.getSize();
+        }
+        ThrowUtils.throwIf(totalSize > 50 * 1024 * 1024,
+                ErrorCode.PARAMS_ERROR, "项目总大小不能超过 50MB");
 
-        // 2MB 限制
-        ThrowUtils.throwIf(file.getSize() > 2 * 1024 * 1024,
-                ErrorCode.PARAMS_ERROR, "文件大小不能超过 2MB");
-
-        // 2. 获取登录用户
+        // 3. 获取登录用户
         User loginUser = InnerUserService.getLoginUser(request);
 
-        // 3. 创建应用
-        Long appId = appService.createAppFromHtml(file, filename, loginUser);
+        // 4. 创建应用
+        Long appId = appService.createAppFromVueProject(files, paths, loginUser);
 
         return ResultUtils.success(appId);
     }

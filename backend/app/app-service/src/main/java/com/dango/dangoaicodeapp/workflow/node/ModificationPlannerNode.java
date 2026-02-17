@@ -130,13 +130,6 @@ public class ModificationPlannerNode {
                    .append("\n\n");
         }
 
-        // HTML 转 Vue 转换提示
-        if (context.isHtmlConversionRequired()) {
-            request.append("## 特殊任务：HTML 转 Vue 转换\n")
-                   .append("项目中存在 `src/legacy.html`，这是用户上传的原始 HTML 文件。\n")
-                   .append("请在修改计划中包含将 HTML 内容拆分为 Vue 组件的步骤，并在转换完成后删除 legacy.html。\n\n");
-        }
-
         return request.toString();
     }
 

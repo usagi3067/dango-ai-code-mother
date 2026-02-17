@@ -141,51 +141,6 @@ class ModeRouterNodeTest {
     }
 
     @Test
-    @DisplayName("hasLegacyHtml 应正确检测 src/legacy.html")
-    void testHasLegacyHtml() throws IOException {
-        Long appId = 888L;
-        Path codeOutputDir = tempDir.resolve("tmp/code_output");
-        Path vueDir = codeOutputDir.resolve("vue_project_" + appId);
-        Path srcDir = vueDir.resolve("src");
-        Files.createDirectories(srcDir);
-        Files.writeString(srcDir.resolve("legacy.html"), "<html><body>Hello</body></html>");
-
-        assertTrue(ModeRouterNode.hasLegacyHtml(appId));
-    }
-
-    @Test
-    @DisplayName("hasLegacyHtml 无 legacy.html 时应返回 false")
-    void testHasLegacyHtmlNotExists() throws IOException {
-        Long appId = 889L;
-        Path codeOutputDir = tempDir.resolve("tmp/code_output");
-        Path vueDir = codeOutputDir.resolve("vue_project_" + appId);
-        Files.createDirectories(vueDir.resolve("src"));
-
-        assertFalse(ModeRouterNode.hasLegacyHtml(appId));
-    }
-
-    @Test
-    @DisplayName("determineOperationMode 检测到 legacy.html 时应标记 htmlConversionRequired")
-    void testDetermineOperationModeWithLegacyHtml() throws IOException {
-        Long appId = 890L;
-        Path codeOutputDir = tempDir.resolve("tmp/code_output");
-        Path vueDir = codeOutputDir.resolve("vue_project_" + appId);
-        Path srcDir = vueDir.resolve("src");
-        Files.createDirectories(srcDir);
-        Files.writeString(srcDir.resolve("legacy.html"), "<html><body>Test</body></html>");
-
-        WorkflowContext context = WorkflowContext.builder()
-                .appId(appId)
-                .originalPrompt("修改颜色")
-                .build();
-
-        OperationModeEnum mode = ModeRouterNode.determineOperationMode(context);
-
-        assertEquals(OperationModeEnum.MODIFY, mode);
-        assertTrue(context.isHtmlConversionRequired());
-    }
-
-    @Test
     @DisplayName("routeToNextNode 应根据操作模式返回正确的路由目标")
     void testRouteToNextNode() {
         // 测试 CREATE 模式

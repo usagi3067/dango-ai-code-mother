@@ -116,14 +116,14 @@ public interface AppService extends IService<App> {
     Long createApp(AppAddRequest appAddRequest, User loginUser);
 
     /**
-     * 通过上传 HTML 文件创建应用
+     * 通过上传 Vue 项目文件夹创建应用
      *
-     * @param file      HTML 文件
-     * @param filename  原始文件名
+     * @param files     项目文件数组
+     * @param paths     每个文件对应的相对路径
      * @param loginUser 登录用户
      * @return 应用 ID
      */
-    Long createAppFromHtml(MultipartFile file, String filename, User loginUser);
+    Long createAppFromVueProject(MultipartFile[] files, String[] paths, User loginUser);
 
     /**
      * 初始化应用数据库

@@ -828,19 +828,6 @@ const loadAppInfo = async () => {
         iframeKey.value++
       }
       
-      /**
-       * 自动发送初始消息的条件：
-       * 1. 应用有初始提示词
-       * 2. 用户是应用所有者
-       * 3. 历史已加载完成（historyLoaded === true）
-       * 4. 前端消息列表为空（messages.value.length === 0）
-       * 5. 有 autoSend=1 参数（仅首页创建新应用时传入）
-       */
-      const autoSend = route.query.autoSend === '1'
-      if (appInfo.value.initPrompt && isOwner.value && historyLoaded.value && messages.value.length === 0 && autoSend) {
-        inputText.value = appInfo.value.initPrompt
-        await handleSend()
-      }
     } else {
       message.error('获取应用信息失败')
     }

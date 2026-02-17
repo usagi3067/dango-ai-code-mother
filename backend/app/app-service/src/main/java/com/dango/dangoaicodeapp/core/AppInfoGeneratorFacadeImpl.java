@@ -35,19 +35,6 @@ public class AppInfoGeneratorFacadeImpl implements AppInfoGeneratorFacade {
     private AiAppInfoGeneratorService aiAppInfoGeneratorService;
 
     @Override
-    public AppNameAndTagResult generateAppInfoFromHtml(String htmlContent) {
-        // 截取前 2000 字符避免 token 过长
-        String truncatedContent = htmlContent.length() > 2000
-                ? htmlContent.substring(0, 2000)
-                : htmlContent;
-
-        // 复用现有的 AI 生成逻辑，调整提示词
-        String prompt = "分析以下 HTML 代码，生成一个简短的应用名称和分类标签。\n\nHTML 内容：\n" + truncatedContent;
-
-        return generateAppInfo(prompt);
-    }
-
-    @Override
     public AppNameAndTagResult generateAppInfo(String initPrompt) {
         AppNameAndTagResult result = new AppNameAndTagResult();
 

@@ -159,12 +159,6 @@ public class WorkflowContext implements Serializable {
     private ElementInfo elementInfo;
 
     /**
-     * 是否需要 HTML 转 Vue 转换（上传 HTML 文件后首次对话时）
-     */
-    @Builder.Default
-    private boolean htmlConversionRequired = false;
-
-    /**
      * 修复重试次数
      */
     @Builder.Default

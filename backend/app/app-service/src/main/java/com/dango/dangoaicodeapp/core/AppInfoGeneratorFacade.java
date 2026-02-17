@@ -17,11 +17,4 @@ public interface AppInfoGeneratorFacade {
      */
     AppNameAndTagResult generateAppInfo(String initPrompt);
 
-    /**
-     * 根据 HTML 内容生成应用名称和标签
-     *
-     * @param htmlContent HTML 文件内容
-     * @return 应用名称和标签
-     */
-    AppNameAndTagResult generateAppInfoFromHtml(String htmlContent);
 }

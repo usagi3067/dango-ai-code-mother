@@ -43,6 +43,8 @@ import reactor.core.publisher.Flux;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -71,8 +73,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     private VueProjectBuilder vueProjectBuilder;
     @Resource
     private AppInfoGeneratorFacade appInfoGeneratorFacade;
-    @Resource
-    private com.dango.dangoaicodeapp.core.scaffold.HtmlToVueConverterService htmlToVueConverterService;
+
 
     @Override
     public AppVO getAppVO(App app) {
@@ -321,38 +322,78 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     }
 
     @Override
-    public Long createAppFromHtml(MultipartFile file, String filename, User loginUser) {
-        try {
-            // 1. 读取 HTML 内容
-            String htmlContent = new String(file.getBytes(), StandardCharsets.UTF_8);
-
-            // 2. AI 分析生成应用名称和标签
-            AppNameAndTagResult appInfo = appInfoGeneratorFacade.generateAppInfoFromHtml(htmlContent);
-
-            // 3. 创建 App 记录
-            App app = new App();
-            app.setUserId(loginUser.getId());
-            app.setAppName(appInfo.getAppName());
-            app.setTag(appInfo.getTag());
-            app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
-            // 设置转换指令作为初始提示词，上传后自动触发 AI 转换
-            app.setInitPrompt("请将上传的 HTML 文件转换为 Vue 项目，保留原始页面的所有功能和样式");
-
-            boolean result = this.save(app);
-            ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "创建应用失败");
-
-            Long appId = app.getId();
-
-            // 4. 创建 Vue 项目脚手架并保存 HTML 内容为 src/legacy.html
-            htmlToVueConverterService.convert(appId, htmlContent);
-
-            log.info("HTML 上传应用创建成功，ID: {}, 文件: {}", appId, filename);
-            return appId;
-
-        } catch (IOException e) {
-            log.error("读取 HTML 文件失败", e);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "文件处理失败");
+    public Long createAppFromVueProject(MultipartFile[] files, String[] paths, User loginUser) {
+        // 1. 读取 package.json 内容用于 AI 分析
+        String packageJsonContent = "";
+        String appVueContent = "";
+        for (int i = 0; i < files.length; i++) {
+            if ("package.json".equals(paths[i])) {
+                try {
+                    packageJsonContent = new String(files[i].getBytes(), StandardCharsets.UTF_8);
+                } catch (IOException e) {
+                    log.warn("读取 package.json 失败", e);
+                }
+            }
+            if (paths[i].endsWith("App.vue") && appVueContent.isEmpty()) {
+                try {
+                    String content = new String(files[i].getBytes(), StandardCharsets.UTF_8);
+                    appVueContent = content.length() > 1000 ? content.substring(0, 1000) : content;
+                } catch (IOException e) {
+                    log.warn("读取 App.vue 失败", e);
+                }
+            }
         }
+
+        // 2. AI 分析生成应用名称和标签
+        String analysisPrompt = "分析以下 Vue 项目信息，生成一个简短的应用名称和分类标签。\n\n";
+        if (!packageJsonContent.isEmpty()) {
+            analysisPrompt += "package.json：\n" + packageJsonContent + "\n\n";
+        }
+        if (!appVueContent.isEmpty()) {
+            analysisPrompt += "App.vue 片段：\n" + appVueContent;
+        }
+        AppNameAndTagResult appInfo = appInfoGeneratorFacade.generateAppInfo(analysisPrompt);
+
+        // 3. 创建 App 记录
+        App app = new App();
+        app.setUserId(loginUser.getId());
+        app.setAppName(appInfo.getAppName());
+        app.setTag(appInfo.getTag());
+        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
+
+        boolean result = this.save(app);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "创建应用失败");
+
+        Long appId = app.getId();
+
+        // 4. 保存文件到项目目录
+        String baseDir = System.getProperty("user.dir") + "/tmp/code_output";
+        Path projectDir = Path.of(baseDir, "vue_project_" + appId);
+        try {
+            for (int i = 0; i < files.length; i++) {
+                Path targetFile = projectDir.resolve(paths[i]);
+                Files.createDirectories(targetFile.getParent());
+                Files.write(targetFile, files[i].getBytes());
+            }
+        } catch (IOException e) {
+            // 保存失败，清理已创建的记录
+            this.removeById(appId);
+            log.error("保存项目文件失败", e);
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "保存项目文件失败");
+        }
+
+        // 5. 构建校验
+        VueProjectBuilder.BuildResult buildResult = vueProjectBuilder.buildProjectWithResult(projectDir.toString());
+        if (!buildResult.isSuccess()) {
+            // 构建失败，清理文件和数据库记录
+            cn.hutool.core.io.FileUtil.del(projectDir.toFile());
+            this.removeById(appId);
+            throw new BusinessException(ErrorCode.OPERATION_ERROR,
+                    "项目构建失败：" + buildResult.getErrorSummary());
+        }
+
+        log.info("Vue 项目上传成功，ID: {}, 文件数: {}", appId, files.length);
+        return appId;
     }
 
     @DubboReference

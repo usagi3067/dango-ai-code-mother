@@ -94,13 +94,14 @@
             -->
             <a-upload
               :show-upload-list="false"
+              :directory="true"
+              :multiple="true"
               :before-upload="beforeUpload"
-              :custom-request="handleUpload"
-              accept=".html"
+              :custom-request="() => {}"
             >
               <a-button type="text" :loading="uploading">
                 <template #icon><UploadOutlined /></template>
-                上传
+                上传项目
               </a-button>
             </a-upload>
             <a-button type="text" disabled>
@@ -392,7 +393,7 @@ import AppCard from '@/components/AppCard.vue'
  * listMyAppVoByPage: 分页查询我的应用
  * listGoodAppVoByPage: 分页查询精选应用
  */
-import { addApp, listMyAppVoByPage, listGoodAppVoByPage, uploadHtmlFile } from '@/api/app/appController'
+import { addApp, listMyAppVoByPage, listGoodAppVoByPage, uploadVueProject } from '@/api/app/appController'
 
 /**
  * 导入环境变量配置
@@ -614,50 +615,93 @@ const handleCreateApp = async () => {
   }
 }
 
+/** 需要过滤的目录和文件 */
+const IGNORED_PATTERNS = ['node_modules/', '.git/', 'dist/', '.DS_Store', 'package-lock.json', '.idea/', '.vscode/']
+
+/** 收集的待上传文件 */
+const pendingFiles = ref<File[]>([])
+let uploadTimer: ReturnType<typeof setTimeout> | null = null
+
 /**
- * 上传前校验
+ * 上传前校验 + 收集文件
+ * directory 模式下，每个文件都会触发一次 beforeUpload
+ * 我们收集所有文件，用 debounce 在最后一个文件收集完后统一上传
  */
 const beforeUpload: UploadProps['beforeUpload'] = (file) => {
-  // 校验登录状态
-  if (!loginUserStore.loginUser.id) {
+  // 校验登录状态（只在第一个文件时检查）
+  if (pendingFiles.value.length === 0 && !loginUserStore.loginUser.id) {
     message.warning('请先登录')
     router.push('/user/login')
     return false
   }
 
-  // 校验文件类型
-  const isHtml = file.name.endsWith('.html')
-  if (!isHtml) {
-    message.error('仅支持上传 .html 文件')
+  // 过滤无用文件
+  const path = (file as any).webkitRelativePath || file.name
+  const shouldIgnore = IGNORED_PATTERNS.some(pattern => path.includes(pattern))
+  if (shouldIgnore) {
     return false
   }
 
-  // 校验文件大小 (2MB)
-  const isLt2M = file.size / 1024 / 1024 < 2
-  if (!isLt2M) {
-    message.error('文件大小不能超过 2MB')
-    return false
-  }
+  // 收集文件
+  pendingFiles.value.push(file as File)
 
-  return true
+  // debounce：等所有文件收集完后统一上传
+  if (uploadTimer) clearTimeout(uploadTimer)
+  uploadTimer = setTimeout(() => {
+    doUpload()
+  }, 300)
+
+  return false // 阻止默认上传行为
 }
 
 /**
- * 自定义上传行为
+ * 统一上传所有收集的文件
  */
-const handleUpload: UploadProps['customRequest'] = async (options) => {
-  const { file } = options
+const doUpload = async () => {
+  const files = [...pendingFiles.value]
+  pendingFiles.value = []
+  if (files.length === 0) {
+    message.error('未选择任何文件')
+    return
+  }
+
+  // 校验项目结构：必须包含 package.json
+  const hasPackageJson = files.some(f => {
+    const path = (f as any).webkitRelativePath || f.name
+    // package.json 应该在根目录（路径中只有一个 /）
+    const parts = path.split('/')
+    return parts.length === 2 && parts[1] === 'package.json'
+  })
+  if (!hasPackageJson) {
+    message.error('不是有效的 Vue 项目：缺少 package.json')
+    return
+  }
+
+  // 校验项目结构：必须包含 .vue 文件
+  const hasVueFile = files.some(f => {
+    const path = (f as any).webkitRelativePath || f.name
+    return path.endsWith('.vue')
+  })
+  if (!hasVueFile) {
+    message.error('不是有效的 Vue 项目：缺少 .vue 文件')
+    return
+  }
 
   uploading.value = true
   try {
     const formData = new FormData()
-    formData.append('file', file as File)
+    files.forEach(file => {
+      formData.append('files', file)
+      // 去掉第一层目录名（文件夹名），只保留项目内部的相对路径
+      const fullPath = (file as any).webkitRelativePath || file.name
+      const relativePath = fullPath.substring(fullPath.indexOf('/') + 1)
+      formData.append('paths', relativePath)
+    })
 
-    const res = await uploadHtmlFile(formData)
+    const res = await uploadVueProject(formData)
     if (res.data.code === 0 && res.data.data) {
-      message.success('上传成功')
-      // 跳转到对话页并自动发起 HTML 转 Vue 转换
-      router.push(`/app/chat/${String(res.data.data)}?autoSend=1`)
+      message.success('项目上传成功')
+      router.push(`/app/chat/${String(res.data.data)}`)
     } else {
       message.error('上传失败：' + res.data.message)
     }
@@ -667,6 +711,11 @@ const handleUpload: UploadProps['customRequest'] = async (options) => {
     uploading.value = false
   }
 }
+
+/**
+ * customRequest 占位（实际上传在 doUpload 中处理）
+ */
+const handleUpload: UploadProps['customRequest'] = () => {}
 
 /**
  * 加载我的应用列表
