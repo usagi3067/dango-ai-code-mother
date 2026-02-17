@@ -54,6 +54,7 @@ declare namespace API {
     userId?: number
     createTime?: string
     updateTime?: string
+    hasDatabase?: boolean
     user?: UserVO
   }
 
@@ -173,5 +174,11 @@ declare namespace API {
     userProfile?: string
     userRole?: string
     createTime?: string
+  }
+
+  /** 表摘要信息 */
+  type TableSummaryDTO = {
+    tableName?: string
+    rowCount?: number
   }
 }
