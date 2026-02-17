@@ -398,6 +398,45 @@
         </a-descriptions>
       </div>
     </a-modal>
+
+    <!-- ==================== 数据库管理 Drawer ==================== -->
+    <a-drawer
+      v-model:open="databaseDrawerVisible"
+      title="数据库管理"
+      placement="right"
+      :width="720"
+      :destroyOnClose="true"
+    >
+      <div class="database-drawer-content">
+        <!-- 状态栏 -->
+        <div class="database-status">
+          <a-descriptions :column="2" size="small">
+            <a-descriptions-item label="Schema">
+              app_{{ appId }}
+            </a-descriptions-item>
+            <a-descriptions-item label="状态">
+              <a-badge status="success" text="已启用" />
+            </a-descriptions-item>
+          </a-descriptions>
+        </div>
+
+        <!-- Platform Kit iframe -->
+        <div class="database-iframe-wrapper">
+          <iframe
+            :src="supabaseManagerUrl"
+            class="database-iframe"
+            frameborder="0"
+          />
+        </div>
+
+        <!-- 底部提示 -->
+        <div class="database-tips">
+          <a-typography-text type="secondary">
+            通过对话管理数据库："帮我新建一个用户表"、"给 todos 表添加 priority 字段"
+          </a-typography-text>
+        </div>
+      </div>
+    </a-drawer>
   </div>
 </template>
 
@@ -426,7 +465,7 @@
 
 // ==================== 导入部分 ====================
 
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, computed, onMounted, nextTick, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 
@@ -656,6 +695,12 @@ const downloading = ref(false)         // 是否正在下载
  */
 const databaseDrawerVisible = ref(false)
 const databaseInitializing = ref(false)
+
+/** Supabase Manager iframe URL */
+const supabaseManagerUrl = computed(() => {
+  const baseUrl = import.meta.env.VITE_SUPABASE_MANAGER_URL || 'http://localhost:3001'
+  return `${baseUrl}?ref=${import.meta.env.VITE_SUPABASE_PROJECT_REF || ''}&schema=app_${appId.value}`
+})
 
 /**
  * 是否为应用所有者
@@ -2070,5 +2115,38 @@ watch(() => route.params.id, (newId) => {
 .edit-mode-btn-active:hover {
   background-color: #ff7875 !important;
   border-color: #ff7875 !important;
+}
+
+/* ==================== 数据库管理 Drawer ==================== */
+
+.database-drawer-content {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 110px);
+}
+
+.database-status {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.database-iframe-wrapper {
+  flex: 1;
+  min-height: 0;
+}
+
+.database-iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 500px;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+}
+
+.database-tips {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
 }
 </style>
