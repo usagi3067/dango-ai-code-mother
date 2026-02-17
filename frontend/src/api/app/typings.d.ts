@@ -94,6 +94,12 @@ declare namespace API {
     message?: string
   }
 
+  type BaseResponseListTableSummaryDTO = {
+    code?: number
+    data?: TableSummaryDTO[]
+    message?: string
+  }
+
   type ChatHistoryQueryRequest = {
     pageNum?: number
     pageSize?: number
