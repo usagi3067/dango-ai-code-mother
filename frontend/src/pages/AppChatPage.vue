@@ -79,8 +79,29 @@
         </a-dropdown>
       </div>
       
-      <!-- 右侧区域：下载代码 + 部署按钮 -->
+      <!-- 右侧区域：数据库 + 下载代码 + 部署按钮 -->
       <div class="top-right">
+        <!-- 数据库按钮 -->
+        <a-tooltip v-if="appInfo?.codeGenType !== 'vue_project'" title="仅支持 Vue 项目">
+          <a-button disabled>
+            <template #icon><DatabaseOutlined /></template>
+            数据库
+          </a-button>
+        </a-tooltip>
+        <a-button
+          v-else-if="!appInfo?.hasDatabase"
+          :loading="databaseInitializing"
+          @click="handleInitDatabase"
+        >
+          <template #icon><DatabaseOutlined /></template>
+          新建 Database
+        </a-button>
+        <a-badge v-else dot color="green">
+          <a-button @click="databaseDrawerVisible = true">
+            <template #icon><DatabaseOutlined /></template>
+            数据库
+          </a-button>
+        </a-badge>
         <a-button 
           :loading="downloading"
           @click="handleDownload"
@@ -427,7 +448,8 @@ import {
   CheckCircleOutlined,  // 成功勾选图标
   LoadingOutlined,      // 加载图标
   InfoCircleOutlined,   // 信息图标
-  AimOutlined           // 瞄准图标（编辑模式）
+  AimOutlined,          // 瞄准图标（编辑模式）
+  DatabaseOutlined      // 数据库图标
 } from '@ant-design/icons-vue'
 
 /**
@@ -435,6 +457,7 @@ import {
  */
 import { getAppVoById, deployApp } from '@/api/app/appController'
 import { listChatHistoryByAppId } from '@/api/app/chatHistoryController'
+import { initializeDatabase } from '@/api/app/databaseController'
 
 /**
  * 导入环境变量配置
@@ -627,6 +650,12 @@ const appDetailModalVisible = ref(false)
  * 下载相关
  */
 const downloading = ref(false)         // 是否正在下载
+
+/**
+ * 数据库相关
+ */
+const databaseDrawerVisible = ref(false)
+const databaseInitializing = ref(false)
 
 /**
  * 是否为应用所有者
@@ -1323,6 +1352,29 @@ const scrollToBottom = (force = false) => {
     // 设置 scrollTop = scrollHeight 即滚动到底部
     messageListRef.value.scrollTop = messageListRef.value.scrollHeight
   })
+}
+
+/** 初始化数据库 */
+const handleInitDatabase = async () => {
+  if (!appId.value) return
+  databaseInitializing.value = true
+  try {
+    const res = await initializeDatabase(Number(appId.value))
+    if (res.data) {
+      message.success('数据库初始化成功')
+      // 刷新应用信息
+      await loadAppInfo()
+      // 打开 Drawer
+      databaseDrawerVisible.value = true
+      // 自动发送初始化消息
+      inputText.value = '数据库已启用，请分析应用并创建合适的数据库表，然后更新代码使用数据库'
+      await handleSend()
+    }
+  } catch (e: any) {
+    message.error(e.message || '数据库初始化失败')
+  } finally {
+    databaseInitializing.value = false
+  }
 }
 
 /**
