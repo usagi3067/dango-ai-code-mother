@@ -1405,7 +1405,7 @@ const handleInitDatabase = async () => {
   databaseInitializing.value = true
   try {
     const res = await initializeDatabase(Number(appId.value))
-    if (res.data) {
+    if (res.data.code === 0 && res.data.data) {
       message.success('数据库初始化成功')
       // 刷新应用信息
       await loadAppInfo()
