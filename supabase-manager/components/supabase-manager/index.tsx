@@ -49,7 +49,7 @@ import {
 
 const queryClient = new QueryClient()
 
-function DialogView({ projectRef, isMobile }: { projectRef: string; isMobile?: boolean }) {
+function DialogView({ projectRef, schema, isMobile }: { projectRef: string; schema?: string; isMobile?: boolean }) {
   const { stack, push, popTo, reset } = useSheetNavigation()
 
   const handleTopLevelNavigation = (title: string, component: ReactNode) => {
@@ -68,7 +68,7 @@ function DialogView({ projectRef, isMobile }: { projectRef: string; isMobile?: b
       {
         title: 'Database',
         icon: Database,
-        component: <DatabaseManager projectRef={projectRef} />,
+        component: <DatabaseManager projectRef={projectRef} schemas={schema ? [schema] : undefined} />,
       },
       {
         title: 'Storage',
@@ -251,11 +251,13 @@ function DialogView({ projectRef, isMobile }: { projectRef: string; isMobile?: b
 
 export default function SupabaseManagerDialog({
   projectRef,
+  schema,
   open,
   onOpenChange,
   isMobile,
 }: {
   projectRef: string
+  schema?: string
   open: boolean
   onOpenChange: (open: boolean) => void
   isMobile: boolean
@@ -266,11 +268,11 @@ export default function SupabaseManagerDialog({
       initialStack={[
         {
           title: 'Database',
-          component: <DatabaseManager projectRef={projectRef} />,
+          component: <DatabaseManager projectRef={projectRef} schemas={schema ? [schema] : undefined} />,
         },
       ]}
     >
-      <DialogView projectRef={projectRef} isMobile={isMobile} />
+      <DialogView projectRef={projectRef} schema={schema} isMobile={isMobile} />
     </SheetNavigationProvider>
   )
 

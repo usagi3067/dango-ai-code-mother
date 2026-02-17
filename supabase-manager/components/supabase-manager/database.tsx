@@ -242,9 +242,9 @@ function TableRecordsView({ projectRef, table }: { projectRef: string; table: an
   )
 }
 
-export function DatabaseManager({ projectRef }: { projectRef: string }) {
+export function DatabaseManager({ projectRef, schemas }: { projectRef: string; schemas?: string[] }) {
   const { push } = useSheetNavigation()
-  const { data: tables, isLoading, isError } = useListTables(projectRef, ['public'])
+  const { data: tables, isLoading, isError } = useListTables(projectRef, schemas || ['public'])
 
   const handleTableClick = useCallback(
     (table: any) => {
