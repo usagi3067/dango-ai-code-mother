@@ -48,5 +48,15 @@ public class LoginUserVO implements Serializable {
      */
     private LocalDateTime updateTime;
 
+    /**
+     * Sa-Token 名称
+     */
+    private String tokenName;
+
+    /**
+     * Sa-Token 值
+     */
+    private String tokenValue;
+
     private static final long serialVersionUID = 1L;
 }

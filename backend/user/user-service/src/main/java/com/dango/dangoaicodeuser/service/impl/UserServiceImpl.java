@@ -1,5 +1,6 @@
 package com.dango.dangoaicodeuser.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
@@ -14,15 +15,12 @@ import com.dango.dangoaicodeuser.model.vo.UserVO;
 import com.dango.dangoaicodeuser.service.UserService;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import static com.dango.dangoaicodeuser.model.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
  * 用户服务层实现（本服务内部使用）
@@ -104,7 +102,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
     }
 
     @Override
-    public LoginUserVO userLogin(String userAccount, String userPassword, HttpServletRequest request) {
+    public LoginUserVO userLogin(String userAccount, String userPassword) {
         // 1. 校验
         if (StrUtil.hasBlank(userAccount, userPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
@@ -127,23 +125,21 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         if (!verifyPassword(userPassword, user.getUserPassword())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户不存在或密码错误");
         }
-        // 4. 记录用户的登录态
-        request.getSession().setAttribute(USER_LOGIN_STATE, user);
-        // 5. 获得脱敏后的用户信息
-        return this.getLoginUserVO(user);
+        // 4. Sa-Token 登录
+        StpUtil.login(user.getId());
+        // 5. 获得脱敏后的用户信息，并设置 Token
+        LoginUserVO loginUserVO = this.getLoginUserVO(user);
+        loginUserVO.setTokenName(StpUtil.getTokenName());
+        loginUserVO.setTokenValue(StpUtil.getTokenValue());
+        return loginUserVO;
     }
 
 
 
     @Override
-    public boolean userLogout(HttpServletRequest request) {
-        // 先判断是否已登录
-        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
-        if (userObj == null) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "未登录");
-        }
-        // 移除登录态
-        request.getSession().removeAttribute(USER_LOGIN_STATE);
+    public boolean userLogout() {
+        StpUtil.checkLogin();
+        StpUtil.logout();
         return true;
     }
 

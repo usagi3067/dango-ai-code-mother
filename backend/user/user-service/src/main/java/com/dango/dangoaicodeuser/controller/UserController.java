@@ -1,5 +1,7 @@
 package com.dango.dangoaicodeuser.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 
 import com.dango.dangoaicodecommon.common.BaseResponse;
@@ -8,8 +10,6 @@ import com.dango.dangoaicodecommon.common.ResultUtils;
 import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
 import com.dango.dangoaicodecommon.exception.ThrowUtils;
-import com.dango.dangoaicodeuser.annotation.AuthCheck;
-import com.dango.dangoaicodeuser.model.constant.UserConstant;
 import com.dango.dangoaicodeuser.model.dto.user.*;
 import com.dango.dangoaicodeuser.model.entity.User;
 import com.dango.dangoaicodeuser.model.vo.LoginUserVO;
@@ -17,7 +17,6 @@ import com.dango.dangoaicodeuser.model.vo.UserVO;
 import com.dango.dangoaicodeuser.service.UserService;
 import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -51,24 +50,25 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest, HttpServletRequest request) {
+    public BaseResponse<LoginUserVO> userLogin(@RequestBody UserLoginRequest userLoginRequest) {
         ThrowUtils.throwIf(userLoginRequest == null, ErrorCode.PARAMS_ERROR);
         String userAccount = userLoginRequest.getUserAccount();
         String userPassword = userLoginRequest.getUserPassword();
-        LoginUserVO loginUserVO = userService.userLogin(userAccount, userPassword, request);
+        LoginUserVO loginUserVO = userService.userLogin(userAccount, userPassword);
         return ResultUtils.success(loginUserVO);
     }
 
     @GetMapping("/get/login")
-    public BaseResponse<LoginUserVO> getLoginUser(HttpServletRequest request) {
-        User loginUser = UserService.getLoginUser(request);
-        return ResultUtils.success(userService.getLoginUserVO(loginUser));
+    public BaseResponse<LoginUserVO> getLoginUser() {
+        long userId = StpUtil.getLoginIdAsLong();
+        User user = userService.getById(userId);
+        ThrowUtils.throwIf(user == null, ErrorCode.NOT_LOGIN_ERROR);
+        return ResultUtils.success(userService.getLoginUserVO(user));
     }
 
     @PostMapping("/logout")
-    public BaseResponse<Boolean> userLogout(HttpServletRequest request) {
-        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
-        boolean result = userService.userLogout(request);
+    public BaseResponse<Boolean> userLogout() {
+        boolean result = userService.userLogout();
         return ResultUtils.success(result);
     }
 
@@ -77,7 +77,7 @@ public class UserController {
      * 创建用户
      */
     @PostMapping("/add")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @SaCheckRole("admin")
     public BaseResponse<Long> addUser(@RequestBody UserAddRequest userAddRequest) {
         ThrowUtils.throwIf(userAddRequest == null, ErrorCode.PARAMS_ERROR);
         User user = new User();
@@ -95,7 +95,7 @@ public class UserController {
      * 根据 id 获取用户（仅管理员）
      */
     @GetMapping("/get")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @SaCheckRole("admin")
     public BaseResponse<User> getUserById(long id) {
         ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
         User user = userService.getById(id);
@@ -117,7 +117,7 @@ public class UserController {
      * 删除用户
      */
     @PostMapping("/delete")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @SaCheckRole("admin")
     public BaseResponse<Boolean> deleteUser(@RequestBody DeleteRequest deleteRequest) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -130,7 +130,7 @@ public class UserController {
      * 更新用户
      */
     @PostMapping("/update")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @SaCheckRole("admin")
     public BaseResponse<Boolean> updateUser(@RequestBody UserUpdateRequest userUpdateRequest) {
         if (userUpdateRequest == null || userUpdateRequest.getId() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -148,7 +148,7 @@ public class UserController {
      * @param userQueryRequest 查询请求参数
      */
     @PostMapping("/list/page/vo")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @SaCheckRole("admin")
     public BaseResponse<Page<UserVO>> listUserVOByPage(@RequestBody UserQueryRequest userQueryRequest) {
         ThrowUtils.throwIf(userQueryRequest == null, ErrorCode.PARAMS_ERROR);
         long pageNum = userQueryRequest.getPageNum();

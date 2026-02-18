@@ -1,6 +1,7 @@
 package com.dango.dangoaicodeapp.controller;
 
 
+import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
@@ -23,16 +24,15 @@ import com.dango.dangoaicodecommon.common.ResultUtils;
 import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
 import com.dango.dangoaicodecommon.exception.ThrowUtils;
-import com.dango.dangoaicodeuser.annotation.AuthCheck;
 import com.dango.dangoaicodeuser.model.constant.UserConstant;
 import com.dango.dangoaicodeuser.model.entity.User;
 import com.dango.dangoaicodeuser.service.InnerUserService;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.MediaType;
@@ -69,18 +69,33 @@ public class AppController {
 
     @Resource
     private AppSearchService appSearchService;
+
+    @DubboReference
+    private InnerUserService innerUserService;
+
+    /**
+     * 获取当前登录用户
+     */
+    private User getLoginUser() {
+        long userId = InnerUserService.getLoginUserId();
+        User user = innerUserService.getById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
+        }
+        return user;
+    }
+
     /**
      * 创建应用
      *
      * @param appAddRequest 创建应用请求
-     * @param request       请求
      * @return 应用 id
      */
     @PostMapping("/add")
-    public BaseResponse<Long> addApp(@RequestBody AppAddRequest appAddRequest, HttpServletRequest request) {
+    public BaseResponse<Long> addApp(@RequestBody AppAddRequest appAddRequest) {
         ThrowUtils.throwIf(appAddRequest == null, ErrorCode.PARAMS_ERROR);
         // 获取当前登录用户
-        User loginUser = InnerUserService.getLoginUser(request);
+        User loginUser = getLoginUser();
         Long appId = appService.createApp(appAddRequest, loginUser);
         return ResultUtils.success(appId);
     }
@@ -90,14 +105,12 @@ public class AppController {
      *
      * @param files   项目文件数组
      * @param paths   每个文件对应的相对路径
-     * @param request 请求
      * @return 应用 ID
      */
     @PostMapping("/upload/vue-project")
     public BaseResponse<Long> uploadVueProject(
             @RequestParam("files") MultipartFile[] files,
-            @RequestParam("paths") String[] paths,
-            HttpServletRequest request) {
+            @RequestParam("paths") String[] paths) {
         // 1. 校验参数
         ThrowUtils.throwIf(files == null || files.length == 0,
                 ErrorCode.PARAMS_ERROR, "文件不能为空");
@@ -113,7 +126,7 @@ public class AppController {
                 ErrorCode.PARAMS_ERROR, "项目总大小不能超过 50MB");
 
         // 3. 获取登录用户
-        User loginUser = InnerUserService.getLoginUser(request);
+        User loginUser = getLoginUser();
 
         // 4. 创建应用
         Long appId = appService.createAppFromVueProject(files, paths, loginUser);
@@ -125,15 +138,14 @@ public class AppController {
      * 更新应用（用户只能更新自己的应用名称和标签）
      *
      * @param appUpdateRequest 更新请求
-     * @param request          请求
      * @return 更新结果
      */
     @PostMapping("/update")
-    public BaseResponse<Boolean> updateApp(@RequestBody AppUpdateRequest appUpdateRequest, HttpServletRequest request) {
+    public BaseResponse<Boolean> updateApp(@RequestBody AppUpdateRequest appUpdateRequest) {
         if (appUpdateRequest == null || appUpdateRequest.getId() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        User loginUser = InnerUserService.getLoginUser(request);
+        User loginUser = getLoginUser();
         long id = appUpdateRequest.getId();
         // 判断是否存在
         App oldApp = appService.getById(id);
@@ -157,15 +169,14 @@ public class AppController {
      * 删除应用（用户只能删除自己的应用）
      *
      * @param deleteRequest 删除请求
-     * @param request       请求
      * @return 删除结果
      */
     @PostMapping("/delete")
-    public BaseResponse<Boolean> deleteApp(@RequestBody DeleteRequest deleteRequest, HttpServletRequest request) {
+    public BaseResponse<Boolean> deleteApp(@RequestBody DeleteRequest deleteRequest) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        User loginUser = InnerUserService.getLoginUser(request);
+        User loginUser = getLoginUser();
         long id = deleteRequest.getId();
         // 判断是否存在
         App oldApp = appService.getById(id);
@@ -200,13 +211,12 @@ public class AppController {
      * 分页获取当前用户创建的应用列表
      *
      * @param appQueryRequest 查询请求
-     * @param request         请求
      * @return 应用列表
      */
     @PostMapping("/my/list/page/vo")
-    public BaseResponse<Page<AppVO>> listMyAppVOByPage(@RequestBody AppQueryRequest appQueryRequest, HttpServletRequest request) {
+    public BaseResponse<Page<AppVO>> listMyAppVOByPage(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
-        User loginUser = InnerUserService.getLoginUser(request);
+        User loginUser = getLoginUser();
         // 限制每页最多 20 个
         long pageSize = appQueryRequest.getPageSize();
         ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR, "每页最多查询 20 个应用");
@@ -289,7 +299,7 @@ public class AppController {
      * @return 删除结果
      */
     @PostMapping("/admin/delete")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @SaCheckRole("admin")
     public BaseResponse<Boolean> deleteAppByAdmin(@RequestBody DeleteRequest deleteRequest) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -311,7 +321,7 @@ public class AppController {
      * @return 更新结果
      */
     @PostMapping("/admin/update")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @SaCheckRole("admin")
     public BaseResponse<Boolean> updateAppByAdmin(@RequestBody AppAdminUpdateRequest appAdminUpdateRequest) {
         if (appAdminUpdateRequest == null || appAdminUpdateRequest.getId() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
@@ -336,7 +346,7 @@ public class AppController {
      * @return 应用列表
      */
     @PostMapping("/admin/list/page/vo")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @SaCheckRole("admin")
     public BaseResponse<Page<AppVO>> listAppVOByPageByAdmin(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
         long pageNum = appQueryRequest.getPageNum();
@@ -357,7 +367,7 @@ public class AppController {
      * @return 应用详情
      */
     @GetMapping("/admin/get/vo")
-    @AuthCheck(mustRole = UserConstant.ADMIN_ROLE)
+    @SaCheckRole("admin")
     public BaseResponse<AppVO> getAppVOByIdByAdmin(long id) {
         ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
         // 查询数据库
@@ -375,21 +385,19 @@ public class AppController {
      * @param appId       应用 ID
      * @param message     用户消息
      * @param elementInfo 选中的元素信息（JSON 字符串，可选，用于修改模式）
-     * @param request     请求对象
      * @return 生成结果流
      */
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @RateLimit(limitType = RateLimitType.USER, rate = 5, rateInterval = 60, message = "AI 对话请求过于频繁，请稍后再试")
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
                                                        @RequestParam String message,
-                                                       @RequestParam(required = false) String elementInfo,
-                                                       HttpServletRequest request) {
+                                                       @RequestParam(required = false) String elementInfo) {
         // 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
         ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
         // 获取当前登录用户
-        User loginUser = InnerUserService.getLoginUser(request);
-        
+        User loginUser = getLoginUser();
+
         // 解析 elementInfo JSON 字符串
         ElementInfo parsedElementInfo = null;
         if (StrUtil.isNotBlank(elementInfo)) {
@@ -401,7 +409,7 @@ public class AppController {
                 log.warn("解析 elementInfo 失败: {}", e.getMessage());
             }
         }
-        
+
         // 调用服务生成代码（流式），使用 Agent 模式
         Flux<String> contentFlux = appService.chatToGenCode(appId, message, parsedElementInfo, loginUser);
         // 转换为 ServerSentEvent 格式
@@ -424,10 +432,10 @@ public class AppController {
                                 .build()
                 ));
     }
-    
+
     /**
      * 将 ElementInfoDTO 转换为 ElementInfo 实体
-     * 
+     *
      * @param dto 元素信息 DTO
      * @return 元素信息实体
      */
@@ -446,16 +454,15 @@ public class AppController {
      * 应用部署
      *
      * @param appDeployRequest 部署请求
-     * @param request          请求
      * @return 部署 URL
      */
     @PostMapping("/deploy")
-    public BaseResponse<String> deployApp(@RequestBody AppDeployRequest appDeployRequest, HttpServletRequest request) {
+    public BaseResponse<String> deployApp(@RequestBody AppDeployRequest appDeployRequest) {
         ThrowUtils.throwIf(appDeployRequest == null, ErrorCode.PARAMS_ERROR);
         Long appId = appDeployRequest.getAppId();
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
         // 获取当前登录用户
-        User loginUser = InnerUserService.getLoginUser(request);
+        User loginUser = getLoginUser();
         // 调用服务部署应用
         String deployUrl = appService.deployApp(appId, loginUser);
         return ResultUtils.success(deployUrl);
@@ -468,12 +475,10 @@ public class AppController {
      * 下载应用代码
      *
      * @param appId    应用ID
-     * @param request  请求
      * @param response 响应
      */
     @GetMapping("/download/{appId}")
     public void downloadAppCode(@PathVariable Long appId,
-                                HttpServletRequest request,
                                 HttpServletResponse response) {
         // 1. 基础校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
@@ -481,7 +486,7 @@ public class AppController {
         App app = appService.getById(appId);
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
         // 3. 权限校验：只有应用创建者可以下载代码
-        User loginUser = InnerUserService.getLoginUser(request);
+        User loginUser = getLoginUser();
         if (!app.getUserId().equals(loginUser.getId())) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限下载该应用代码");
         }
@@ -505,14 +510,13 @@ public class AppController {
      * 为应用创建独立的数据库 Schema，并写入 Supabase 客户端配置
      *
      * @param appId   应用 ID
-     * @param request 请求
      * @return 初始化结果
      */
     @PostMapping("/{appId}/database")
-    public BaseResponse<Boolean> initializeDatabase(@PathVariable Long appId, HttpServletRequest request) {
+    public BaseResponse<Boolean> initializeDatabase(@PathVariable Long appId) {
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
         // 获取当前登录用户
-        User loginUser = InnerUserService.getLoginUser(request);
+        User loginUser = getLoginUser();
         // 调用服务初始化数据库
         appService.initializeDatabase(appId, loginUser);
         return ResultUtils.success(true);

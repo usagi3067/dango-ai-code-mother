@@ -1,16 +1,14 @@
 package com.dango.dangoaicodeuser.service;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
 import com.dango.dangoaicodeuser.model.entity.User;
 import com.dango.dangoaicodeuser.model.vo.UserVO;
-import jakarta.servlet.http.HttpServletRequest;
 
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.List;
-
-import static com.dango.dangoaicodeuser.model.constant.UserConstant.USER_LOGIN_STATE;
 
 /**
  * 用户内部服务接口
@@ -45,18 +43,15 @@ public interface InnerUserService {
     UserVO getUserVO(User user);
 
     /**
-     * 获取当前登录用户（静态方法，避免跨服务调用）
-     * 由于 HttpServletRequest 对象不好在网络中传递，因此采用静态方法
+     * 获取当前登录用户 ID（通过 Sa-Token）
      *
-     * @param request HTTP 请求
-     * @return 当前登录用户
+     * @return 当前登录用户 ID
      */
-    static User getLoginUser(HttpServletRequest request) {
-        Object userObj = request.getSession().getAttribute(USER_LOGIN_STATE);
-        User currentUser = (User) userObj;
-        if (currentUser == null || currentUser.getId() == null) {
+    static long getLoginUserId() {
+        try {
+            return StpUtil.getLoginIdAsLong();
+        } catch (Exception e) {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
         }
-        return currentUser;
     }
 }

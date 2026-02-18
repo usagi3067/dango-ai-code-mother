@@ -3,7 +3,6 @@ package com.dango.dangoaicodeapp.ratelimit;
 import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
 import com.dango.dangoaicodecommon.ratelimit.annotation.RateLimit;
-import com.dango.dangoaicodeuser.model.entity.User;
 import com.dango.dangoaicodeuser.service.InnerUserService;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletRequest;
@@ -93,12 +92,7 @@ public class RateLimitAspect {
      */
     private Long getUserId() {
         try {
-            ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
-            if (attributes != null) {
-                HttpServletRequest request = attributes.getRequest();
-                User loginUser = InnerUserService.getLoginUser(request);
-                return loginUser.getId();
-            }
+            return InnerUserService.getLoginUserId();
         } catch (Exception e) {
             log.warn("获取用户ID失败，降级为IP限流: {}", e.getMessage());
         }
