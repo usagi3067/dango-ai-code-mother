@@ -1,6 +1,6 @@
 package com.dango.dangoaicodeapp.ai;
 
-import com.dango.aicodegenerate.service.ImageCollectionService;
+import com.dango.dangoaicodeapp.domain.codegen.ai.service.ImageCollectionService;
 import com.dango.dangoaicodeapp.DangoAiCodeAppApplication;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Assertions;

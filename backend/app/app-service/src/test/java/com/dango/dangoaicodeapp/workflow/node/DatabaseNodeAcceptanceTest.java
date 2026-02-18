@@ -1,8 +1,8 @@
 package com.dango.dangoaicodeapp.workflow.node;
 
 import com.dango.aicodegenerate.model.DatabaseAnalysisResult;
-import com.dango.aicodegenerate.service.AiDatabaseAnalyzerService;
-import com.dango.dangoaicodeapp.ai.AiDatabaseAnalyzerServiceFactory;
+import com.dango.dangoaicodeapp.domain.codegen.ai.service.AiDatabaseAnalyzerService;
+import com.dango.dangoaicodeapp.domain.codegen.ai.factory.AiDatabaseAnalyzerServiceFactory;
 import com.dango.supabase.dto.TableSchemaDTO;
 import com.dango.supabase.service.SupabaseService;
 import org.apache.dubbo.config.annotation.DubboReference;

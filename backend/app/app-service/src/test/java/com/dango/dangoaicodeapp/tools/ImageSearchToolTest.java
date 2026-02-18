@@ -2,7 +2,7 @@ package com.dango.dangoaicodeapp.tools;
 
 import com.dango.aicodegenerate.model.ImageCategoryEnum;
 import com.dango.aicodegenerate.model.ImageResource;
-import com.dango.aicodegenerate.tools.ImageSearchTool;
+import com.dango.dangoaicodeapp.domain.codegen.tools.ImageSearchTool;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

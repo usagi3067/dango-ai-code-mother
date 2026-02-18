@@ -8,6 +8,10 @@ import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Repository;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -61,5 +65,13 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public long count(QueryWrapper queryWrapper) {
         return userMapper.selectCountByQuery(queryWrapper);
+    }
+
+    @Override
+    public List<User> findByIds(Collection<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return userMapper.selectListByIds(new ArrayList<>(ids));
     }
 }

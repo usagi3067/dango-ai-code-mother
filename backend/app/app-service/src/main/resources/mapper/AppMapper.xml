@@ -2,7 +2,7 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="com.dango.dangoaicodeapp.mapper.AppMapper">
+<mapper namespace="com.dango.dangoaicodeapp.infrastructure.mapper.AppMapper">
 
     <!-- 游标分页查询应用列表 -->
     <select id="listAppByCursor" resultType="com.dango.dangoaicodeapp.model.entity.App">

@@ -1,7 +1,8 @@
 package com.dango.dangoaicodeapp.workflow;
 
 import com.dango.dangoaicodeapp.DangoAiCodeAppApplication;
-import com.dango.dangoaicodeapp.workflow.state.WorkflowContext;
+import com.dango.dangoaicodeapp.domain.codegen.workflow.CodeGenWorkflow;
+import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

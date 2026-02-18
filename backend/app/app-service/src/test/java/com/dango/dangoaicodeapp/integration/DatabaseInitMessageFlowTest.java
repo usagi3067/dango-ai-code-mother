@@ -2,8 +2,8 @@ package com.dango.dangoaicodeapp.integration;
 
 import com.dango.dangoaicodeapp.model.entity.App;
 import com.dango.dangoaicodeapp.service.AppService;
-import com.dango.dangoaicodeapp.workflow.CodeGenWorkflow;
-import com.dango.dangoaicodeapp.workflow.state.WorkflowContext;
+import com.dango.dangoaicodeapp.domain.codegen.workflow.CodeGenWorkflow;
+import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.manager.CosManager;
 import com.dango.supabase.dto.TableSchemaDTO;
 import com.dango.supabase.dto.TableSchemaDTO;

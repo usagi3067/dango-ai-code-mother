@@ -2,7 +2,8 @@ package com.dango.dangoaicodeapp.workflow.node;
 
 import com.dango.aicodegenerate.model.QualityResult;
 import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
-import com.dango.dangoaicodeapp.workflow.state.WorkflowContext;
+import com.dango.dangoaicodeapp.domain.codegen.node.CodeFixerNode;
+import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

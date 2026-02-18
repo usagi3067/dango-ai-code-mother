@@ -2,7 +2,8 @@ package com.dango.dangoaicodeapp.workflow.node;
 
 import com.dango.dangoaicodeapp.model.entity.ElementInfo;
 import com.dango.dangoaicodeapp.model.enums.OperationModeEnum;
-import com.dango.dangoaicodeapp.workflow.state.WorkflowContext;
+import com.dango.dangoaicodeapp.domain.codegen.node.ModeRouterNode;
+import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

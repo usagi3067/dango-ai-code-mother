@@ -1,5 +1,6 @@
 package com.dango.dangoaicodeapp.workflow.node;
 
+import com.dango.dangoaicodeapp.domain.codegen.node.CodeQualityCheckNode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

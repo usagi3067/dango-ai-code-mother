@@ -4,6 +4,8 @@ import com.dango.dangoaicodeuser.domain.user.entity.User;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -45,4 +47,9 @@ public interface UserRepository {
      * 统计数量
      */
     long count(QueryWrapper queryWrapper);
+
+    /**
+     * 根据 ID 列表批量查询用户
+     */
+    List<User> findByIds(Collection<Long> ids);
 }
