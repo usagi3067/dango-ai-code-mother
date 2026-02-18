@@ -57,9 +57,7 @@ public class AppDomainService {
         }
 
         // 获取代码生成类型，构建源目录路径
-        String codeGenType = app.getCodeGenType();
-        String sourceDirName = codeGenType + "_" + appId;
-        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
+        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + app.getProjectDirName();
 
         // 检查源目录是否存在
         File sourceDir = new File(sourceDirPath);
@@ -97,8 +95,7 @@ public class AppDomainService {
      */
     public void initializeDatabase(App app) {
         Long appId = app.getId();
-        String codeGenType = app.getCodeGenType();
-        String projectDir = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + codeGenType + "_" + appId;
+        String projectDir = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + app.getProjectDirName();
 
         // 调用 supabase-service 创建 Schema
         try {
