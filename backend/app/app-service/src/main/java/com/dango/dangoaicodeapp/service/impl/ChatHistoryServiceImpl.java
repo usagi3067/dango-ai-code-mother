@@ -1,5 +1,6 @@
 package com.dango.dangoaicodeapp.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
@@ -15,8 +16,6 @@ import com.dango.dangoaicodeapp.service.ChatHistoryService;
 import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
 import com.dango.dangoaicodecommon.exception.ThrowUtils;
-import com.dango.dangoaicodeuser.model.entity.User;
-import com.dango.dangoaicodeuser.model.enums.UserRoleEnum;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.spring.service.impl.ServiceImpl;
@@ -83,10 +82,9 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
     }
 
     @Override
-    public Page<ChatHistoryVO> listByAppId(Long appId, Long lastId, int size, User loginUser) {
+    public Page<ChatHistoryVO> listByAppId(Long appId, Long lastId, int size, long userId) {
         // 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
-        ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR, "用户未登录");
 
         // 限制每页数量
         if (size <= 0 || size > 20) {
@@ -98,8 +96,8 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
 
         // 权限校验：仅应用创建者或管理员可以查看
-        boolean isOwner = app.getUserId().equals(loginUser.getId());
-        boolean isAdmin = UserRoleEnum.ADMIN.getValue().equals(loginUser.getUserRole());
+        boolean isOwner = app.getUserId().equals(userId);
+        boolean isAdmin = StpUtil.hasRole("admin");
         if (!isOwner && !isAdmin) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限查看该应用的对话历史");
         }

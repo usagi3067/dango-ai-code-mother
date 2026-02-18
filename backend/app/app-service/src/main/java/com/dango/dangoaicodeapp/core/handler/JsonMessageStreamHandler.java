@@ -8,7 +8,6 @@ import com.dango.aicodegenerate.model.message.*;
 import com.dango.aicodegenerate.tools.BaseTool;
 import com.dango.aicodegenerate.tools.ToolManager;
 import com.dango.dangoaicodeapp.service.ChatHistoryService;
-import com.dango.dangoaicodeuser.model.entity.User;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -39,12 +38,12 @@ public class JsonMessageStreamHandler {
      * @param originFlux         原始流
      * @param chatHistoryService 聊天历史服务
      * @param appId              应用ID
-     * @param loginUser          登录用户
+     * @param userId             用户ID
      * @return 处理后的流
      */
     public Flux<String> handle(Flux<String> originFlux,
                                ChatHistoryService chatHistoryService,
-                               long appId, User loginUser) {
+                               long appId, long userId) {
         // 收集数据用于生成后端记忆格式
         StringBuilder chatHistoryStringBuilder = new StringBuilder();
         // 用于跟踪已经见过的工具ID，判断是否是第一次调用
@@ -63,12 +62,12 @@ public class JsonMessageStreamHandler {
                 .doOnComplete(() -> {
                     // 流式响应完成后，保存 AI 消息到对话历史
                     String aiResponse = chatHistoryStringBuilder.toString();
-                    chatHistoryService.saveAiMessage(appId, loginUser.getId(), aiResponse);
+                    chatHistoryService.saveAiMessage(appId, userId, aiResponse);
                 })
                 .doOnError(error -> {
                     // 如果AI回复失败，也要记录错误消息
                     String errorMessage = "AI回复失败: " + error.getMessage();
-                    chatHistoryService.saveAiMessage(appId, loginUser.getId(), errorMessage);
+                    chatHistoryService.saveAiMessage(appId, userId, errorMessage);
                 });
     }
 

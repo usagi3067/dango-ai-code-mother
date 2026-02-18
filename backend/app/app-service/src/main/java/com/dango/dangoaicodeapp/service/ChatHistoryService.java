@@ -3,7 +3,6 @@ package com.dango.dangoaicodeapp.service;
 import com.dango.dangoaicodeapp.model.dto.chathistory.ChatHistoryQueryRequest;
 import com.dango.dangoaicodeapp.model.entity.ChatHistory;
 import com.dango.dangoaicodeapp.model.vo.ChatHistoryVO;
-import com.dango.dangoaicodeuser.model.entity.User;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
@@ -44,10 +43,10 @@ public interface ChatHistoryService extends IService<ChatHistory> {
      * @param appId     应用ID
      * @param lastId    游标ID，用于向前加载更早的消息
      * @param size      每页数量
-     * @param loginUser 当前登录用户
+     * @param userId    当前登录用户ID
      * @return 对话历史VO分页
      */
-    Page<ChatHistoryVO> listByAppId(Long appId, Long lastId, int size, User loginUser);
+    Page<ChatHistoryVO> listByAppId(Long appId, Long lastId, int size, long userId);
 
     /**
      * 删除应用的所有对话历史

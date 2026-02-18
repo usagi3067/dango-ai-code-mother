@@ -2,7 +2,6 @@ package com.dango.dangoaicodeapp.core.handler;
 
 
 import com.dango.dangoaicodeapp.service.ChatHistoryService;
-import com.dango.dangoaicodeuser.model.entity.User;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -25,12 +24,12 @@ public class StreamHandlerExecutor {
      * @param originFlux         原始流
      * @param chatHistoryService 聊天历史服务
      * @param appId              应用ID
-     * @param loginUser          登录用户
+     * @param userId             用户ID
      * @return 处理后的流
      */
     public Flux<String> doExecute(Flux<String> originFlux,
                                   ChatHistoryService chatHistoryService,
-                                  long appId, User loginUser) {
-        return jsonMessageStreamHandler.handle(originFlux, chatHistoryService, appId, loginUser);
+                                  long appId, long userId) {
+        return jsonMessageStreamHandler.handle(originFlux, chatHistoryService, appId, userId);
     }
 }

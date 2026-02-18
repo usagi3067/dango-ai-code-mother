@@ -5,7 +5,6 @@ import com.dango.dangoaicodeapp.model.dto.app.AppQueryRequest;
 import com.dango.dangoaicodeapp.model.entity.App;
 import com.dango.dangoaicodeapp.model.entity.ElementInfo;
 import com.dango.dangoaicodeapp.model.vo.AppVO;
-import com.dango.dangoaicodeuser.model.entity.User;
 
 import com.mybatisflex.core.query.QueryWrapper;
 import com.mybatisflex.core.service.IService;
@@ -46,24 +45,24 @@ public interface AppService extends IService<App> {
      * 根据应用id和用户消息生成代码
      * @param appId
      * @param message
-     * @param loginUser
+     * @param userId
      * @return
-     * @deprecated 请使用 {@link #chatToGenCode(Long, String, ElementInfo, User)} 方法，默认使用 Agent 模式
+     * @deprecated 请使用 {@link #chatToGenCode(Long, String, ElementInfo, long)} 方法，默认使用 Agent 模式
      */
     @Deprecated
-    Flux<String> chatToGenCode(Long appId, String message, User loginUser);
+    Flux<String> chatToGenCode(Long appId, String message, long userId);
 
     /**
      * 根据应用id和用户消息生成代码（支持 Agent 模式）
      * @param appId 应用 ID
      * @param message 用户消息
-     * @param loginUser 登录用户
+     * @param userId 用户 ID
      * @param agent 是否启用 Agent 模式（工作流模式）
      * @return 生成的代码流
-     * @deprecated 请使用 {@link #chatToGenCode(Long, String, ElementInfo, User)} 方法，默认使用 Agent 模式
+     * @deprecated 请使用 {@link #chatToGenCode(Long, String, ElementInfo, long)} 方法，默认使用 Agent 模式
      */
     @Deprecated
-    Flux<String> chatToGenCode(Long appId, String message, User loginUser, boolean agent);
+    Flux<String> chatToGenCode(Long appId, String message, long userId, boolean agent);
 
     /**
      * 根据应用id和用户消息生成代码（支持 Agent 模式和元素信息）
@@ -71,13 +70,13 @@ public interface AppService extends IService<App> {
      * @param appId 应用 ID
      * @param message 用户消息
      * @param elementInfo 选中的元素信息（可选，用于修改模式）
-     * @param loginUser 登录用户
+     * @param userId 用户 ID
      * @param agent 是否启用 Agent 模式（工作流模式）
      * @return 生成的代码流
-     * @deprecated 请使用 {@link #chatToGenCode(Long, String, ElementInfo, User)} 方法，默认使用 Agent 模式
+     * @deprecated 请使用 {@link #chatToGenCode(Long, String, ElementInfo, long)} 方法，默认使用 Agent 模式
      */
     @Deprecated
-    Flux<String> chatToGenCode(Long appId, String message, ElementInfo elementInfo, User loginUser, boolean agent);
+    Flux<String> chatToGenCode(Long appId, String message, ElementInfo elementInfo, long userId, boolean agent);
 
     /**
      * 根据应用id和用户消息生成代码（Agent 模式）
@@ -87,18 +86,18 @@ public interface AppService extends IService<App> {
      * @param appId 应用 ID
      * @param message 用户消息
      * @param elementInfo 选中的元素信息（可选，用于修改模式）
-     * @param loginUser 登录用户
+     * @param userId 用户 ID
      * @return 生成的代码流
      */
-    Flux<String> chatToGenCode(Long appId, String message, ElementInfo elementInfo, User loginUser);
+    Flux<String> chatToGenCode(Long appId, String message, ElementInfo elementInfo, long userId);
 
     /**
      * 部署应用
       * @param appId 应用id
-      * @param loginUser 登录用户
+      * @param userId 用户 ID
      * @return 部署地址
      */
-    String deployApp(Long appId, User loginUser);
+    String deployApp(Long appId, long userId);
 
     /**
      * 异步生成应用截图
@@ -110,20 +109,20 @@ public interface AppService extends IService<App> {
     /**
      * 创建应用
      * @param appAddRequest
-     * @param loginUser
+     * @param userId
      * @return
      */
-    Long createApp(AppAddRequest appAddRequest, User loginUser);
+    Long createApp(AppAddRequest appAddRequest, long userId);
 
     /**
      * 通过上传 Vue 项目文件夹创建应用
      *
      * @param files     项目文件数组
      * @param paths     每个文件对应的相对路径
-     * @param loginUser 登录用户
+     * @param userId    用户 ID
      * @return 应用 ID
      */
-    Long createAppFromVueProject(MultipartFile[] files, String[] paths, User loginUser);
+    Long createAppFromVueProject(MultipartFile[] files, String[] paths, long userId);
 
     /**
      * 初始化应用数据库
@@ -136,7 +135,7 @@ public interface AppService extends IService<App> {
      * 5. 更新 app.has_database = true
      *
      * @param appId     应用 ID
-     * @param loginUser 登录用户
+     * @param userId    用户 ID
      */
-    void initializeDatabase(Long appId, User loginUser);
+    void initializeDatabase(Long appId, long userId);
 }

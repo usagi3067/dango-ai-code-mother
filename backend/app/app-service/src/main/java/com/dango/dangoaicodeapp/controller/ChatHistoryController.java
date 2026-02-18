@@ -9,15 +9,11 @@ import com.dango.dangoaicodeapp.model.vo.ChatHistoryVO;
 import com.dango.dangoaicodeapp.service.ChatHistoryService;
 import com.dango.dangoaicodecommon.common.BaseResponse;
 import com.dango.dangoaicodecommon.common.ResultUtils;
-import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
 import com.dango.dangoaicodecommon.exception.ThrowUtils;
-import com.dango.dangoaicodeuser.model.entity.User;
-import com.dango.dangoaicodeuser.service.InnerUserService;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
-import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -34,21 +30,6 @@ public class ChatHistoryController {
     @Resource
     private ChatHistoryService chatHistoryService;
 
-    @DubboReference
-    private InnerUserService innerUserService;
-
-    /**
-     * 获取当前登录用户
-     */
-    private User getLoginUser() {
-        long userId = StpUtil.getLoginIdAsLong();
-        User user = innerUserService.getById(userId);
-        if (user == null) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
-        }
-        return user;
-    }
-
     /**
      * 获取应用的对话历史（游标分页）
      *
@@ -64,10 +45,8 @@ public class ChatHistoryController {
             @RequestParam(required = false, defaultValue = "10") Integer size) {
         // 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
-        // 获取当前登录用户
-        User loginUser = getLoginUser();
         // 调用服务获取对话历史
-        Page<ChatHistoryVO> chatHistoryVOPage = chatHistoryService.listByAppId(appId, lastId, size, loginUser);
+        Page<ChatHistoryVO> chatHistoryVOPage = chatHistoryService.listByAppId(appId, lastId, size, StpUtil.getLoginIdAsLong());
         return ResultUtils.success(chatHistoryVOPage);
     }
 

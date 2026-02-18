@@ -142,27 +142,27 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
     @Override
     @Deprecated
-    public Flux<String> chatToGenCode(Long appId, String message, User loginUser) {
+    public Flux<String> chatToGenCode(Long appId, String message, long userId) {
         // 委托给新方法，无元素信息
-        return chatToGenCode(appId, message, null, loginUser);
+        return chatToGenCode(appId, message, null, userId);
     }
 
     @Override
     @Deprecated
-    public Flux<String> chatToGenCode(Long appId, String message, User loginUser, boolean agent) {
+    public Flux<String> chatToGenCode(Long appId, String message, long userId, boolean agent) {
         // 委托给新方法
-        return chatToGenCode(appId, message, null, loginUser);
+        return chatToGenCode(appId, message, null, userId);
     }
 
     @Override
     @Deprecated
-    public Flux<String> chatToGenCode(Long appId, String message, ElementInfo elementInfo, User loginUser, boolean agent) {
+    public Flux<String> chatToGenCode(Long appId, String message, ElementInfo elementInfo, long userId, boolean agent) {
         // 委托给新方法
-        return chatToGenCode(appId, message, elementInfo, loginUser);
+        return chatToGenCode(appId, message, elementInfo, userId);
     }
 
     @Override
-    public Flux<String> chatToGenCode(Long appId, String message, ElementInfo elementInfo, User loginUser) {
+    public Flux<String> chatToGenCode(Long appId, String message, ElementInfo elementInfo, long userId) {
         // 1. 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
         ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
@@ -170,7 +170,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         App app = this.getById(appId);
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
         // 3. 验证用户是否有权限访问该应用，仅本人可以生成代码
-        if (!app.getUserId().equals(loginUser.getId())) {
+        if (!app.getUserId().equals(userId)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限访问该应用");
         }
         // 4. 获取应用的代码生成类型
@@ -180,7 +180,6 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的代码生成类型");
         }
         // 5. 保存用户消息到对话历史
-        Long userId = loginUser.getId();
         try {
             chatHistoryService.saveUserMessage(appId, userId, message);
         } catch (Exception e) {
@@ -203,7 +202,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         }
         // 7. 创建监控上下文
         MonitorContext monitorContext = MonitorContext.builder()
-                .userId(userId.toString())
+                .userId(String.valueOf(userId))
                 .appId(appId.toString())
                 .build();
         // 设置到当前线程
@@ -214,7 +213,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
         Flux<String> codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(
                 message, appId, elementInfo, databaseEnabled, databaseSchema, monitorContext);
         // 9. 收集 AI 响应内容并在完成后记录到对话历史
-        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, loginUser)
+        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, userId)
                 .doFinally(signalType -> {
                     // 流结束时清理（无论成功/失败/取消）
                     MonitorContextHolder.clearContext();
@@ -222,15 +221,14 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     }
 
     @Override
-    public String deployApp(Long appId, User loginUser) {
+    public String deployApp(Long appId, long userId) {
         // 1. 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
-        ThrowUtils.throwIf(loginUser == null, ErrorCode.NOT_LOGIN_ERROR, "用户未登录");
         // 2. 查询应用信息
         App app = this.getById(appId);
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
         // 3. 验证用户是否有权限部署该应用，仅本人可以部署
-        if (!app.getUserId().equals(loginUser.getId())) {
+        if (!app.getUserId().equals(userId)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限部署该应用");
         }
         // 4. 检查是否已有 deployKey
@@ -300,14 +298,14 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     }
 
     @Override
-    public Long createApp(AppAddRequest appAddRequest, User loginUser) {
+    public Long createApp(AppAddRequest appAddRequest, long userId) {
         // 参数校验
         String initPrompt = appAddRequest.getInitPrompt();
         ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化 prompt 不能为空");
         // 构造入库对象
         App app = new App();
         BeanUtil.copyProperties(appAddRequest, app);
-        app.setUserId(loginUser.getId());
+        app.setUserId(userId);
         // 使用 AI 智能生成应用名称和标签
         AppNameAndTagResult appInfo = appInfoGeneratorFacade.generateAppInfo(initPrompt);
         app.setAppName(appInfo.getAppName());
@@ -322,7 +320,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     }
 
     @Override
-    public Long createAppFromVueProject(MultipartFile[] files, String[] paths, User loginUser) {
+    public Long createAppFromVueProject(MultipartFile[] files, String[] paths, long userId) {
         // 1. 读取 package.json 内容用于 AI 分析
         String packageJsonContent = "";
         String appVueContent = "";
@@ -356,7 +354,7 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
 
         // 3. 创建 App 记录
         App app = new App();
-        app.setUserId(loginUser.getId());
+        app.setUserId(userId);
         app.setAppName(appInfo.getAppName());
         app.setTag(appInfo.getTag());
         app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
@@ -403,13 +401,13 @@ public class AppServiceImpl extends ServiceImpl<AppMapper, App> implements AppSe
     private com.dango.dangoaicodeapp.config.SupabaseClientConfig supabaseClientConfig;
 
     @Override
-    public void initializeDatabase(Long appId, User loginUser) {
+    public void initializeDatabase(Long appId, long userId) {
         // 1. 查询应用信息
         App app = this.getById(appId);
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
 
         // 2. 权限校验：只有应用创建者可以初始化数据库
-        if (!app.getUserId().equals(loginUser.getId())) {
+        if (!app.getUserId().equals(userId)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限操作该应用");
         }
 
