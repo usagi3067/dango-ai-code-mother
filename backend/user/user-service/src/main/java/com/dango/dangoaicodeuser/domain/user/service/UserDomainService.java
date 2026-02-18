@@ -23,7 +23,7 @@ public class UserDomainService {
     public User register(String userAccount, String userPassword, String checkPassword) {
         // 1. 校验参数
         User.validateAccount(userAccount);
-        User.validatePassword(userPassword);
+        User.validatePasswordFormat(userPassword);
 
         if (!userPassword.equals(checkPassword)) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的密码不一致");
@@ -47,7 +47,7 @@ public class UserDomainService {
     public User authenticate(String userAccount, String userPassword) {
         // 1. 校验参数
         User.validateAccount(userAccount);
-        User.validatePassword(userPassword);
+        User.validatePasswordFormat(userPassword);
 
         // 2. 查询用户
         User user = userRepository.findByAccount(userAccount)

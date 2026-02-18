@@ -114,7 +114,7 @@ public class User implements Serializable {
     /**
      * 校验密码格式
      */
-    public static void validatePassword(String password) {
+    public static void validatePasswordFormat(String password) {
         if (password == null || password.length() < 8) {
             throw new IllegalArgumentException("用户密码过短");
         }

@@ -16,7 +16,7 @@ import org.springframework.context.annotation.EnableAspectJAutoProxy;
  */
 @SpringBootApplication
 @EnableAspectJAutoProxy(exposeProxy = true)
-@MapperScan("com.dango.dangoaicodeuser.mapper")
+@MapperScan("com.dango.dangoaicodeuser.infrastructure.mapper")
 @ComponentScan(basePackages = {"com.dango.dangoaicodecommon", "com.dango.dangoaicodeuser"})
 @EnableDubbo
 public class dangoAiCodeUserApplication {
