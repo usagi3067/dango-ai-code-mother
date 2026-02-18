@@ -1,4 +1,4 @@
-package com.dango.dangoaicodeuser.controller;
+package com.dango.dangoaicodeuser.interfaces.controller;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.skywalking.apm.toolkit.trace.TraceContext;
