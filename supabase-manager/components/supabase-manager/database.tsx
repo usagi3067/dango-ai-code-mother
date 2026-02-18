@@ -1,7 +1,7 @@
 // @ts-nocheck
 'use client'
 
-import { AlertTriangle, Table, Wand } from 'lucide-react'
+import { AlertTriangle, Plus, Trash2, Table, Wand } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import { z, type ZodTypeAny } from 'zod'
@@ -62,6 +62,129 @@ const getPrimaryKeys = (table: any): string[] => {
     return []
   }
   return table.primary_keys.map((pk: any) => pk.name)
+}
+
+// Helper to generate a Zod schema for inserting a new row (all fields optional)
+function generateInsertZodSchema(table: any): z.ZodObject<any, any, any> {
+  if (!table || !table.columns) {
+    return z.object({})
+  }
+
+  const shape: Record<string, ZodTypeAny> = {}
+  for (const column of table.columns) {
+    if (!column.is_updatable || column.is_generated) continue
+    // Skip identity/serial columns (auto-increment)
+    if (column.identity_generation) continue
+
+    let fieldSchema: ZodTypeAny
+    const dataType = column.data_type.toLowerCase()
+
+    if (dataType.includes('array')) {
+      fieldSchema = z.array(z.any())
+    } else if (dataType.includes('int') || dataType.includes('numeric')) {
+      fieldSchema = z.number()
+    } else if (dataType.includes('bool')) {
+      fieldSchema = z.boolean()
+    } else if (
+      dataType === 'user-defined' &&
+      column.enums &&
+      Array.isArray(column.enums) &&
+      column.enums.length > 0
+    ) {
+      fieldSchema = z.enum(column.enums as [string, ...string[]])
+    } else {
+      fieldSchema = z.string()
+    }
+
+    // All fields optional for insert (they may have defaults)
+    fieldSchema = fieldSchema.nullish()
+    shape[column.name] = fieldSchema
+  }
+  return z.object(shape)
+}
+
+function InsertRowView({
+  projectRef,
+  table,
+  onSuccess,
+}: {
+  projectRef: string
+  table: any
+  onSuccess: () => void
+}) {
+  const { mutate: runInsertQuery, isPending: isInsertPending } = useRunQuery()
+  const formSchema = useMemo(() => generateInsertZodSchema(table), [table])
+
+  const columnInfo = useMemo(() => {
+    if (!table || !table.columns) return {}
+    const info: Record<string, any> = {}
+    for (const column of table.columns) {
+      if (!column.is_updatable || column.is_generated) continue
+      if (column.identity_generation) continue
+
+      const dataType = column.data_type.toLowerCase()
+      const displayType =
+        dataType === 'user-defined' &&
+        column.enums &&
+        Array.isArray(column.enums) &&
+        column.enums.length > 0
+          ? 'enum'
+          : dataType
+
+      info[column.name] = {
+        data_type: displayType,
+        is_nullable: column.is_nullable,
+        default_value: column.default_value,
+      }
+    }
+    return info
+  }, [table])
+
+  const handleFormSubmit = useCallback(
+    (formData: any) => {
+      const entries = Object.entries(formData).filter(
+        ([, value]) => value !== null && value !== undefined && value !== ''
+      )
+
+      if (entries.length === 0) {
+        toast.error('Please fill in at least one field')
+        return
+      }
+
+      const columns = entries.map(([key]) => `"${key}"`).join(', ')
+      const values = entries
+        .map(([key, value]) => {
+          const column = table.columns.find((col: any) => col.name === key)
+          const dataType = column?.data_type?.toLowerCase() || ''
+
+          if (dataType.includes('array')) {
+            const jsonObj = JSON.stringify({ [key]: value })
+            return `(select ${key} from json_populate_record(null::"${table.schema}"."${table.name}", '${jsonObj.replace(/'/g, "''")}'))`
+          } else if (typeof value === 'string') {
+            return `'${value.replace(/'/g, "''")}'`
+          } else {
+            return value
+          }
+        })
+        .join(', ')
+
+      const insertSql = `INSERT INTO "${table.schema}"."${table.name}" (${columns}) VALUES (${values});`
+      runInsertQuery({ projectRef, query: insertSql, readOnly: false }, { onSuccess })
+    },
+    [projectRef, table, runInsertQuery, onSuccess]
+  )
+
+  return (
+    <div className="px-6 pt-4 pb-10 lg:px-12 lg:pt-10">
+      <h2 className="text-base lg:text-xl font-semibold mb-4">Insert row into {table.name}</h2>
+      <DynamicForm
+        schema={formSchema}
+        onSubmit={handleFormSubmit}
+        isLoading={isInsertPending}
+        columnInfo={columnInfo}
+      />
+    </div>
+  )
 }
 
 function EditRowView({
@@ -133,7 +256,7 @@ function EditRowView({
             } else if (dataType.includes('array')) {
               // Non-nullable array, set to empty array
               const jsonObj = JSON.stringify({ [key]: [] })
-              formattedValue = `(select ${key} from json_populate_record(null::public."${
+              formattedValue = `(select ${key} from json_populate_record(null::"${table.schema}"."${
                 table.name
               }", '${jsonObj.replace(/'/g, "''")}'))`
             } else {
@@ -143,13 +266,13 @@ function EditRowView({
           } else if (Array.isArray(value) && value.length === 0) {
             // Explicitly empty array (different from null)
             const jsonObj = JSON.stringify({ [key]: [] })
-            formattedValue = `(select ${key} from json_populate_record(null::public."${
+            formattedValue = `(select ${key} from json_populate_record(null::"${table.schema}"."${
               table.name
             }", '${jsonObj.replace(/'/g, "''")}'))`
           } else if (dataType.includes('array')) {
             // Array type with actual values - use json_populate_record syntax
             const jsonObj = JSON.stringify({ [key]: value })
-            formattedValue = `(select ${key} from json_populate_record(null::public."${
+            formattedValue = `(select ${key} from json_populate_record(null::"${table.schema}"."${
               table.name
             }", '${jsonObj.replace(/'/g, "''")}'))`
           } else if (dataType === 'user-defined' && column?.enums) {
@@ -181,7 +304,7 @@ function EditRowView({
         })
         .join(' AND ')
 
-      const updateSql = `UPDATE public."${table.name}" SET ${setClauses} WHERE ${whereClauses};`
+      const updateSql = `UPDATE "${table.schema}"."${table.name}" SET ${setClauses} WHERE ${whereClauses};`
 
       runUpdateQuery({ projectRef, query: updateSql, readOnly: false }, { onSuccess })
     },
@@ -205,6 +328,9 @@ function EditRowView({
 function TableRecordsView({ projectRef, table }: { projectRef: string; table: any }) {
   const { push, pop } = useSheetNavigation()
   const [refetchCounter, setRefetchCounter] = useState(0)
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set())
+  const [queryData, setQueryData] = useState<any[]>([])
+  const { mutate: runDeleteQuery, isPending: isDeleting } = useRunQuery()
 
   const handleRowClick = useCallback(
     (row: any) => {
@@ -226,19 +352,101 @@ function TableRecordsView({ projectRef, table }: { projectRef: string; table: an
     [push, pop, projectRef, table]
   )
 
+  const handleInsertClick = useCallback(() => {
+    push({
+      title: `Insert row`,
+      component: (
+        <InsertRowView
+          projectRef={projectRef}
+          table={table}
+          onSuccess={() => {
+            pop()
+            setRefetchCounter((c) => c + 1)
+          }}
+        />
+      ),
+    })
+  }, [push, pop, projectRef, table])
+
+  const handleDeleteSelected = useCallback(() => {
+    const pks = getPrimaryKeys(table)
+    if (pks.length === 0) {
+      toast.error('Cannot delete rows. This table does not have a primary key.')
+      return
+    }
+    if (selectedIndices.size === 0) return
+
+    const selectedRows = Array.from(selectedIndices).map((i) => queryData[i]).filter(Boolean)
+    if (selectedRows.length === 0) return
+
+    const whereClauses = selectedRows
+      .map((row) => {
+        const conditions = pks
+          .map((pk) => {
+            const value = row[pk]
+            const formatted = typeof value === 'string' ? `'${value.replace(/'/g, "''")}'` : value
+            return `"${pk}" = ${formatted}`
+          })
+          .join(' AND ')
+        return `(${conditions})`
+      })
+      .join(' OR ')
+
+    const deleteSql = `DELETE FROM "${table.schema}"."${table.name}" WHERE ${whereClauses};`
+
+    runDeleteQuery(
+      { projectRef, query: deleteSql, readOnly: false },
+      {
+        onSuccess: () => {
+          toast.success(`Deleted ${selectedRows.length} row(s)`)
+          setSelectedIndices(new Set())
+          setRefetchCounter((c) => c + 1)
+        },
+      }
+    )
+  }, [projectRef, table, selectedIndices, queryData, runDeleteQuery])
+
+  const handleResults = useCallback((data: any[] | undefined) => {
+    setQueryData(data || [])
+    setSelectedIndices(new Set())
+  }, [])
+
   return (
-    <SqlEditor
-      hideChartOption={true}
-      projectRef={projectRef}
-      label={`View records in ${table.name}`}
-      initialSql={`SELECT * FROM public."${table.name}" LIMIT 100;`}
-      queryKey={table.id}
-      onRowClick={handleRowClick}
-      hideSql={true}
-      runAutomatically={true}
-      refetch={refetchCounter}
-      readOnly
-    />
+    <div className="flex flex-col h-full">
+      <div className="flex items-center justify-end px-6 pt-4 gap-2">
+        {selectedIndices.size > 0 && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleDeleteSelected}
+            disabled={isDeleting}
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            {isDeleting ? 'Deleting...' : `Delete ${selectedIndices.size} row(s)`}
+          </Button>
+        )}
+        <Button variant="outline" size="sm" onClick={handleInsertClick}>
+          <Plus className="h-4 w-4 mr-1" />
+          Insert Row
+        </Button>
+      </div>
+      <SqlEditor
+        hideChartOption={true}
+        projectRef={projectRef}
+        label={`View records in ${table.name}`}
+        initialSql={`SELECT * FROM "${table.schema}"."${table.name}" LIMIT 100;`}
+        queryKey={table.id}
+        onRowClick={handleRowClick}
+        onResults={handleResults}
+        hideSql={true}
+        runAutomatically={true}
+        refetch={refetchCounter}
+        readOnly
+        selectable
+        selectedIndices={selectedIndices}
+        onSelectionChange={setSelectedIndices}
+      />
+    </div>
   )
 }
 

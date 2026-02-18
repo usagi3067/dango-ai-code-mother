@@ -49,6 +49,9 @@ interface SqlEditorProps {
   refetch?: number
   initialNaturalLanguageMode?: boolean
   hideChartOption?: boolean
+  selectable?: boolean
+  selectedIndices?: Set<number>
+  onSelectionChange?: (indices: Set<number>) => void
 }
 
 export function SqlEditor({
@@ -64,6 +67,9 @@ export function SqlEditor({
   refetch,
   initialNaturalLanguageMode = false,
   hideChartOption = false,
+  selectable,
+  selectedIndices,
+  onSelectionChange,
 }: SqlEditorProps) {
   const [sql, setSql] = useState(initialSql || '')
   const [isSqlVisible, setIsSqlVisible] = useState(!hideSql)
@@ -378,7 +384,13 @@ export function SqlEditor({
 
       {data && (
         <div>
-          <ResultsTable data={data} onRowClick={(row) => onRowClick?.(row, queryKey)} />
+          <ResultsTable
+            data={data}
+            onRowClick={(row) => onRowClick?.(row, queryKey)}
+            selectable={selectable}
+            selectedIndices={selectedIndices}
+            onSelectionChange={onSelectionChange}
+          />
         </div>
       )}
     </div>

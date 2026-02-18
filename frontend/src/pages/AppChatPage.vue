@@ -404,7 +404,7 @@
       v-model:open="databaseDrawerVisible"
       title="数据库管理"
       placement="right"
-      :width="720"
+      :width="'80%'"
       :destroyOnClose="true"
     >
       <div class="database-drawer-content">
@@ -901,7 +901,13 @@ const loadAppInfo = async () => {
         previewUrl.value = getStaticPreviewUrl(appInfo.value.codeGenType, appId.value)
         iframeKey.value++
       }
-      
+
+      // 自动发送初始消息（仅首页创建新应用跳转时，带 autoSend=1 参数）
+      const autoSend = route.query.autoSend === '1'
+      if (appInfo.value.initPrompt && isOwner.value && historyLoaded.value && messages.value.length === 0 && autoSend) {
+        inputText.value = appInfo.value.initPrompt
+        await handleSend()
+      }
     } else {
       message.error('获取应用信息失败')
     }
@@ -1404,7 +1410,7 @@ const handleInitDatabase = async () => {
   if (!appId.value) return
   databaseInitializing.value = true
   try {
-    const res = await initializeDatabase(Number(appId.value))
+    const res = await initializeDatabase(appId.value)
     if (res.data.code === 0 && res.data.data) {
       message.success('数据库初始化成功')
       // 刷新应用信息
