@@ -1,5 +1,8 @@
 package com.dango.dangoaicodeapp.domain.app.entity;
 
+import com.dango.dangoaicodeapp.model.enums.MessageTypeEnum;
+import com.dango.dangoaicodecommon.exception.BusinessException;
+import com.dango.dangoaicodecommon.exception.ErrorCode;
 import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
 import com.mybatisflex.annotation.KeyType;
@@ -75,5 +78,62 @@ public class ChatHistory implements Serializable {
      */
     @Column(value = "isDelete", isLogicDelete = true)
     private Integer isDelete;
+
+    // ========== 业务方法（充血模型核心）==========
+
+    /**
+     * 创建用户消息
+     */
+    public static ChatHistory createUserMessage(Long appId, Long userId, String message) {
+        validateMessage(appId, userId, message);
+        return ChatHistory.builder()
+                .appId(appId)
+                .userId(userId)
+                .message(message)
+                .messageType(MessageTypeEnum.USER.getValue())
+                .build();
+    }
+
+    /**
+     * 创建 AI 消息
+     */
+    public static ChatHistory createAiMessage(Long appId, Long userId, String message) {
+        validateMessage(appId, userId, message);
+        return ChatHistory.builder()
+                .appId(appId)
+                .userId(userId)
+                .message(message)
+                .messageType(MessageTypeEnum.AI.getValue())
+                .build();
+    }
+
+    /**
+     * 是否为用户消息
+     */
+    public boolean isUserMessage() {
+        return MessageTypeEnum.USER.getValue().equals(this.messageType);
+    }
+
+    /**
+     * 是否为 AI 消息
+     */
+    public boolean isAiMessage() {
+        return MessageTypeEnum.AI.getValue().equals(this.messageType);
+    }
+
+    /**
+     * 校验消息参数
+     */
+    public static void validateMessage(Long appId, Long userId, String message) {
+        if (appId == null || appId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
+        }
+        if (userId == null || userId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户 ID 不能为空");
+        }
+        if (message == null || message.isBlank()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "消息内容不能为空");
+        }
+    }
 
 }
