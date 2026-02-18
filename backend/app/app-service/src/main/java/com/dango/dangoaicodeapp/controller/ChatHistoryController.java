@@ -2,6 +2,7 @@ package com.dango.dangoaicodeapp.controller;
 
 
 import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.stp.StpUtil;
 import com.dango.dangoaicodeapp.model.dto.chathistory.ChatHistoryQueryRequest;
 import com.dango.dangoaicodeapp.model.entity.ChatHistory;
 import com.dango.dangoaicodeapp.model.vo.ChatHistoryVO;
@@ -40,7 +41,7 @@ public class ChatHistoryController {
      * 获取当前登录用户
      */
     private User getLoginUser() {
-        long userId = InnerUserService.getLoginUserId();
+        long userId = StpUtil.getLoginIdAsLong();
         User user = innerUserService.getById(userId);
         if (user == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);

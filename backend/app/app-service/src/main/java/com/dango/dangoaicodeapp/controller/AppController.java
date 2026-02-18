@@ -2,6 +2,7 @@ package com.dango.dangoaicodeapp.controller;
 
 
 import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
@@ -77,7 +78,7 @@ public class AppController {
      * 获取当前登录用户
      */
     private User getLoginUser() {
-        long userId = InnerUserService.getLoginUserId();
+        long userId = StpUtil.getLoginIdAsLong();
         User user = innerUserService.getById(userId);
         if (user == null) {
             throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);

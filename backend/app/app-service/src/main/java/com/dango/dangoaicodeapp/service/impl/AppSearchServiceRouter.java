@@ -1,9 +1,10 @@
 package com.dango.dangoaicodeapp.service.impl;
 
+import cn.dev33.satoken.stp.StpUtil;
 import com.dango.dangoaicodeapp.model.dto.app.AppQueryRequest;
 import com.dango.dangoaicodeapp.model.entity.App;
 import com.dango.dangoaicodeapp.service.AppSearchService;
-import com.dango.dangoaicodeuser.service.InnerUserService;
+import com.dango.dangoaicodeapp.service.AppSearchService;
 import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -64,7 +65,7 @@ public class AppSearchServiceRouter implements AppSearchService {
      */
     private Long getCurrentUserId() {
         try {
-            return InnerUserService.getLoginUserId();
+            return StpUtil.getLoginIdAsLong();
         } catch (Exception e) {
             log.debug("获取当前登录用户失败: {}", e.getMessage());
         }

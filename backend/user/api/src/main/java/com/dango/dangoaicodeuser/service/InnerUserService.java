@@ -1,8 +1,5 @@
 package com.dango.dangoaicodeuser.service;
 
-import cn.dev33.satoken.stp.StpUtil;
-import com.dango.dangoaicodecommon.exception.BusinessException;
-import com.dango.dangoaicodecommon.exception.ErrorCode;
 import com.dango.dangoaicodeuser.model.entity.User;
 import com.dango.dangoaicodeuser.model.vo.UserVO;
 
@@ -41,17 +38,4 @@ public interface InnerUserService {
      * @return 用户 VO
      */
     UserVO getUserVO(User user);
-
-    /**
-     * 获取当前登录用户 ID（通过 Sa-Token）
-     *
-     * @return 当前登录用户 ID
-     */
-    static long getLoginUserId() {
-        try {
-            return StpUtil.getLoginIdAsLong();
-        } catch (Exception e) {
-            throw new BusinessException(ErrorCode.NOT_LOGIN_ERROR);
-        }
-    }
 }
