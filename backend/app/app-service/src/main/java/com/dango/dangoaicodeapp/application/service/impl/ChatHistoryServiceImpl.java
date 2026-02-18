@@ -62,20 +62,12 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
      * @return 是否保存成功
      */
     private boolean saveMessage(Long appId, Long userId, String message, String messageType) {
-        // 参数校验
-        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
-        ThrowUtils.throwIf(userId == null || userId <= 0, ErrorCode.PARAMS_ERROR, "用户 ID 不能为空");
-        ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "消息内容不能为空");
-
-        // 构建对话历史实体
-        ChatHistory chatHistory = ChatHistory.builder()
-                .appId(appId)
-                .userId(userId)
-                .message(message)
-                .messageType(messageType)
-                .build();
-
-        // 保存到数据库
+        ChatHistory chatHistory;
+        if (MessageTypeEnum.USER.getValue().equals(messageType)) {
+            chatHistory = ChatHistory.createUserMessage(appId, userId, message);
+        } else {
+            chatHistory = ChatHistory.createAiMessage(appId, userId, message);
+        }
         boolean result = this.save(chatHistory);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "保存对话历史失败");
         return true;
@@ -96,10 +88,8 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
 
         // 权限校验：仅应用创建者或管理员可以查看
-        boolean isOwner = app.getUserId().equals(userId);
-        boolean isAdmin = StpUtil.hasRole("admin");
-        if (!isOwner && !isAdmin) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限查看该应用的对话历史");
+        if (!StpUtil.hasRole("admin")) {
+            app.checkOwnership(userId);
         }
 
         // 构建查询条件
@@ -243,10 +233,10 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
             // 先清理历史缓存，防止重复加载
             chatMemory.clear();
             for (ChatHistory history : historyList) {
-                if (MessageTypeEnum.USER.getValue().equals(history.getMessageType())) {
+                if (history.isUserMessage()) {
                     chatMemory.add(UserMessage.from(history.getMessage()));
                     loadedCount++;
-                } else if (MessageTypeEnum.AI.getValue().equals(history.getMessageType())) {
+                } else if (history.isAiMessage()) {
                     chatMemory.add(AiMessage.from(history.getMessage()));
                     loadedCount++;
                 }
