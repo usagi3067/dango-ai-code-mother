@@ -1,11 +1,14 @@
 package com.dango.dangoaicodeuser.service.impl;
 
+import cn.dev33.satoken.session.SaSession;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
+import com.dango.dangoaicodeuser.mapper.PermissionMapper;
+import com.dango.dangoaicodeuser.mapper.RoleMapper;
 import com.dango.dangoaicodeuser.mapper.UserMapper;
 import com.dango.dangoaicodeuser.model.dto.user.UserQueryRequest;
 import com.dango.dangoaicodeuser.model.entity.User;
@@ -29,6 +32,12 @@ import java.util.stream.Collectors;
  */
 @Service
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
+
+    @jakarta.annotation.Resource
+    private RoleMapper roleMapper;
+
+    @jakarta.annotation.Resource
+    private PermissionMapper permissionMapper;
 
     // BCrypt 密码编码器（cost=10，即 2^10=1024 轮迭代）
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder(10);
@@ -127,7 +136,11 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
         }
         // 4. Sa-Token 登录
         StpUtil.login(user.getId());
-        // 5. 获得脱敏后的用户信息，并设置 Token
+        // 5. 缓存角色和权限到 Sa-Token Session（供所有微服务使用）
+        SaSession session = StpUtil.getSession();
+        session.set("roleList", roleMapper.selectRoleCodesByUserId(user.getId()));
+        session.set("permissionList", permissionMapper.selectPermissionCodesByUserId(user.getId()));
+        // 6. 获得脱敏后的用户信息，并设置 Token
         LoginUserVO loginUserVO = this.getLoginUserVO(user);
         loginUserVO.setTokenName(StpUtil.getTokenName());
         loginUserVO.setTokenValue(StpUtil.getTokenValue());
