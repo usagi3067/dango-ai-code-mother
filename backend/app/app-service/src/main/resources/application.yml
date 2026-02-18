@@ -3,10 +3,6 @@ spring:
     name: dango-ai-code-app
   profiles:
     active: local
-  session:
-    store-type: redis
-    # session 10 年过期
-    timeout: 315360000
   # mysql
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -23,10 +19,12 @@ server:
   port: 8124
   servlet:
     context-path: /api
-    # cookie 10 年过期
-    session:
-      cookie:
-        max-age: 315360000
+sa-token:
+  token-name: Authorization
+  timeout: 604800
+  active-timeout: 7200
+  is-concurrent: true
+  is-share: false
 # springdoc-openapi
 springdoc:
   group-configs:
