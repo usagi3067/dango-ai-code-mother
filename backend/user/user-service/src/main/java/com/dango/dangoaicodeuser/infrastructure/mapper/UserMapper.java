@@ -1,6 +1,6 @@
-package com.dango.dangoaicodeuser.mapper;
+package com.dango.dangoaicodeuser.infrastructure.mapper;
 
-import com.dango.dangoaicodeuser.model.entity.User;
+import com.dango.dangoaicodeuser.domain.user.entity.User;
 import com.mybatisflex.core.BaseMapper;
 
 /**
