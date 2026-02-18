@@ -18,6 +18,7 @@ import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
 import com.dango.dangoaicodeapp.model.vo.AppVO;
 import com.dango.dangoaicodeapp.application.service.AppApplicationService;
 import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
+import com.dango.dangoaicodeapp.application.service.CodeGenApplicationService;
 import com.dango.dangoaicodeapp.application.service.AppSearchService;
 import com.dango.dangoaicodecommon.common.BaseResponse;
 import com.dango.dangoaicodecommon.common.DeleteRequest;
@@ -66,6 +67,9 @@ public class AppController {
 
     @Resource
     private AppSearchService appSearchService;
+
+    @Resource
+    private CodeGenApplicationService codeGenApplicationService;
 
     /**
      * 创建应用
@@ -387,7 +391,7 @@ public class AppController {
         }
 
         // 调用服务生成代码（流式），使用 Agent 模式
-        Flux<String> contentFlux = appService.chatToGenCode(appId, message, parsedElementInfo, loginUserId);
+        Flux<String> contentFlux = codeGenApplicationService.chatToGenCode(appId, message, parsedElementInfo, loginUserId);
         // 转换为 ServerSentEvent 格式
         return contentFlux
                 .map(chunk -> {

@@ -7,22 +7,16 @@ import cn.hutool.core.util.StrUtil;
 import com.dango.aicodegenerate.model.AppNameAndTagResult;
 
 import com.dango.dangoaicodeapp.application.service.AppApplicationService;
-import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
 import com.dango.dangoaicodeapp.domain.app.service.AppDomainService;
 import com.dango.dangoaicodeapp.domain.codegen.service.AppInfoGeneratorFacade;
 import com.dango.dangoaicodeapp.domain.codegen.builder.VueProjectBuilder;
-import com.dango.dangoaicodeapp.domain.codegen.handler.StreamHandlerExecutor;
 import com.dango.dangoaicodeapp.infrastructure.mapper.AppMapper;
-import com.dango.dangoaicodeapp.infrastructure.monitor.MonitorContext;
-import com.dango.dangoaicodeapp.infrastructure.monitor.MonitorContextHolder;
 import com.dango.dangoaicodeapp.model.constant.AppConstant;
 import com.dango.dangoaicodeapp.model.dto.app.AppAddRequest;
 import com.dango.dangoaicodeapp.model.dto.app.AppQueryRequest;
 import com.dango.dangoaicodeapp.domain.app.entity.App;
-import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.model.vo.AppVO;
-import com.dango.dangoaicodeapp.domain.codegen.workflow.CodeGenWorkflow;
 import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
 import com.dango.dangoaicodecommon.exception.ThrowUtils;
@@ -36,7 +30,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-import reactor.core.publisher.Flux;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,10 +56,6 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
     private InnerUserService innerUserService;
     @Resource
     private AppDomainService appDomainService;
-    @Resource
-    private ChatHistoryService chatHistoryService;
-    @Resource
-    private StreamHandlerExecutor streamHandlerExecutor;
     @Resource
     private VueProjectBuilder vueProjectBuilder;
     @Resource
@@ -136,86 +125,6 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
             appVO.setUser(userVO);
             return appVO;
         }).collect(Collectors.toList());
-    }
-
-    @Override
-    @Deprecated
-    public Flux<String> chatToGenCode(Long appId, String message, long userId) {
-        // 委托给新方法，无元素信息
-        return chatToGenCode(appId, message, null, userId);
-    }
-
-    @Override
-    @Deprecated
-    public Flux<String> chatToGenCode(Long appId, String message, long userId, boolean agent) {
-        // 委托给新方法
-        return chatToGenCode(appId, message, null, userId);
-    }
-
-    @Override
-    @Deprecated
-    public Flux<String> chatToGenCode(Long appId, String message, ElementInfo elementInfo, long userId, boolean agent) {
-        // 委托给新方法
-        return chatToGenCode(appId, message, elementInfo, userId);
-    }
-
-    @Override
-    public Flux<String> chatToGenCode(Long appId, String message, ElementInfo elementInfo, long userId) {
-        // 1. 参数校验
-        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
-        ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
-        // 2. 查询应用信息
-        App app = this.getById(appId);
-        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
-        // 3. 验证用户是否有权限访问该应用，仅本人可以生成代码
-        if (!app.getUserId().equals(userId)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限访问该应用");
-        }
-        // 4. 获取应用的代码生成类型
-        String codeGenTypeStr = app.getCodeGenType();
-        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(codeGenTypeStr);
-        if (codeGenTypeEnum == null) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的代码生成类型");
-        }
-        // 5. 保存用户消息到对话历史
-        try {
-            chatHistoryService.saveUserMessage(appId, userId, message);
-        } catch (Exception e) {
-            log.error("保存用户消息失败: {}", e.getMessage());
-        }
-        // 6. 检查数据库是否启用，如果启用则查询当前 Schema
-        boolean databaseEnabled = Boolean.TRUE.equals(app.getHasDatabase());
-        String databaseSchema = null;
-        if (databaseEnabled) {
-            try {
-                List<com.dango.supabase.dto.TableSchemaDTO> tables = supabaseService.getSchema(appId);
-                if (tables != null && !tables.isEmpty()) {
-                    databaseSchema = formatTableSchemas(tables);
-                    log.info("应用 {} 已启用数据库，当前有 {} 个表", appId, tables.size());
-                }
-            } catch (Exception e) {
-                log.error("查询数据库 Schema 失败: {}", e.getMessage(), e);
-                // Schema 查询失败不影响工作流执行，只是数据库功能不可用
-            }
-        }
-        // 7. 创建监控上下文
-        MonitorContext monitorContext = MonitorContext.builder()
-                .userId(String.valueOf(userId))
-                .appId(appId.toString())
-                .build();
-        // 设置到当前线程
-        MonitorContextHolder.setContext(monitorContext);
-        // 8. 使用 Agent 模式（工作流）生成代码
-        log.info("使用 Agent 模式（工作流）生成代码, appId: {}, hasElementInfo: {}, databaseEnabled: {}",
-                appId, elementInfo != null, databaseEnabled);
-        Flux<String> codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(
-                message, appId, elementInfo, databaseEnabled, databaseSchema, monitorContext);
-        // 9. 收集 AI 响应内容并在完成后记录到对话历史
-        return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, userId)
-                .doFinally(signalType -> {
-                    // 流结束时清理（无论成功/失败/取消）
-                    MonitorContextHolder.clearContext();
-                });
     }
 
     @Override
@@ -363,9 +272,6 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
         return appId;
     }
 
-    @DubboReference
-    private com.dango.supabase.service.SupabaseService supabaseService;
-
     @Override
     public void initializeDatabase(Long appId, long userId) {
         // 1. 查询应用信息
@@ -407,42 +313,5 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "更新应用状态失败");
 
         log.info("应用数据库初始化成功，appId: {}", appId);
-    }
-
-    /**
-     * 格式化表结构为字符串
-     * 用于传递给工作流上下文
-     *
-     * @param tables 表结构列表（扁平结构，每行代表一个列）
-     * @return 格式化后的字符串
-     */
-    private String formatTableSchemas(List<com.dango.supabase.dto.TableSchemaDTO> tables) {
-        if (tables == null || tables.isEmpty()) {
-            return "";
-        }
-
-        // 按表名分组
-        Map<String, List<com.dango.supabase.dto.TableSchemaDTO>> tableMap = tables.stream()
-                .collect(Collectors.groupingBy(com.dango.supabase.dto.TableSchemaDTO::getTableName));
-
-        StringBuilder sb = new StringBuilder();
-        for (Map.Entry<String, List<com.dango.supabase.dto.TableSchemaDTO>> entry : tableMap.entrySet()) {
-            String tableName = entry.getKey();
-            List<com.dango.supabase.dto.TableSchemaDTO> columns = entry.getValue();
-
-            sb.append("表 ").append(tableName).append(":\n");
-            for (com.dango.supabase.dto.TableSchemaDTO column : columns) {
-                sb.append("  - ").append(column.getColumnName())
-                        .append(": ").append(column.getDataType());
-                if (Boolean.TRUE.equals(column.getIsNullable())) {
-                    sb.append(" (nullable)");
-                }
-                if (StrUtil.isNotBlank(column.getColumnDefault())) {
-                    sb.append(" DEFAULT ").append(column.getColumnDefault());
-                }
-                sb.append("\n");
-            }
-        }
-        return sb.toString();
     }
 }
