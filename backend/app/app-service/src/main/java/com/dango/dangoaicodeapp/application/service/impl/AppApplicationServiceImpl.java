@@ -2,18 +2,16 @@ package com.dango.dangoaicodeapp.application.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.RandomUtil;
 import cn.hutool.core.util.StrUtil;
 
 import com.dango.aicodegenerate.model.AppNameAndTagResult;
 
 import com.dango.dangoaicodeapp.application.service.AppApplicationService;
 import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
+import com.dango.dangoaicodeapp.domain.app.service.AppDomainService;
 import com.dango.dangoaicodeapp.domain.codegen.service.AppInfoGeneratorFacade;
 import com.dango.dangoaicodeapp.domain.codegen.builder.VueProjectBuilder;
 import com.dango.dangoaicodeapp.domain.codegen.handler.StreamHandlerExecutor;
-import com.dango.dangoaicodeapp.infrastructure.config.SupabaseClientConfig;
 import com.dango.dangoaicodeapp.infrastructure.mapper.AppMapper;
 import com.dango.dangoaicodeapp.infrastructure.monitor.MonitorContext;
 import com.dango.dangoaicodeapp.infrastructure.monitor.MonitorContextHolder;
@@ -28,7 +26,6 @@ import com.dango.dangoaicodeapp.domain.codegen.workflow.CodeGenWorkflow;
 import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
 import com.dango.dangoaicodecommon.exception.ThrowUtils;
-import com.dango.dangoaicodescreenshot.InnerScreenshotService;
 import com.dango.dangoaicodeuser.dto.UserDTO;
 import com.dango.dangoaicodeuser.model.vo.UserVO;
 import com.dango.dangoaicodeuser.service.InnerUserService;
@@ -64,8 +61,8 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
 
     @DubboReference
     private InnerUserService innerUserService;
-    @DubboReference
-    private InnerScreenshotService innerScreenshotService;
+    @Resource
+    private AppDomainService appDomainService;
     @Resource
     private ChatHistoryService chatHistoryService;
     @Resource
@@ -232,47 +229,18 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
         if (!app.getUserId().equals(userId)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限部署该应用");
         }
-        // 4. 检查是否已有 deployKey
-        String deployKey = app.getDeployKey();
-        // 没有则生成 6 位 deployKey（大小写字母 + 数字）
-        if (StrUtil.isBlank(deployKey)) {
-            deployKey = RandomUtil.randomString(6);
-        }
-        // 5. 获取代码生成类型，构建源目录路径
-        String codeGenType = app.getCodeGenType();
-        String sourceDirName = codeGenType + "_" + appId;
-        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
-        // 6. 检查源目录是否存在
-        File sourceDir = new File(sourceDirPath);
-        if (!sourceDir.exists() || !sourceDir.isDirectory()) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "应用代码不存在，请先生成代码");
-        }
-        // 7. 执行 Vue 项目构建
-        boolean buildSuccess = vueProjectBuilder.buildProject(sourceDirPath);
-        ThrowUtils.throwIf(!buildSuccess, ErrorCode.SYSTEM_ERROR, "Vue 项目构建失败，请检查代码和依赖");
-        // 检查 dist 目录是否存在
-        File distDir = new File(sourceDirPath, "dist");
-        ThrowUtils.throwIf(!distDir.exists(), ErrorCode.SYSTEM_ERROR, "Vue 项目构建完成但未生成 dist 目录");
-        // 将 dist 目录作为部署源
-        sourceDir = distDir;
-        log.info("Vue 项目构建成功，将部署 dist 目录: {}", distDir.getAbsolutePath());
-        // 8. 复制文件到部署目录
-        String deployDirPath = AppConstant.CODE_DEPLOY_ROOT_DIR + File.separator + deployKey;
-        try {
-            FileUtil.copyContent(sourceDir, new File(deployDirPath), true);
-        } catch (Exception e) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "部署失败：" + e.getMessage());
-        }
-        // 9. 更新应用的 deployKey 和部署时间
+        // 4. 委托领域服务执行核心部署逻辑（构建、复制、生成 deployKey）
+        String deployKey = appDomainService.deployApp(app);
+        // 5. 更新应用的 deployKey 和部署时间
         App updateApp = new App();
         updateApp.setId(appId);
         updateApp.setDeployKey(deployKey);
         updateApp.setDeployedTime(LocalDateTime.now());
         boolean updateResult = this.updateById(updateApp);
         ThrowUtils.throwIf(!updateResult, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
-        // 10. 构建应用访问 URL
+        // 6. 构建应用访问 URL
         String appDeployUrl = String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
-        // 11. 异步生成截图并更新应用封面
+        // 7. 异步生成截图并更新应用封面
         generateAppScreenshotAsync(appId, appDeployUrl);
         return appDeployUrl;
     }
@@ -287,8 +255,8 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
     public void generateAppScreenshotAsync(Long appId, String appUrl) {
         // 使用虚拟线程异步执行
         Thread.startVirtualThread(() -> {
-            // 调用截图服务生成截图并上传
-            String screenshotUrl = innerScreenshotService.generateAndUploadScreenshot(appUrl);
+            // 委托领域服务生成截图
+            String screenshotUrl = appDomainService.generateScreenshot(appId, appUrl);
             // 更新应用封面字段
             App updateApp = new App();
             updateApp.setId(appId);
@@ -398,9 +366,6 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
     @DubboReference
     private com.dango.supabase.service.SupabaseService supabaseService;
 
-    @Resource
-    private SupabaseClientConfig supabaseClientConfig;
-
     @Override
     public void initializeDatabase(Long appId, long userId) {
         // 1. 查询应用信息
@@ -430,22 +395,10 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "项目目录不存在，请先生成代码");
         }
 
-        // 6. 调用 supabase-service 创建 Schema
-        try {
-            supabaseService.createSchema(appId);
-            log.info("Schema 创建成功: app_{}", appId);
-        } catch (Exception e) {
-            log.error("创建 Schema 失败: {}", e.getMessage(), e);
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "创建数据库 Schema 失败: " + e.getMessage());
-        }
+        // 6. 委托领域服务执行核心数据库初始化逻辑（创建 Schema、写入配置、更新 package.json）
+        appDomainService.initializeDatabase(app);
 
-        // 7. 写入 Supabase 客户端配置文件
-        writeSupabaseClientConfig(projectDir, appId);
-
-        // 8. 更新 package.json 添加依赖
-        updatePackageJson(projectDir);
-
-        // 9. 更新 app.has_database = true
+        // 7. 更新 app.has_database = true
         App updateApp = new App();
         updateApp.setId(appId);
         updateApp.setHasDatabase(true);
@@ -454,77 +407,6 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "更新应用状态失败");
 
         log.info("应用数据库初始化成功，appId: {}", appId);
-    }
-
-    /**
-     * 写入 Supabase 客户端配置文件
-     */
-    private void writeSupabaseClientConfig(String projectDir, Long appId) {
-        // 创建目录 src/integrations/supabase
-        String supabaseDir = projectDir + File.separator + "src" + File.separator + "integrations" + File.separator + "supabase";
-        File supabaseDirFile = new File(supabaseDir);
-        if (!supabaseDirFile.exists()) {
-            supabaseDirFile.mkdirs();
-        }
-
-        // 从配置文件读取 URL 和 Key
-        String supabaseUrl = supabaseClientConfig.getUrl();
-        String supabaseAnonKey = supabaseClientConfig.getAnonKey();
-
-        // 写入 client.js
-        String clientContent = """
-            import { createClient } from '@supabase/supabase-js';
-
-            const SUPABASE_URL = "%s";
-            const SUPABASE_ANON_KEY = "%s";
-
-            // Schema 名称（每个应用独立的数据库空间）
-            export const SCHEMA_NAME = "app_%d";
-
-            // 创建 Supabase 客户端
-            // 导入方式: import { supabase } from "@/integrations/supabase/client";
-            export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-                db: {
-                    schema: SCHEMA_NAME
-                }
-            });
-            """.formatted(supabaseUrl, supabaseAnonKey, appId);
-
-        File clientFile = new File(supabaseDir, "client.js");
-        FileUtil.writeString(clientContent, clientFile, StandardCharsets.UTF_8);
-        log.info("Supabase 客户端配置文件写入成功: {}", clientFile.getAbsolutePath());
-    }
-
-    /**
-     * 更新 package.json 添加 Supabase 依赖
-     */
-    private void updatePackageJson(String projectDir) {
-        File packageJsonFile = new File(projectDir, "package.json");
-        if (!packageJsonFile.exists()) {
-            log.warn("package.json 不存在，跳过依赖更新");
-            return;
-        }
-
-        String content = FileUtil.readString(packageJsonFile, StandardCharsets.UTF_8);
-
-        // 检查是否已包含 supabase 依赖
-        if (content.contains("@supabase/supabase-js")) {
-            log.info("package.json 已包含 Supabase 依赖，跳过更新");
-            return;
-        }
-
-        // 在 dependencies 中添加 supabase
-        // 简单的字符串替换方式
-        if (content.contains("\"dependencies\"")) {
-            content = content.replace(
-                    "\"dependencies\": {",
-                    "\"dependencies\": {\n    \"@supabase/supabase-js\": \"^2.49.4\","
-            );
-            FileUtil.writeString(content, packageJsonFile, StandardCharsets.UTF_8);
-            log.info("package.json 已添加 Supabase 依赖");
-        } else {
-            log.warn("package.json 中未找到 dependencies 字段");
-        }
     }
 
     /**
