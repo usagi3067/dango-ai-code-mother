@@ -5,7 +5,7 @@ import cn.hutool.core.thread.ThreadFactoryBuilder;
 import cn.hutool.json.JSONUtil;
 import com.dango.aicodegenerate.model.QualityResult;
 import com.dango.aicodegenerate.model.message.AiResponseMessage;
-import com.dango.dangoaicodeapp.model.entity.ElementInfo;
+import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
 import com.dango.dangoaicodeapp.infrastructure.monitor.MonitorContext;
 import com.dango.dangoaicodeapp.domain.codegen.node.*;
 import com.dango.dangoaicodeapp.domain.codegen.node.concurrent.*;

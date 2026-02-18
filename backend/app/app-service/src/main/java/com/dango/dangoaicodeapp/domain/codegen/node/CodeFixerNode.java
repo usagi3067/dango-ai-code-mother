@@ -11,7 +11,7 @@ import com.dango.aicodegenerate.model.message.ToolExecutedMessage;
 import com.dango.aicodegenerate.model.message.ToolRequestMessage;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.AiCodeFixerService;
 import com.dango.dangoaicodeapp.domain.codegen.ai.factory.AiCodeFixerServiceFactory;
-import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
+import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.utils.SpringContextUtil;
 import dev.langchain4j.service.TokenStream;

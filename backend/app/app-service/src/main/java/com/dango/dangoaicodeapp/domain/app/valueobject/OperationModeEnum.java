@@ -1,4 +1,4 @@
-package com.dango.dangoaicodeapp.model.enums;
+package com.dango.dangoaicodeapp.domain.app.valueobject;
 
 import cn.hutool.core.util.ObjUtil;
 import lombok.Getter;

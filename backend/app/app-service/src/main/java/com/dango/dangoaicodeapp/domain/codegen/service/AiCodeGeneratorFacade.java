@@ -8,7 +8,7 @@ import com.dango.aicodegenerate.model.message.StreamMessage;
 import com.dango.aicodegenerate.model.message.ToolExecutedMessage;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.AiCodeGeneratorService;
 import com.dango.dangoaicodeapp.domain.codegen.ai.factory.AiCodeGeneratorServiceFactory;
-import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
+import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.service.TokenStream;
 import dev.langchain4j.service.tool.ToolExecution;

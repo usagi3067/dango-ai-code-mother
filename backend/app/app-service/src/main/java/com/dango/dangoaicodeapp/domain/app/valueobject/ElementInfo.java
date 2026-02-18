@@ -1,4 +1,4 @@
-package com.dango.dangoaicodeapp.model.entity;
+package com.dango.dangoaicodeapp.domain.app.valueobject;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

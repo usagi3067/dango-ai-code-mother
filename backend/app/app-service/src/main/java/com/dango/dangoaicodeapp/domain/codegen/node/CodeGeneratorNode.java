@@ -4,7 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.dango.aicodegenerate.model.QualityResult;
 import com.dango.dangoaicodeapp.domain.codegen.service.AiCodeGeneratorFacade;
 import com.dango.dangoaicodeapp.domain.codegen.scaffold.VueProjectScaffoldService;
-import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
+import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.utils.SpringContextUtil;
 import lombok.extern.slf4j.Slf4j;

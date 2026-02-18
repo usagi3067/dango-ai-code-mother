@@ -1,8 +1,8 @@
 package com.dango.dangoaicodeapp.domain.codegen.node;
 
 import cn.hutool.core.io.FileUtil;
-import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
-import com.dango.dangoaicodeapp.model.enums.OperationModeEnum;
+import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
+import com.dango.dangoaicodeapp.domain.app.valueobject.OperationModeEnum;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;

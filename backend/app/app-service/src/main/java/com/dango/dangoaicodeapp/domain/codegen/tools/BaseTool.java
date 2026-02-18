@@ -2,7 +2,7 @@ package com.dango.dangoaicodeapp.domain.codegen.tools;
 
 import cn.hutool.json.JSONObject;
 import com.dango.dangoaicodeapp.model.constant.AppConstant;
-import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
+import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

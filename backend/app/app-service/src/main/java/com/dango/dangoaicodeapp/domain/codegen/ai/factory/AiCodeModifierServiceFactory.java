@@ -3,7 +3,7 @@ package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
 import com.dango.aicodegenerate.guardrail.PromptSafetyInputGuardrail;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.AiCodeModifierService;
 import com.dango.dangoaicodeapp.domain.codegen.tools.*;
-import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
+import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
 
 import com.github.benmanes.caffeine.cache.Cache;
