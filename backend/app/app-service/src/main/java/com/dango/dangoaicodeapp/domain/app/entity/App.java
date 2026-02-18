@@ -125,7 +125,7 @@ public class App implements Serializable {
      * 校验当前用户是否为应用所有者，不是则抛异常
      */
     public void checkOwnership(Long userId) {
-        if (!this.userId.equals(userId)) {
+        if (this.userId == null || !this.userId.equals(userId)) {
             throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限操作该应用");
         }
     }
@@ -156,9 +156,12 @@ public class App implements Serializable {
      * 更新应用基本信息
      */
     public void updateInfo(String appName, String tag) {
-        if (appName != null) this.appName = appName;
-        if (tag != null) this.tag = tag;
-        this.editTime = LocalDateTime.now();
+        boolean changed = false;
+        if (appName != null) { this.appName = appName; changed = true; }
+        if (tag != null) { this.tag = tag; changed = true; }
+        if (changed) {
+            this.editTime = LocalDateTime.now();
+        }
     }
 
     /**

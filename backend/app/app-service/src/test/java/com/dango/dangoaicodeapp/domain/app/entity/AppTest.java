@@ -89,6 +89,7 @@ class AppTest {
             app.updateInfo(null, null);
             assertEquals("原名称", app.getAppName());
             assertEquals("原标签", app.getTag());
+            assertNull(app.getEditTime());
         }
     }
 
