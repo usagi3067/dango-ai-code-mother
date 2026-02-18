@@ -4,7 +4,7 @@ package com.dango.dangoaicodeapp.interfaces.controller;
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.dango.dangoaicodeapp.model.dto.chathistory.ChatHistoryQueryRequest;
-import com.dango.dangoaicodeapp.model.entity.ChatHistory;
+import com.dango.dangoaicodeapp.domain.app.entity.ChatHistory;
 import com.dango.dangoaicodeapp.model.vo.ChatHistoryVO;
 import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
 import com.dango.dangoaicodecommon.common.BaseResponse;

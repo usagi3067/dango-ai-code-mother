@@ -3,7 +3,7 @@ package com.dango.dangoaicodeapp.application.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import com.dango.dangoaicodeapp.application.service.AppSearchService;
 import com.dango.dangoaicodeapp.model.dto.app.AppQueryRequest;
-import com.dango.dangoaicodeapp.model.entity.App;
+import com.dango.dangoaicodeapp.domain.app.entity.App;
 import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;

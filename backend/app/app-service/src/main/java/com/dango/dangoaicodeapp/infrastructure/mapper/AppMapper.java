@@ -1,6 +1,6 @@
 package com.dango.dangoaicodeapp.infrastructure.mapper;
 
-import com.dango.dangoaicodeapp.model.entity.App;
+import com.dango.dangoaicodeapp.domain.app.entity.App;
 import com.mybatisflex.core.BaseMapper;
 import org.apache.ibatis.annotations.Param;
 

@@ -1,6 +1,6 @@
 package com.dango.dangoaicodeapp.infrastructure.esdao;
 
-import com.dango.dangoaicodeapp.model.entity.App;
+import com.dango.dangoaicodeapp.domain.app.entity.App;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.annotation.Id;

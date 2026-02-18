@@ -1,7 +1,7 @@
 package com.dango.dangoaicodeapp.application.service;
 
 import com.dango.dangoaicodeapp.model.dto.chathistory.ChatHistoryQueryRequest;
-import com.dango.dangoaicodeapp.model.entity.ChatHistory;
+import com.dango.dangoaicodeapp.domain.app.entity.ChatHistory;
 import com.dango.dangoaicodeapp.model.vo.ChatHistoryVO;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;

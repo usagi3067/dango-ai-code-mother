@@ -20,7 +20,7 @@ import com.dango.dangoaicodeapp.infrastructure.monitor.MonitorContextHolder;
 import com.dango.dangoaicodeapp.model.constant.AppConstant;
 import com.dango.dangoaicodeapp.model.dto.app.AppAddRequest;
 import com.dango.dangoaicodeapp.model.dto.app.AppQueryRequest;
-import com.dango.dangoaicodeapp.model.entity.App;
+import com.dango.dangoaicodeapp.domain.app.entity.App;
 import com.dango.dangoaicodeapp.model.entity.ElementInfo;
 import com.dango.dangoaicodeapp.model.enums.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.model.vo.AppVO;

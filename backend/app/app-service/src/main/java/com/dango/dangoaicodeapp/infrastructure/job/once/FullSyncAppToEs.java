@@ -2,7 +2,7 @@ package com.dango.dangoaicodeapp.infrastructure.job.once;
 
 import cn.hutool.core.collection.CollUtil;
 import com.dango.dangoaicodeapp.infrastructure.esdao.AppEsDao;
-import com.dango.dangoaicodeapp.model.entity.App;
+import com.dango.dangoaicodeapp.domain.app.entity.App;
 import com.dango.dangoaicodeapp.infrastructure.esdao.AppEsDTO;
 import com.dango.dangoaicodeapp.application.service.AppApplicationService;
 import jakarta.annotation.Resource;

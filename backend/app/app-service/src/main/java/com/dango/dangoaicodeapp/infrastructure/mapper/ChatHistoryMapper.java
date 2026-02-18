@@ -1,6 +1,6 @@
 package com.dango.dangoaicodeapp.infrastructure.mapper;
 
-import com.dango.dangoaicodeapp.model.entity.ChatHistory;
+import com.dango.dangoaicodeapp.domain.app.entity.ChatHistory;
 import com.mybatisflex.core.BaseMapper;
 
 /**

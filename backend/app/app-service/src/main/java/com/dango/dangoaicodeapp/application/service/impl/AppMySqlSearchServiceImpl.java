@@ -3,7 +3,7 @@ package com.dango.dangoaicodeapp.application.service.impl;
 import com.dango.dangoaicodeapp.application.service.AppSearchService;
 import com.dango.dangoaicodeapp.infrastructure.mapper.AppMapper;
 import com.dango.dangoaicodeapp.model.dto.app.AppQueryRequest;
-import com.dango.dangoaicodeapp.model.entity.App;
+import com.dango.dangoaicodeapp.domain.app.entity.App;
 import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Service;

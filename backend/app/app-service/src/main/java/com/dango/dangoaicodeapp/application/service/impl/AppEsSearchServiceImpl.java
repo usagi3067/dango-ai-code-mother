@@ -7,7 +7,7 @@ import co.elastic.clients.elasticsearch._types.query_dsl.TermQuery;
 import com.dango.dangoaicodeapp.application.service.AppSearchService;
 import com.dango.dangoaicodeapp.infrastructure.esdao.AppEsDTO;
 import com.dango.dangoaicodeapp.model.dto.app.AppQueryRequest;
-import com.dango.dangoaicodeapp.model.entity.App;
+import com.dango.dangoaicodeapp.domain.app.entity.App;
 import com.mybatisflex.core.paginate.Page;
 import jakarta.annotation.Resource;
 import org.apache.commons.lang3.StringUtils;

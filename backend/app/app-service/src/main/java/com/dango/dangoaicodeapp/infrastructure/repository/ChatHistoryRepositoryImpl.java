@@ -2,7 +2,7 @@ package com.dango.dangoaicodeapp.infrastructure.repository;
 
 import com.dango.dangoaicodeapp.domain.app.repository.ChatHistoryRepository;
 import com.dango.dangoaicodeapp.infrastructure.mapper.ChatHistoryMapper;
-import com.dango.dangoaicodeapp.model.entity.ChatHistory;
+import com.dango.dangoaicodeapp.domain.app.entity.ChatHistory;
 import com.mybatisflex.core.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -10,7 +10,7 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-import static com.dango.dangoaicodeapp.model.entity.table.ChatHistoryTableDef.CHAT_HISTORY;
+import static com.dango.dangoaicodeapp.domain.app.entity.table.ChatHistoryTableDef.CHAT_HISTORY;
 
 /**
  * 聊天历史仓储实现（基础设施层）

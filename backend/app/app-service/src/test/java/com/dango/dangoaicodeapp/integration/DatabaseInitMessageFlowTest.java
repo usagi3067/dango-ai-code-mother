@@ -1,6 +1,6 @@
 package com.dango.dangoaicodeapp.integration;
 
-import com.dango.dangoaicodeapp.model.entity.App;
+import com.dango.dangoaicodeapp.domain.app.entity.App;
 import com.dango.dangoaicodeapp.service.AppService;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.CodeGenWorkflow;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;

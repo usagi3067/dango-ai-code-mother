@@ -2,7 +2,7 @@ package com.dango.dangoaicodeapp.application.service;
 
 import com.dango.dangoaicodeapp.model.dto.app.AppAddRequest;
 import com.dango.dangoaicodeapp.model.dto.app.AppQueryRequest;
-import com.dango.dangoaicodeapp.model.entity.App;
+import com.dango.dangoaicodeapp.domain.app.entity.App;
 import com.dango.dangoaicodeapp.model.entity.ElementInfo;
 import com.dango.dangoaicodeapp.model.vo.AppVO;
 

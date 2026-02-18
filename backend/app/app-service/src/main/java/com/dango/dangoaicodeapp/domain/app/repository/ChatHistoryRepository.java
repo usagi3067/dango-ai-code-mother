@@ -1,6 +1,6 @@
 package com.dango.dangoaicodeapp.domain.app.repository;
 
-import com.dango.dangoaicodeapp.model.entity.ChatHistory;
+import com.dango.dangoaicodeapp.domain.app.entity.ChatHistory;
 
 import java.util.List;
 import java.util.Optional;

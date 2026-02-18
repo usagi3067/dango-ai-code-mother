@@ -13,7 +13,7 @@ import com.dango.dangoaicodecommon.ratelimit.annotation.RateLimit;
 import com.dango.dangoaicodecommon.ratelimit.enums.RateLimitType;
 import com.dango.dangoaicodeapp.model.constant.AppConstant;
 import com.dango.dangoaicodeapp.model.dto.app.*;
-import com.dango.dangoaicodeapp.model.entity.App;
+import com.dango.dangoaicodeapp.domain.app.entity.App;
 import com.dango.dangoaicodeapp.model.entity.ElementInfo;
 import com.dango.dangoaicodeapp.model.vo.AppVO;
 import com.dango.dangoaicodeapp.application.service.AppApplicationService;

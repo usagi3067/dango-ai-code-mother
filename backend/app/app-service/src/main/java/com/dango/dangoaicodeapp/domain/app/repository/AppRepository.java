@@ -1,6 +1,6 @@
 package com.dango.dangoaicodeapp.domain.app.repository;
 
-import com.dango.dangoaicodeapp.model.entity.App;
+import com.dango.dangoaicodeapp.domain.app.entity.App;
 import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 

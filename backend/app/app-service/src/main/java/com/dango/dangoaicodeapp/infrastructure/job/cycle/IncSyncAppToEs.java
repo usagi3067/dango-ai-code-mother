@@ -3,7 +3,7 @@ package com.dango.dangoaicodeapp.infrastructure.job.cycle;
 import cn.hutool.core.collection.CollUtil;
 import com.dango.dangoaicodeapp.infrastructure.esdao.AppEsDao;
 import com.dango.dangoaicodeapp.infrastructure.mapper.AppMapper;
-import com.dango.dangoaicodeapp.model.entity.App;
+import com.dango.dangoaicodeapp.domain.app.entity.App;
 import com.dango.dangoaicodeapp.infrastructure.esdao.AppEsDTO;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;

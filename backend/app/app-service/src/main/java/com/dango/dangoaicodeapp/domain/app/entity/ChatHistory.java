@@ -1,4 +1,4 @@
-package com.dango.dangoaicodeapp.model.entity;
+package com.dango.dangoaicodeapp.domain.app.entity;
 
 import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
@@ -15,7 +15,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 /**
- * 应用 实体类。
+ * 对话历史 实体类。
  *
  * @author dango
  */
@@ -23,8 +23,8 @@ import java.time.LocalDateTime;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Table("app")
-public class App implements Serializable {
+@Table("chat_history")
+public class ChatHistory implements Serializable {
 
     @Serial
     private static final long serialVersionUID = 1L;
@@ -36,61 +36,27 @@ public class App implements Serializable {
     private Long id;
 
     /**
-     * 应用名称
+     * 消息
      */
-    @Column("appName")
-    private String appName;
+    private String message;
 
     /**
-     * 应用封面
+     * user/ai
      */
-    private String cover;
+    @Column("messageType")
+    private String messageType;
 
     /**
-     * 应用初始化的 prompt
+     * 应用id
      */
-    @Column("initPrompt")
-    private String initPrompt;
-
-    /**
-     * 应用标签
-     */
-    private String tag;
-
-    /**
-     * 代码生成类型（枚举）
-     */
-    @Column("codeGenType")
-    private String codeGenType;
-
-    /**
-     * 部署标识
-     */
-    @Column("deployKey")
-    private String deployKey;
-
-    /**
-     * 部署时间
-     */
-    @Column("deployedTime")
-    private LocalDateTime deployedTime;
-
-    /**
-     * 优先级
-     */
-    private Integer priority;
+    @Column("appId")
+    private Long appId;
 
     /**
      * 创建用户id
      */
     @Column("userId")
     private Long userId;
-
-    /**
-     * 编辑时间
-     */
-    @Column("editTime")
-    private LocalDateTime editTime;
 
     /**
      * 创建时间
@@ -109,11 +75,5 @@ public class App implements Serializable {
      */
     @Column(value = "isDelete", isLogicDelete = true)
     private Integer isDelete;
-
-    /**
-     * 是否启用数据库
-     */
-    @Column("hasDatabase")
-    private Boolean hasDatabase;
 
 }

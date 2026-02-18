@@ -1,7 +1,7 @@
 package com.dango.dangoaicodeapp.integration;
 
 import com.dango.dangoaicodeapp.config.SupabaseClientConfig;
-import com.dango.dangoaicodeapp.model.entity.App;
+import com.dango.dangoaicodeapp.domain.app.entity.App;
 import com.dango.dangoaicodeapp.service.AppService;
 import com.dango.dangoaicodecommon.manager.CosManager;
 import com.dango.supabase.service.SupabaseService;
