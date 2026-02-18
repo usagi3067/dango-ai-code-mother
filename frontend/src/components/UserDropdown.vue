@@ -61,6 +61,7 @@ const loginUserStore = useLoginUserStore()
 const doLogout = async () => {
   const res = await userLogout()
   if (res.data.code === 0) {
+    localStorage.removeItem('satoken')
     loginUserStore.setLoginUser({ userName: '未登录' })
     message.success('退出登录成功')
     await router.push('/user/login')

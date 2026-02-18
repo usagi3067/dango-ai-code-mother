@@ -59,6 +59,10 @@ const formState = reactive<API.UserLoginRequest>({
 const handleSubmit = async (values: any) => {
   const res = await userLogin(values)
   if (res.data.code === 0 && res.data.data) {
+    // 存储 Sa-Token
+    if (res.data.data.tokenValue) {
+      localStorage.setItem('satoken', res.data.data.tokenValue)
+    }
     await loginUserStore.fetchLoginUser()
     message.success('登录成功')
     const redirectPath = (route.query.redirect as string) || '/'
