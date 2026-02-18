@@ -2,7 +2,6 @@ package com.dango.dangoaicodeapp.application.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.util.StrUtil;
 
 import com.dango.aicodegenerate.model.AppNameAndTagResult;
 
@@ -36,7 +35,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -129,27 +127,18 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
 
     @Override
     public String deployApp(Long appId, long userId) {
-        // 1. 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
-        // 2. 查询应用信息
         App app = this.getById(appId);
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
-        // 3. 验证用户是否有权限部署该应用，仅本人可以部署
-        if (!app.getUserId().equals(userId)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限部署该应用");
-        }
-        // 4. 委托领域服务执行核心部署逻辑（构建、复制、生成 deployKey）
+        // 使用聚合根的权限校验
+        app.checkOwnership(userId);
+        // 委托领域服务执行核心部署逻辑
         String deployKey = appDomainService.deployApp(app);
-        // 5. 更新应用的 deployKey 和部署时间
-        App updateApp = new App();
-        updateApp.setId(appId);
-        updateApp.setDeployKey(deployKey);
-        updateApp.setDeployedTime(LocalDateTime.now());
-        boolean updateResult = this.updateById(updateApp);
+        // 使用聚合根的状态变更方法
+        app.markDeployed(deployKey);
+        boolean updateResult = this.updateById(app);
         ThrowUtils.throwIf(!updateResult, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
-        // 6. 构建应用访问 URL
         String appDeployUrl = String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
-        // 7. 异步生成截图并更新应用封面
         generateAppScreenshotAsync(appId, appDeployUrl);
         return appDeployUrl;
     }
@@ -162,35 +151,25 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
      */
     @Override
     public void generateAppScreenshotAsync(Long appId, String appUrl) {
-        // 使用虚拟线程异步执行
         Thread.startVirtualThread(() -> {
-            // 委托领域服务生成截图
             String screenshotUrl = appDomainService.generateScreenshot(appId, appUrl);
-            // 更新应用封面字段
-            App updateApp = new App();
-            updateApp.setId(appId);
-            updateApp.setCover(screenshotUrl);
-            boolean updated = this.updateById(updateApp);
-            ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR, "更新应用封面字段失败");
+            App app = this.getById(appId);
+            if (app != null) {
+                app.updateCover(screenshotUrl);
+                boolean updated = this.updateById(app);
+                ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR, "更新应用封面字段失败");
+            }
         });
     }
 
     @Override
     public Long createApp(AppAddRequest appAddRequest, long userId) {
-        // 参数校验
         String initPrompt = appAddRequest.getInitPrompt();
-        ThrowUtils.throwIf(StrUtil.isBlank(initPrompt), ErrorCode.PARAMS_ERROR, "初始化 prompt 不能为空");
-        // 构造入库对象
-        App app = new App();
-        BeanUtil.copyProperties(appAddRequest, app);
-        app.setUserId(userId);
+        App.validateInitPrompt(initPrompt);
         // 使用 AI 智能生成应用名称和标签
         AppNameAndTagResult appInfo = appInfoGeneratorFacade.generateAppInfo(initPrompt);
-        app.setAppName(appInfo.getAppName());
-        app.setTag(appInfo.getTag());
-        // 统一使用 VUE_PROJECT 类型
-        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
-        // 插入数据库
+        // 使用工厂方法创建应用
+        App app = App.createNew(userId, initPrompt, appInfo.getAppName(), appInfo.getTag());
         boolean result = this.save(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         log.info("应用创建成功，ID: {}, 类型: {}", app.getId(), CodeGenTypeEnum.VUE_PROJECT.getValue());
@@ -274,44 +253,23 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
 
     @Override
     public void initializeDatabase(Long appId, long userId) {
-        // 1. 查询应用信息
         App app = this.getById(appId);
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
-
-        // 2. 权限校验：只有应用创建者可以初始化数据库
-        if (!app.getUserId().equals(userId)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限操作该应用");
-        }
-
-        // 3. 校验是否已启用数据库
-        if (Boolean.TRUE.equals(app.getHasDatabase())) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "该应用已启用数据库");
-        }
-
-        // 4. 校验代码生成类型（仅支持 VUE_PROJECT）
-        String codeGenType = app.getCodeGenType();
-        if (!CodeGenTypeEnum.VUE_PROJECT.getValue().equals(codeGenType)) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "仅支持 Vue 项目启用数据库");
-        }
-
-        // 5. 校验项目目录是否存在
-        String projectDir = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + codeGenType + "_" + appId;
+        // 使用聚合根的权限校验
+        app.checkOwnership(userId);
+        // 使用聚合根的数据库启用方法（含业务校验）
+        app.enableDatabase();
+        // 校验项目目录是否存在
+        String projectDir = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + app.getProjectDirName();
         File projectDirFile = new File(projectDir);
         if (!projectDirFile.exists() || !projectDirFile.isDirectory()) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "项目目录不存在，请先生成代码");
         }
-
-        // 6. 委托领域服务执行核心数据库初始化逻辑（创建 Schema、写入配置、更新 package.json）
+        // 委托领域服务执行核心数据库初始化逻辑
         appDomainService.initializeDatabase(app);
-
-        // 7. 更新 app.has_database = true
-        App updateApp = new App();
-        updateApp.setId(appId);
-        updateApp.setHasDatabase(true);
-        updateApp.setEditTime(LocalDateTime.now());
-        boolean result = this.updateById(updateApp);
+        // 持久化状态变更
+        boolean result = this.updateById(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "更新应用状态失败");
-
         log.info("应用数据库初始化成功，appId: {}", appId);
     }
 }
