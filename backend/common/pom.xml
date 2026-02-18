@@ -30,6 +30,16 @@
             <artifactId>apm-toolkit-trace</artifactId>
             <version>${skywalking.version}</version>
         </dependency>
+        <!-- Sa-Token 核心 -->
+        <dependency>
+            <groupId>cn.dev33</groupId>
+            <artifactId>sa-token-spring-boot3-starter</artifactId>
+        </dependency>
+        <!-- Sa-Token 整合 Dubbo3 -->
+        <dependency>
+            <groupId>cn.dev33</groupId>
+            <artifactId>sa-token-dubbo3</artifactId>
+        </dependency>
     </dependencies>
 
 </project>
