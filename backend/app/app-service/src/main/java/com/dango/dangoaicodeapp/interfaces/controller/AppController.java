@@ -128,20 +128,12 @@ public class AppController {
         }
         long loginUserId = StpUtil.getLoginIdAsLong();
         long id = appUpdateRequest.getId();
-        // 判断是否存在
         App oldApp = appService.getById(id);
         ThrowUtils.throwIf(oldApp == null, ErrorCode.NOT_FOUND_ERROR);
-        // 仅本人可更新
-        if (!oldApp.getUserId().equals(loginUserId)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
-        }
-        App app = new App();
-        app.setId(id);
-        app.setAppName(appUpdateRequest.getAppName());
-        app.setTag(appUpdateRequest.getTag());
-        // 设置编辑时间
-        app.setEditTime(LocalDateTime.now());
-        boolean result = appService.updateById(app);
+        // 使用聚合根的权限校验和信息更新
+        oldApp.checkOwnership(loginUserId);
+        oldApp.updateInfo(appUpdateRequest.getAppName(), appUpdateRequest.getTag());
+        boolean result = appService.updateById(oldApp);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
         return ResultUtils.success(true);
     }
@@ -159,14 +151,12 @@ public class AppController {
         }
         long loginUserId = StpUtil.getLoginIdAsLong();
         long id = deleteRequest.getId();
-        // 判断是否存在
         App oldApp = appService.getById(id);
         ThrowUtils.throwIf(oldApp == null, ErrorCode.NOT_FOUND_ERROR);
         // 仅本人或管理员可删除
-        if (!oldApp.getUserId().equals(loginUserId) && !StpUtil.hasRole("admin")) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR);
+        if (!StpUtil.hasRole("admin")) {
+            oldApp.checkOwnership(loginUserId);
         }
-        // 级联删除该应用的所有对话历史
         chatHistoryService.deleteByAppId(id);
         boolean result = appService.removeById(id);
         return ResultUtils.success(result);
@@ -458,27 +448,16 @@ public class AppController {
     @GetMapping("/download/{appId}")
     public void downloadAppCode(@PathVariable Long appId,
                                 HttpServletResponse response) {
-        // 1. 基础校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
-        // 2. 查询应用信息
         App app = appService.getById(appId);
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
-        // 3. 权限校验：只有应用创建者可以下载代码
-        long loginUserId = StpUtil.getLoginIdAsLong();
-        if (!app.getUserId().equals(loginUserId)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限下载该应用代码");
-        }
-        // 4. 构建应用代码目录路径（生成目录，非部署目录）
-        String codeGenType = app.getCodeGenType();
-        String sourceDirName = codeGenType + "_" + appId;
-        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + sourceDirName;
-        // 5. 检查代码目录是否存在
+        // 使用聚合根的权限校验和目录名获取
+        app.checkOwnership(StpUtil.getLoginIdAsLong());
+        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + app.getProjectDirName();
         File sourceDir = new File(sourceDirPath);
         ThrowUtils.throwIf(!sourceDir.exists() || !sourceDir.isDirectory(),
                 ErrorCode.NOT_FOUND_ERROR, "应用代码不存在，请先生成代码");
-        // 6. 生成下载文件名（不建议添加中文内容）
         String downloadFileName = String.valueOf(appId);
-        // 7. 调用通用下载服务
         projectDownloadService.downloadProjectAsZip(sourceDirPath, downloadFileName, response);
     }
 
