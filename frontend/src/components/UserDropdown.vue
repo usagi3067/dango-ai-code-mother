@@ -20,6 +20,11 @@
       </a-space>
       <template #overlay>
         <a-menu>
+          <a-menu-item @click="router.push('/user/settings')">
+            <SettingOutlined />
+            个人设置
+          </a-menu-item>
+          <a-menu-divider />
           <a-menu-item @click="doLogout">
             <LogoutOutlined />
             退出登录
@@ -36,7 +41,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { LogoutOutlined } from '@ant-design/icons-vue'
+import { LogoutOutlined, SettingOutlined } from '@ant-design/icons-vue'
 import { useLoginUserStore } from '@/stores/loginUser'
 import { userLogout } from '@/api/user/userController'
 import UserAvatar from '@/components/UserAvatar.vue'

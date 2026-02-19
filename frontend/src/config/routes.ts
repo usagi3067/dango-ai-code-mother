@@ -99,6 +99,17 @@ export const routeConfigs: RouteConfig[] = [
       hideLayout: true
     }
   },
+  // 个人设置页面
+  {
+    path: '/user/settings',
+    name: 'userSettings',
+    component: () => import('@/pages/UserSettingsPage.vue'),
+    meta: {
+      title: '个人设置',
+      showInMenu: false,
+      access: ACCESS_ENUM.USER
+    }
+  },
   // 无权限页面
   {
     path: '/noAuth',
