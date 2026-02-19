@@ -1,7 +1,7 @@
-import type { SolutionData } from '../types'
-import PlaceholderVis from '../components/visualizations/PlaceholderVis.vue'
+import type { SolutionData } from '@/types'
+import PlaceholderVis from '@/components/visualizations/PlaceholderVis.vue'
 
-// 占位数据 — 由 skill 生成时覆盖此文件
+// 占位数据 — 由 AI 生成时覆盖此目录
 export const solutions: SolutionData[] = [
   {
     id: 'placeholder',
@@ -22,7 +22,7 @@ export const solutions: SolutionData[] = [
       {
         state: {},
         highlightLines: { java: [], cpp: [] },
-        explanation: '占位步骤 — 由 skill 生成实际动画数据。',
+        explanation: '占位步骤 — 由 AI 生成实际动画数据。',
       },
     ],
     visualization: PlaceholderVis,
