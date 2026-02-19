@@ -3,6 +3,10 @@ spring:
     name: dango-ai-code-user
   profiles:
     active: local
+  servlet:
+    multipart:
+      max-file-size: 2MB
+      max-request-size: 5MB
   # mysql
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
