@@ -214,6 +214,15 @@ public class CodeModifierNode {
                 com.dango.aicodegenerate.model.FileModificationGuide guide = guides.get(i);
                 context.emitNodeMessage(NODE_NAME,
                     String.format("  %d. %s (%s)\n", i+1, guide.getPath(), guide.getType()));
+
+                // 输出每个文件的具体操作步骤
+                List<String> operations = guide.getOperations();
+                if (operations != null && !operations.isEmpty()) {
+                    for (String operation : operations) {
+                        context.emitNodeMessage(NODE_NAME,
+                            String.format("     - %s\n", operation));
+                    }
+                }
             }
 
             context.emitNodeMessage(NODE_NAME, "\n开始执行修改...\n\n");
