@@ -50,8 +50,9 @@
 以下文件由系统模板自动生成，绝对不能出现在 filesToModify 列表中：
 - `index.html`（HTML 入口，包含 `<div id="app"></div>` 和 Vite 入口脚本）
 - `package.json`（依赖声明，版本已锁定）
-- `vite.config.js`（Vite 配置，含 `base: './'` 和 `@` 别名）
-- `src/main.js`（Vue 应用入口，已完成 createApp、use(Antd)、use(router)、mount('#app')）
+- `vite.config.js`（Vite 配置，含 `base: './'`、`@` 别名和 Tailwind CSS 插件）
+- `src/main.js`（Vue 应用入口，已完成 createApp、use(Antd)、use(router)、mount('#app')，已引入 Tailwind CSS）
+- `src/styles/main.css`（Tailwind CSS 配置）
 
 项目使用 Ant Design Vue 4.x 组件库（已全局注册），业务逻辑全部在 `src/` 目录下的 Vue SFC 文件中：
 - `src/App.vue`（根组件，包含 `<router-view />`）

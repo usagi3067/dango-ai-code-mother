@@ -81,7 +81,7 @@ public class App implements Serializable {
     /**
      * 优先级
      */
-    private Integer priority;
+    private Integer priority = 0;
 
     /**
      * 创建用户id
@@ -184,12 +184,16 @@ public class App implements Serializable {
     public static App createNew(Long userId, String initPrompt,
                                 String appName, String tag) {
         validateInitPrompt(initPrompt);
+        LocalDateTime now = LocalDateTime.now();
         App app = new App();
         app.setUserId(userId);
         app.setInitPrompt(initPrompt);
         app.setAppName(appName);
         app.setTag(tag);
         app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
+        app.setEditTime(now);
+        app.setCreateTime(now);
+        app.setUpdateTime(now);
         return app;
     }
 

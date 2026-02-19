@@ -86,11 +86,14 @@ public class ChatHistory implements Serializable {
      */
     public static ChatHistory createUserMessage(Long appId, Long userId, String message) {
         validateMessage(appId, userId, message);
+        LocalDateTime now = LocalDateTime.now();
         return ChatHistory.builder()
                 .appId(appId)
                 .userId(userId)
                 .message(message)
                 .messageType(MessageTypeEnum.USER.getValue())
+                .createTime(now)
+                .updateTime(now)
                 .build();
     }
 
@@ -99,11 +102,14 @@ public class ChatHistory implements Serializable {
      */
     public static ChatHistory createAiMessage(Long appId, Long userId, String message) {
         validateMessage(appId, userId, message);
+        LocalDateTime now = LocalDateTime.now();
         return ChatHistory.builder()
                 .appId(appId)
                 .userId(userId)
                 .message(message)
                 .messageType(MessageTypeEnum.AI.getValue())
+                .createTime(now)
+                .updateTime(now)
                 .build();
     }
 

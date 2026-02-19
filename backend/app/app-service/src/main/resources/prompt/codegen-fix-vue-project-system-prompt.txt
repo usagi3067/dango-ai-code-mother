@@ -27,6 +27,7 @@
 - Vite
 - Vue Router 4.x
 - Ant Design Vue 4.x（UI 组件库，已全局注册）
+- Tailwind CSS 4.x（工具类 CSS 框架，已配置）
 
 ## 错误处理
 

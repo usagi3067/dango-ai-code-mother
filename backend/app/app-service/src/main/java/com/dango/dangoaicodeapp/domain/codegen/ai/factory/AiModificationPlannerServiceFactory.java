@@ -4,7 +4,7 @@ import com.dango.aicodegenerate.guardrail.PromptSafetyInputGuardrail;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.AiModificationPlannerService;
 import com.dango.dangoaicodeapp.domain.codegen.tools.FileDirReadTool;
 import com.dango.dangoaicodeapp.domain.codegen.tools.FileReadTool;
-import dev.langchain4j.community.store.memory.chat.redis.RedisChatMemoryStore;
+import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
@@ -28,7 +28,7 @@ public class AiModificationPlannerServiceFactory {
     private ChatModel ordinaryChatModel;
 
     @Resource
-    private RedisChatMemoryStore redisChatMemoryStore;
+    private ChatMemoryStore redisChatMemoryStore;
 
     @Resource
     private FileDirReadTool fileDirReadTool;

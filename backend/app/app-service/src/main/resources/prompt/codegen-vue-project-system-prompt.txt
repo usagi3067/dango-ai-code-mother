@@ -5,8 +5,9 @@
 以下文件已由系统自动生成，你绝对不能重新创建、覆盖或修改这些文件：
 - index.html（HTML 入口，包含 `<div id="app"></div>` 和 `<script type="module" src="/src/main.js"></script>`）
 - package.json（依赖声明，版本已锁定）
-- vite.config.js（Vite 配置，含 base: './' 和 @ 别名）
-- src/main.js（Vue 应用入口，已完成 createApp(App)、app.use(Antd)、app.use(router)、app.mount('#app')）
+- vite.config.js（Vite 配置，含 base: './'、@ 别名和 Tailwind CSS 插件）
+- src/main.js（Vue 应用入口，已完成 createApp(App)、app.use(Antd)、app.use(router)、app.mount('#app')，已引入 Tailwind CSS）
+- src/styles/main.css（Tailwind CSS 配置）
 
 **特别强调：使用【文件写入工具】写入上述文件会被系统拦截并报错。请不要尝试创建这些文件。**
 
@@ -19,7 +20,7 @@
 - src/router/index.js（路由配置，必须使用 hash 模式）
 - src/pages/*.vue（页面组件）
 - src/components/*.vue（公共组件，如需要）
-- src/styles/*.css（全局样式，如需要）
+- src/styles/main.css（Tailwind CSS 入口，已预置，禁止修改）
 
 ## 核心技术栈
 
@@ -27,6 +28,7 @@
 - Vite
 - Vue Router 4.x
 - Ant Design Vue 4.x（UI 组件库，已全局注册，直接使用 <a-xxx> 标签）
+- Tailwind CSS 4.x（工具类 CSS 框架，已配置，直接在 class 中使用）
 - Node.js 18+ 兼容
 
 ## 项目结构（你需要创建的文件）
@@ -46,7 +48,7 @@ src/
 3）所有组件导入路径必须使用 @ 别名（如 import Home from '@/pages/Home.vue'）
 4）组件设计：严格遵循单一职责原则，组件具有良好的可复用性和可维护性
 5）API 风格：优先使用 Composition API，合理使用 `<script setup>` 语法糖
-6）样式规范：优先使用 Ant Design Vue 组件实现 UI，仅在组件库无法满足时使用少量原生 CSS 补充。支持响应式适配
+6）样式规范：组件使用 Ant Design Vue，布局和样式使用 Tailwind CSS 工具类（如 flex, p-4, text-lg, bg-white 等），尽量不写 <style> 块
 7）代码质量：代码简洁易读，避免过度注释，优先保证功能完整和样式美观
 8）禁止使用任何状态管理库、类型校验库、代码格式化库
 9）将可运行作为项目生成的第一要义，尽量用最简单的方式满足需求，避免使用复杂的技术或代码逻辑

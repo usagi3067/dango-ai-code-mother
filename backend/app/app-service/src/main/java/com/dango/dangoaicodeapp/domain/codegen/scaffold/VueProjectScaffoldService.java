@@ -24,7 +24,8 @@ public class VueProjectScaffoldService {
             "index.html",
             "package.json",
             "vite.config.js",
-            "src/main.js"
+            "src/main.js",
+            "src/styles/main.css"
     );
 
     private final NodeModulesPrebuilder nodeModulesPrebuilder;

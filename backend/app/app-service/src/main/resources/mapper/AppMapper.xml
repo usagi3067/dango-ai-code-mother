@@ -5,7 +5,7 @@
 <mapper namespace="com.dango.dangoaicodeapp.infrastructure.mapper.AppMapper">
 
     <!-- 游标分页查询应用列表 -->
-    <select id="listAppByCursor" resultType="com.dango.dangoaicodeapp.model.entity.App">
+    <select id="listAppByCursor" resultType="com.dango.dangoaicodeapp.domain.app.entity.App">
         SELECT * FROM app
         WHERE isDelete = 0
         <if test="tag != null and tag != ''">
@@ -22,7 +22,7 @@
         LIMIT #{pageSize}
     </select>
 
-    <select id="listAppWithDelete" resultType="com.dango.dangoaicodeapp.model.entity.App">
+    <select id="listAppWithDelete" resultType="com.dango.dangoaicodeapp.domain.app.entity.App">
         SELECT * FROM app WHERE updateTime >= #{minUpdateTime}
     </select>
 
