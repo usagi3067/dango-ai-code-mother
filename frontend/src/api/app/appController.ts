@@ -210,3 +210,33 @@ export async function uploadVueProject(formData: FormData, options?: { [key: str
     ...(options || {}),
   })
 }
+
+/** 分析功能列表 POST /app/analyze-features */
+export async function analyzeFeatures(
+  body: { prompt: string; supplement?: string },
+  options?: { [key: string]: any },
+) {
+  return request<API.BaseResponseFeatureAnalysisVO>('/app/analyze-features', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** 生成应用信息 POST /app/generate-info */
+export async function generateAppInfo(
+  body: { prompt: string },
+  options?: { [key: string]: any },
+) {
+  return request<API.BaseResponseAppInfoVO>('/app/generate-info', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}

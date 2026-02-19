@@ -187,4 +187,32 @@ declare namespace API {
     tableName?: string
     rowCount?: number
   }
+
+  type FeatureItemVO = {
+    name?: string
+    description?: string
+    checked?: boolean
+    recommended?: boolean
+  }
+
+  type FeatureAnalysisVO = {
+    features?: FeatureItemVO[]
+  }
+
+  type AppInfoVO = {
+    appName?: string
+    tag?: string
+  }
+
+  type BaseResponseFeatureAnalysisVO = {
+    code?: number
+    data?: FeatureAnalysisVO
+    message?: string
+  }
+
+  type BaseResponseAppInfoVO = {
+    code?: number
+    data?: AppInfoVO
+    message?: string
+  }
 }
