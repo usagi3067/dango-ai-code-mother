@@ -98,6 +98,9 @@ public class UserProfileApplicationServiceImpl implements UserProfileApplication
     @Override
     @Transactional
     public boolean changePassword(Long userId, ChangePasswordRequest request) {
+        if (request.getOldPassword() == null || request.getNewPassword() == null || request.getCheckPassword() == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码不能为空");
+        }
         if (!request.getNewPassword().equals(request.getCheckPassword())) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的密码不一致");
         }
