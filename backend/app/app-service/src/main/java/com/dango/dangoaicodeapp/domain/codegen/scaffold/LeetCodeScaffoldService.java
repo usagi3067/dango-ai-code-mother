@@ -93,13 +93,13 @@ public class LeetCodeScaffoldService implements ProjectScaffoldService {
      * 创建 node_modules 符号链接指向预构建目录
      */
     private void linkSharedNodeModules(Path targetDir) {
-        if (!nodeModulesPrebuilder.isReady()) {
-            log.warn("预构建 node_modules 未就绪，跳过 symlink 创建");
+        if (!nodeModulesPrebuilder.isLeetCodeReady()) {
+            log.warn("LeetCode 预构建 node_modules 未就绪，跳过 symlink 创建");
             return;
         }
 
         Path link = targetDir.resolve("node_modules");
-        Path target = nodeModulesPrebuilder.getPrebuiltNodeModulesPath();
+        Path target = nodeModulesPrebuilder.getLeetCodePrebuiltNodeModulesPath();
 
         try {
             Files.createSymbolicLink(link, target);
