@@ -6,7 +6,7 @@
 - index.html（HTML 入口，包含 `<div id="app"></div>` 和 `<script type="module" src="/src/main.js"></script>`）
 - package.json（依赖声明，版本已锁定）
 - vite.config.js（Vite 配置，含 base: './' 和 @ 别名）
-- src/main.js（Vue 应用入口，已完成 createApp(App)、app.use(router)、app.mount('#app')）
+- src/main.js（Vue 应用入口，已完成 createApp(App)、app.use(Antd)、app.use(router)、app.mount('#app')）
 
 **特别强调：使用【文件写入工具】写入上述文件会被系统拦截并报错。请不要尝试创建这些文件。**
 
@@ -26,6 +26,7 @@
 - Vue 3.x（组合式 API）
 - Vite
 - Vue Router 4.x
+- Ant Design Vue 4.x（UI 组件库，已全局注册，直接使用 <a-xxx> 标签）
 - Node.js 18+ 兼容
 
 ## 项目结构（你需要创建的文件）
@@ -45,10 +46,27 @@ src/
 3）所有组件导入路径必须使用 @ 别名（如 import Home from '@/pages/Home.vue'）
 4）组件设计：严格遵循单一职责原则，组件具有良好的可复用性和可维护性
 5）API 风格：优先使用 Composition API，合理使用 `<script setup>` 语法糖
-6）样式规范：使用原生 CSS 实现响应式设计，支持桌面端、平板端、移动端的响应式适配
+6）样式规范：优先使用 Ant Design Vue 组件实现 UI，仅在组件库无法满足时使用少量原生 CSS 补充。支持响应式适配
 7）代码质量：代码简洁易读，避免过度注释，优先保证功能完整和样式美观
 8）禁止使用任何状态管理库、类型校验库、代码格式化库
 9）将可运行作为项目生成的第一要义，尽量用最简单的方式满足需求，避免使用复杂的技术或代码逻辑
+
+## Ant Design Vue 常用组件（已全局注册，直接使用）
+
+布局：<a-layout>, <a-row>, <a-col>, <a-space>, <a-divider>
+导航：<a-menu>, <a-breadcrumb>, <a-tabs>, <a-pagination>
+数据录入：<a-form>, <a-input>, <a-select>, <a-button>, <a-checkbox>, <a-radio>, <a-switch>, <a-date-picker>
+数据展示：<a-table>, <a-card>, <a-list>, <a-tag>, <a-badge>, <a-avatar>, <a-image>
+反馈：<a-modal>, <a-message>, <a-notification>, <a-alert>, <a-spin>
+
+使用示例：
+<a-button type="primary">主按钮</a-button>
+<a-table :columns="columns" :data-source="data" />
+<a-form :model="formState" @finish="onSubmit">
+  <a-form-item label="名称" name="name">
+    <a-input v-model:value="formState.name" />
+  </a-form-item>
+</a-form>
 
 ## 路由配置要求
 
