@@ -12,7 +12,14 @@ import com.dango.dangoaicodecommon.ratelimit.enums.RateLimitType;
 import com.dango.dangoaicodeapp.model.constant.AppConstant;
 import com.dango.dangoaicodeapp.model.dto.app.*;
 import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
+import com.dango.dangoaicodeapp.model.vo.AppInfoVO;
 import com.dango.dangoaicodeapp.model.vo.AppVO;
+import com.dango.dangoaicodeapp.model.vo.FeatureAnalysisVO;
+import com.dango.dangoaicodeapp.model.vo.FeatureItemVO;
+import com.dango.dangoaicodeapp.domain.codegen.service.AppInfoGeneratorFacade;
+import com.dango.dangoaicodeapp.domain.codegen.service.FeatureAnalyzerFacade;
+import com.dango.aicodegenerate.model.AppNameAndTagResult;
+import com.dango.aicodegenerate.model.FeatureAnalysisResult;
 import com.dango.dangoaicodeapp.application.service.AppApplicationService;
 import com.dango.dangoaicodeapp.application.service.CodeGenApplicationService;
 import com.dango.dangoaicodecommon.common.BaseResponse;
@@ -57,6 +64,12 @@ public class AppController {
     @Resource
     private ProjectDownloadService projectDownloadService;
 
+    @Resource
+    private FeatureAnalyzerFacade featureAnalyzerFacade;
+
+    @Resource
+    private AppInfoGeneratorFacade appInfoGeneratorFacade;
+
     /**
      * 创建应用
      */
@@ -65,6 +78,40 @@ public class AppController {
         ThrowUtils.throwIf(appAddRequest == null, ErrorCode.PARAMS_ERROR);
         Long appId = appService.createApp(appAddRequest, StpUtil.getLoginIdAsLong());
         return ResultUtils.success(appId);
+    }
+
+    /**
+     * 分析功能列表
+     */
+    @PostMapping("/analyze-features")
+    public BaseResponse<FeatureAnalysisVO> analyzeFeatures(@RequestBody AnalyzeFeaturesRequest request) {
+        ThrowUtils.throwIf(request == null || request.getPrompt() == null, ErrorCode.PARAMS_ERROR);
+        FeatureAnalysisResult result = featureAnalyzerFacade.analyzeFeatures(
+                request.getPrompt(), request.getSupplement());
+        FeatureAnalysisVO vo = new FeatureAnalysisVO();
+        vo.setFeatures(result.getFeatures().stream().map(item -> {
+            FeatureItemVO itemVO = new FeatureItemVO();
+            itemVO.setName(item.getName());
+            itemVO.setDescription(item.getDescription());
+            itemVO.setChecked(item.isChecked());
+            itemVO.setRecommended(item.isRecommended());
+            return itemVO;
+        }).toList());
+        return ResultUtils.success(vo);
+    }
+
+    /**
+     * 生成应用名称和标签
+     */
+    @PostMapping("/generate-info")
+    public BaseResponse<AppInfoVO> generateAppInfo(@RequestBody Map<String, String> request) {
+        String prompt = request.get("prompt");
+        ThrowUtils.throwIf(prompt == null || prompt.isBlank(), ErrorCode.PARAMS_ERROR);
+        AppNameAndTagResult result = appInfoGeneratorFacade.generateAppInfo(prompt);
+        AppInfoVO vo = new AppInfoVO();
+        vo.setAppName(result.getAppName());
+        vo.setTag(result.getTag());
+        return ResultUtils.success(vo);
     }
 
     /**

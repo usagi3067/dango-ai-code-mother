@@ -145,8 +145,22 @@ public class AppApplicationServiceImpl implements AppApplicationService {
     public Long createApp(AppAddRequest appAddRequest, long userId) {
         String initPrompt = appAddRequest.getInitPrompt();
         App.validateInitPrompt(initPrompt);
-        AppNameAndTagResult appInfo = appInfoGeneratorFacade.generateAppInfo(initPrompt);
-        App app = App.createNew(userId, initPrompt, appInfo.getAppName(), appInfo.getTag());
+
+        String appName;
+        String tag;
+
+        // 如果前端已提供名称和标签，直接使用，跳过 AI 生成
+        if (appAddRequest.getAppName() != null && !appAddRequest.getAppName().isBlank()
+                && appAddRequest.getTag() != null && !appAddRequest.getTag().isBlank()) {
+            appName = appAddRequest.getAppName();
+            tag = appAddRequest.getTag();
+        } else {
+            AppNameAndTagResult appInfo = appInfoGeneratorFacade.generateAppInfo(initPrompt);
+            appName = appInfo.getAppName();
+            tag = appInfo.getTag();
+        }
+
+        App app = App.createNew(userId, initPrompt, appName, tag);
         appRepository.save(app);
         log.info("应用创建成功，ID: {}, 类型: {}", app.getId(), CodeGenTypeEnum.VUE_PROJECT.getValue());
         return app.getId();

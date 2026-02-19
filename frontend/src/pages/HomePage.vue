@@ -303,6 +303,16 @@
         <a-empty v-else description="暂无精选案例" />
       </a-spin>
     </div>
+
+    <FeatureSelectionModal
+      v-model:visible="featureModalVisible"
+      :app-name="appNameResult"
+      :tag="tagResult"
+      :features="featuresResult"
+      :loading="featureModalLoading"
+      @confirm="handleConfirmCreate"
+      @reanalyze="handleReanalyze"
+    />
   </div>
 </template>
 
@@ -382,6 +392,7 @@ import {
  * 导入应用卡片组件
  */
 import AppCard from '@/components/AppCard.vue'
+import FeatureSelectionModal from '@/components/FeatureSelectionModal.vue'
 
 /**
  * 导入 API 接口函数
@@ -393,7 +404,7 @@ import AppCard from '@/components/AppCard.vue'
  * listMyAppVoByPage: 分页查询我的应用
  * listGoodAppVoByPage: 分页查询精选应用
  */
-import { addApp, listMyAppVoByPage, listGoodAppVoByPage, uploadVueProject } from '@/api/app/appController'
+import { addApp, listMyAppVoByPage, listGoodAppVoByPage, uploadVueProject, analyzeFeatures, generateAppInfo } from '@/api/app/appController'
 
 /**
  * 导入环境变量配置
@@ -525,6 +536,13 @@ const featuredPagination = reactive({
  */
 const selectedTag = ref('')
 
+const featureModalVisible = ref(false)
+const featureModalLoading = ref(false)
+const appNameResult = ref('')
+const tagResult = ref('')
+const featuresResult = ref<API.FeatureItemVO[]>([])
+const originalPrompt = ref('')
+
 // ==================== 方法定义 ====================
 
 /**
@@ -540,77 +558,83 @@ const selectedTag = ref('')
  * 4. 创建成功后跳转到对话页面
  */
 const handleCreateApp = async () => {
-  // trim(): 去除字符串首尾空格
-  // 如果去除空格后为空，说明用户没有输入有效内容
   if (!promptText.value.trim()) {
     message.warning('请输入提示词')
-    return  // 提前返回，不执行后续代码
+    return
   }
-  
-  // 检查用户是否已登录
-  // 如果没有 id，说明未登录
+
   if (!loginUserStore.loginUser.id) {
     message.warning('请先登录')
-    // 跳转到登录页
     router.push('/user/login')
     return
   }
-  
-  // 设置加载状态为 true，按钮显示加载动画
-  creating.value = true
-  
-  /**
-   * try-catch-finally: 异常处理结构
-   * 
-   * try: 尝试执行的代码（可能会出错）
-   * catch: 捕获错误并处理
-   * finally: 无论成功失败都会执行（可选）
-   */
+
+  originalPrompt.value = promptText.value
+  featureModalLoading.value = true
+  featureModalVisible.value = true
+
   try {
-    // 调用后端接口创建应用
-    // await: 等待异步操作完成
-    const res = await addApp({ initPrompt: promptText.value })
-    
-    /**
-     * 判断请求是否成功
-     * 
-     * res.data.code === 0: 后端约定的成功状态码
-     * res.data.data: 返回的数据（这里是应用 ID）
-     */
+    const [infoRes, featuresRes] = await Promise.all([
+      generateAppInfo({ prompt: promptText.value }),
+      analyzeFeatures({ prompt: promptText.value }),
+    ])
+
+    if (infoRes.data.code === 0 && infoRes.data.data) {
+      appNameResult.value = infoRes.data.data.appName || ''
+      tagResult.value = infoRes.data.data.tag || 'website'
+    }
+    if (featuresRes.data.code === 0 && featuresRes.data.data) {
+      featuresResult.value = featuresRes.data.data.features || []
+    }
+  } catch (error) {
+    message.error('分析失败，请稍后重试')
+    featureModalVisible.value = false
+  } finally {
+    featureModalLoading.value = false
+  }
+}
+
+const handleReanalyze = async (supplement: string) => {
+  featureModalLoading.value = true
+  try {
+    const res = await analyzeFeatures({
+      prompt: originalPrompt.value,
+      supplement,
+    })
     if (res.data.code === 0 && res.data.data) {
-      /**
-       * 【重要】ID 精度问题处理
-       * 
-       * 后端返回的 ID 是 Long 类型（64位整数）
-       * JavaScript 的 Number 只能精确表示 53 位整数
-       * 超过 Number.MAX_SAFE_INTEGER (9007199254740991) 会丢失精度
-       * 
-       * 解决方案：始终将 ID 作为字符串处理
-       * String(res.data.data): 将数字转为字符串
-       */
+      featuresResult.value = res.data.data.features || []
+    }
+  } catch (error) {
+    message.error('重新分析失败')
+  } finally {
+    featureModalLoading.value = false
+  }
+}
+
+const handleConfirmCreate = async (payload: {
+  appName: string
+  tag: string
+  initPrompt: string
+}) => {
+  featureModalVisible.value = false
+  creating.value = true
+  try {
+    const fullInitPrompt = originalPrompt.value + payload.initPrompt
+    const res = await addApp({
+      initPrompt: fullInitPrompt,
+      appName: payload.appName,
+      tag: payload.tag,
+    })
+    if (res.data.code === 0 && res.data.data) {
       const appId = String(res.data.data)
-      
       message.success('应用创建成功')
-      
-      /**
-       * 路由跳转
-       *
-       * router.push(): 编程式导航
-       * 模板字符串 ``: 可以嵌入变量 ${变量名}
-       *
-       * 跳转到应用对话页面，路径格式: /app/chat/应用ID
-       * autoSend=1 表示自动发送初始消息开始生成
-       */
       router.push(`/app/chat/${appId}?autoSend=1`)
     } else {
-      // 请求失败，显示错误信息
       message.error('创建失败：' + res.data.message)
     }
   } catch (error) {
-    // 捕获异常（如网络错误）
     message.error('创建失败，请稍后重试')
   } finally {
-    // 无论成功失败，都要关闭加载状态
     creating.value = false
   }
 }
