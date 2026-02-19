@@ -3,6 +3,7 @@ package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
 import com.dango.aicodegenerate.guardrail.PromptSafetyInputGuardrail;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.CodeFixerService;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.LeetCodeCodeFixerService;
+import com.dango.dangoaicodeapp.domain.codegen.ai.service.InterviewCodeFixerService;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.VueCodeFixerService;
 import com.dango.dangoaicodeapp.domain.codegen.tools.*;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
@@ -108,6 +109,7 @@ public class AiCodeFixerServiceFactory {
 
         Class<? extends CodeFixerService> serviceClass = switch (codeGenType) {
             case LEETCODE_PROJECT -> LeetCodeCodeFixerService.class;
+            case INTERVIEW_PROJECT -> InterviewCodeFixerService.class;
             default -> VueCodeFixerService.class;
         };
 
