@@ -250,8 +250,8 @@ export const bruteForceSolution: SolutionData = {
 
    【文件生成顺序】
    1. 先生成 src/data/problem.ts
-   2. 依次生成每个解法文件 src/data/solutions/<id>.ts（每个解法一个文件）
-   3. 依次生成每个可视化组件 src/components/visualizations/<Name>Vis.vue
+   2. 依次生成每个可视化组件 src/components/visualizations/<Name>Vis.vue
+   3. 依次生成每个解法文件 src/data/solutions/<id>.ts（每个解法一个文件）
    4. 最后生成 src/data/solutions/index.ts 汇总所有解法
 
    【禁止事项】
