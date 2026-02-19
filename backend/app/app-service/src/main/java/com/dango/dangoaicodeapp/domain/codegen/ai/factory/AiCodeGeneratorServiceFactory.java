@@ -1,7 +1,9 @@
 package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
 
 import com.dango.aicodegenerate.guardrail.PromptSafetyInputGuardrail;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.AiCodeGeneratorService;
+import com.dango.dangoaicodeapp.domain.codegen.ai.service.CodeGeneratorService;
+import com.dango.dangoaicodeapp.domain.codegen.ai.service.LeetCodeCodeGeneratorService;
+import com.dango.dangoaicodeapp.domain.codegen.ai.service.VueCodeGeneratorService;
 
 import com.dango.dangoaicodeapp.domain.codegen.tools.ToolManager;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
@@ -37,8 +39,6 @@ public class AiCodeGeneratorServiceFactory {
     @Resource
     private ToolManager toolManager;
 
-
-
     /**
      * AI 服务实例缓存
      * 缓存策略：
@@ -46,7 +46,7 @@ public class AiCodeGeneratorServiceFactory {
      * - 写入后 30 分钟过期
      * - 访问后 10 分钟过期
      */
-    private final Cache<String, AiCodeGeneratorService> serviceCache = Caffeine.newBuilder()
+    private final Cache<String, CodeGeneratorService> serviceCache = Caffeine.newBuilder()
             .maximumSize(1000)
             .expireAfterWrite(Duration.ofMinutes(30))
             .expireAfterAccess(Duration.ofMinutes(10))
@@ -58,17 +58,16 @@ public class AiCodeGeneratorServiceFactory {
     /**
      * 根据 appId 和代码生成类型获取服务（带缓存）
      */
-    public AiCodeGeneratorService getAiCodeGeneratorService(long appId, CodeGenTypeEnum codeGenType) {
+    public CodeGeneratorService getService(long appId, CodeGenTypeEnum codeGenType) {
         String cacheKey = buildCacheKey(appId, codeGenType);
-        return serviceCache.get(cacheKey, key -> createAiCodeGeneratorService(appId, codeGenType));
+        return serviceCache.get(cacheKey, key -> createService(appId, codeGenType));
     }
-
 
     /**
      * 创建新的 AI 服务实例
      */
-    private AiCodeGeneratorService createAiCodeGeneratorService(long appId, CodeGenTypeEnum codeGenType) {
-        log.info("为 appId: {} 创建新的 AI 服务实例", appId);
+    private CodeGeneratorService createService(long appId, CodeGenTypeEnum codeGenType) {
+        log.info("为 appId: {} 创建新的 AI 服务实例，类型: {}", appId, codeGenType.getValue());
         // 根据 appId 构建独立的对话记忆
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory
                 .builder()
@@ -78,18 +77,23 @@ public class AiCodeGeneratorServiceFactory {
                 .build();
         // 从数据库加载历史对话到记忆中
         chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
-        return AiServices.builder(AiCodeGeneratorService.class)
+
+        Class<? extends CodeGeneratorService> serviceClass = switch (codeGenType) {
+            case LEETCODE_PROJECT -> LeetCodeCodeGeneratorService.class;
+            default -> VueCodeGeneratorService.class;
+        };
+
+        return AiServices.builder(serviceClass)
                 .streamingChatModel(reasoningStreamingChatModel)
                 .chatMemory(chatMemory)
                 .chatMemoryProvider(memoryId -> chatMemory)
                 .tools(toolManager.getAllTools())
-                .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨
+                .inputGuardrails(new PromptSafetyInputGuardrail())
                 .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                         toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                 ))
                 .build();
     }
-
 
     /**
      * 构建缓存键

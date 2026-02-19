@@ -6,7 +6,7 @@ import com.dango.aicodegenerate.extractor.ToolArgumentsExtractor;
 import com.dango.aicodegenerate.model.message.AiResponseMessage;
 import com.dango.aicodegenerate.model.message.StreamMessage;
 import com.dango.aicodegenerate.model.message.ToolExecutedMessage;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.AiCodeGeneratorService;
+import com.dango.dangoaicodeapp.domain.codegen.ai.service.CodeGeneratorService;
 import com.dango.dangoaicodeapp.domain.codegen.ai.factory.AiCodeGeneratorServiceFactory;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import dev.langchain4j.model.chat.response.ChatResponse;
@@ -33,15 +33,14 @@ public class AiCodeGeneratorFacade {
 
     /**
      * 统一入口：生成并保存代码（流式, 使用 appId）
-     * 统一使用 VUE_PROJECT 类型
      *
      * @param userMessage     用户提示词
      * @param codeGenTypeEnum 生成类型
      * @param appId           应用 id
      */
     public Flux<String> generateAndSaveCodeStream(String userMessage, CodeGenTypeEnum codeGenTypeEnum, Long appId) {
-        AiCodeGeneratorService aiCodeGeneratorService = aiCodeGeneratorServiceFactory.getAiCodeGeneratorService(appId, CodeGenTypeEnum.VUE_PROJECT);
-        TokenStream tokenStream = aiCodeGeneratorService.generateVueProjectCodeStream(appId, userMessage);
+        CodeGeneratorService service = aiCodeGeneratorServiceFactory.getService(appId, codeGenTypeEnum);
+        TokenStream tokenStream = service.generateCodeStream(appId, userMessage);
         return processTokenStream(tokenStream);
     }
 

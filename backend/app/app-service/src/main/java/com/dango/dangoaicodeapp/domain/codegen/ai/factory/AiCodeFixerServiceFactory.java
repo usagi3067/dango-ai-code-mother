@@ -1,7 +1,9 @@
 package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
 
 import com.dango.aicodegenerate.guardrail.PromptSafetyInputGuardrail;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.AiCodeFixerService;
+import com.dango.dangoaicodeapp.domain.codegen.ai.service.CodeFixerService;
+import com.dango.dangoaicodeapp.domain.codegen.ai.service.LeetCodeCodeFixerService;
+import com.dango.dangoaicodeapp.domain.codegen.ai.service.VueCodeFixerService;
 import com.dango.dangoaicodeapp.domain.codegen.tools.*;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
@@ -60,7 +62,7 @@ public class AiCodeFixerServiceFactory {
      * - 写入后 30 分钟过期
      * - 访问后 10 分钟过期
      */
-    private final Cache<String, AiCodeFixerService> serviceCache = Caffeine.newBuilder()
+    private final Cache<String, CodeFixerService> serviceCache = Caffeine.newBuilder()
             .maximumSize(500)
             .expireAfterWrite(Duration.ofMinutes(30))
             .expireAfterAccess(Duration.ofMinutes(10))
@@ -76,7 +78,7 @@ public class AiCodeFixerServiceFactory {
      * @param codeGenType 代码生成类型
      * @return AI 代码修复服务实例
      */
-    public AiCodeFixerService getFixerService(long appId, CodeGenTypeEnum codeGenType) {
+    public CodeFixerService getFixerService(long appId, CodeGenTypeEnum codeGenType) {
         String cacheKey = buildCacheKey(appId, codeGenType);
         return serviceCache.get(cacheKey, key -> createFixerService(appId, codeGenType));
     }
@@ -88,7 +90,7 @@ public class AiCodeFixerServiceFactory {
      * @param codeGenType 代码生成类型
      * @return AI 代码修复服务实例
      */
-    private AiCodeFixerService createFixerService(long appId, CodeGenTypeEnum codeGenType) {
+    private CodeFixerService createFixerService(long appId, CodeGenTypeEnum codeGenType) {
         log.info("为 appId: {} 创建新的 AI 修复服务实例，类型: {}", appId, codeGenType.getValue());
 
         // 根据 appId 构建独立的对话记忆
@@ -102,8 +104,12 @@ public class AiCodeFixerServiceFactory {
         // 从数据库加载历史对话到记忆中
         chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
 
-        // 根据代码生成类型选择不同的模型和工具配置
-        return AiServices.builder(AiCodeFixerService.class)
+        Class<? extends CodeFixerService> serviceClass = switch (codeGenType) {
+            case LEETCODE_PROJECT -> LeetCodeCodeFixerService.class;
+            default -> VueCodeFixerService.class;
+        };
+
+        return AiServices.builder(serviceClass)
                 .streamingChatModel(reasoningStreamingChatModel)
                 .chatMemory(chatMemory)
                 .chatMemoryProvider(memoryId -> chatMemory)
@@ -115,7 +121,7 @@ public class AiCodeFixerServiceFactory {
                         fileWriteTool,
                         fileDeleteTool
                 )
-                .inputGuardrails(new PromptSafetyInputGuardrail())  // 添加输入护轨
+                .inputGuardrails(new PromptSafetyInputGuardrail())
                 .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                         toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                 ))
