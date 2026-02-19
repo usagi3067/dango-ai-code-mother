@@ -1,21 +1,16 @@
 package com.dango.dangoaicodeapp.application.service;
 
 import com.dango.dangoaicodeapp.model.dto.chathistory.ChatHistoryQueryRequest;
-import com.dango.dangoaicodeapp.domain.app.entity.ChatHistory;
 import com.dango.dangoaicodeapp.model.vo.ChatHistoryVO;
 import com.mybatisflex.core.paginate.Page;
-import com.mybatisflex.core.query.QueryWrapper;
-import com.mybatisflex.core.service.IService;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-
-import java.util.List;
 
 /**
  * 对话历史 服务层。
  *
  * @author dango
  */
-public interface ChatHistoryService extends IService<ChatHistory> {
+public interface ChatHistoryService {
 
     /**
      * 保存用户消息
@@ -57,35 +52,20 @@ public interface ChatHistoryService extends IService<ChatHistory> {
     boolean deleteByAppId(Long appId);
 
     /**
-     * 获取查询条件包装器（管理员用）
+     * 管理员分页查询对话历史
      *
      * @param request 查询请求
-     * @return 查询条件包装器
+     * @return 对话历史VO分页
      */
-    QueryWrapper getQueryWrapper(ChatHistoryQueryRequest request);
-
-    /**
-     * 实体转VO
-     *
-     * @param chatHistory 对话历史实体
-     * @return 对话历史VO
-     */
-    ChatHistoryVO getChatHistoryVO(ChatHistory chatHistory);
-
-    /**
-     * 实体列表转VO列表
-     *
-     * @param chatHistoryList 对话历史实体列表
-     * @return 对话历史VO列表
-     */
-    List<ChatHistoryVO> getChatHistoryVOList(List<ChatHistory> chatHistoryList);
+    Page<ChatHistoryVO> adminListChatHistory(ChatHistoryQueryRequest request);
 
     /**
      * 加载对话历史到会话记忆中
-     * @param appId 应用ID
+     *
+     * @param appId      应用ID
      * @param chatMemory 会话记忆
-     * @param maxCount 最大数量
-     * @return
+     * @param maxCount   最大数量
+     * @return 加载的消息数量
      */
     int loadChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount);
 }
