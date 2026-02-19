@@ -125,3 +125,43 @@ export async function updateUser(body: API.UserUpdateRequest, options?: { [key: 
     ...(options || {}),
   })
 }
+
+/** 更新个人资料 POST /user/profile/update */
+export async function updateMyProfile(
+  body: API.UserProfileUpdateRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseBoolean>('/user/profile/update', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** 上传头像 POST /user/profile/upload-avatar */
+export async function uploadAvatar(
+  file: File,
+  options?: { [key: string]: any }
+) {
+  const formData = new FormData()
+  formData.append('file', file)
+  return request<API.BaseResponseString>('/user/profile/upload-avatar', {
+    method: 'POST',
+    data: formData,
+    ...(options || {}),
+  })
+}
+
+/** 修改密码 POST /user/profile/change-password */
+export async function changePassword(
+  body: API.ChangePasswordRequest,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseBoolean>('/user/profile/change-password', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data: body,
+    ...(options || {}),
+  })
+}

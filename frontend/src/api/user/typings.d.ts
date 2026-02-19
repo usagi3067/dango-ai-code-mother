@@ -129,4 +129,22 @@ declare namespace API {
     userRole?: string
     createTime?: string
   }
+
+  type UserProfileUpdateRequest = {
+    userName?: string
+    userAvatar?: string
+    userProfile?: string
+  }
+
+  type ChangePasswordRequest = {
+    oldPassword?: string
+    newPassword?: string
+    checkPassword?: string
+  }
+
+  type BaseResponseString = {
+    code?: number
+    data?: string
+    message?: string
+  }
 }
