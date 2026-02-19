@@ -4,6 +4,7 @@ import com.dango.aicodegenerate.guardrail.PromptSafetyInputGuardrail;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.AiModificationPlannerService;
 import com.dango.dangoaicodeapp.domain.codegen.tools.FileDirReadTool;
 import com.dango.dangoaicodeapp.domain.codegen.tools.FileReadTool;
+import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -31,6 +32,9 @@ public class AiModificationPlannerServiceFactory {
     private ChatMemoryStore redisChatMemoryStore;
 
     @Resource
+    private ChatHistoryService chatHistoryService;
+
+    @Resource
     private FileDirReadTool fileDirReadTool;
 
     @Resource
@@ -51,10 +55,13 @@ public class AiModificationPlannerServiceFactory {
         // 设置足够大的窗口以支持多次工具调用
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory
                 .builder()
-                .id(appId)
+                .id("planner_" + appId)
                 .chatMemoryStore(redisChatMemoryStore)
                 .maxMessages(50)  // 支持约 20+ 次工具调用
                 .build();
+
+        // 从数据库加载历史对话，让 Planner 知道之前做过什么修改
+        chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 10);
 
         return AiServices.builder(AiModificationPlannerService.class)
                 .chatModel(ordinaryChatModel)

@@ -161,8 +161,7 @@ public class CodeReaderNode {
             return null;
         }
 
-        // 统一使用 vue_project_ 目录
-        String dirName = "vue_project_" + appId;
+        String dirName = (codeGenType != null ? codeGenType.getValue() : "vue_project") + "_" + appId;
         Path projectPath = Paths.get(CODE_OUTPUT_ROOT_DIR, dirName);
         if (Files.exists(projectPath)) {
             return projectPath;

@@ -30,8 +30,13 @@ import java.time.Duration;
 @Slf4j
 public class AiCodeFixerServiceFactory {
 
+    /**
+     * 使用普通模型（deepseek-chat）而非推理模型（deepseek-reasoner）
+     * 因为 deepseek-reasoner 在 tool calls 场景下要求 assistant 消息包含 reasoning_content 字段，
+     * 而 LangChain4j 序列化/反序列化时会丢失该字段，导致后续 API 调用失败
+     */
     @Resource
-    private StreamingChatModel reasoningStreamingChatModel;
+    private StreamingChatModel odinaryStreamingChatModel;
 
     @Resource
     private ChatMemoryStore redisChatMemoryStore;
@@ -93,16 +98,13 @@ public class AiCodeFixerServiceFactory {
     private CodeFixerService createFixerService(long appId, CodeGenTypeEnum codeGenType) {
         log.info("为 appId: {} 创建新的 AI 修复服务实例，类型: {}", appId, codeGenType.getValue());
 
-        // 根据 appId 构建独立的对话记忆
+        // 根据 appId 构建独立的对话记忆（不加载历史，修复构建错误不需要聊天历史）
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory
                 .builder()
-                .id(appId)
+                .id("fixer_" + appId)
                 .chatMemoryStore(redisChatMemoryStore)
                 .maxMessages(50)
                 .build();
-
-        // 从数据库加载历史对话到记忆中
-        chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
 
         Class<? extends CodeFixerService> serviceClass = switch (codeGenType) {
             case LEETCODE_PROJECT -> LeetCodeCodeFixerService.class;
@@ -110,7 +112,7 @@ public class AiCodeFixerServiceFactory {
         };
 
         return AiServices.builder(serviceClass)
-                .streamingChatModel(reasoningStreamingChatModel)
+                .streamingChatModel(odinaryStreamingChatModel)
                 .chatMemory(chatMemory)
                 .chatMemoryProvider(memoryId -> chatMemory)
                 .tools(
@@ -150,5 +152,20 @@ public class AiCodeFixerServiceFactory {
             serviceCache.invalidate(cacheKey);
         }
         log.info("已清除 appId: {} 的修复服务缓存", appId);
+    }
+
+    /**
+     * 清空指定应用的 Fixer Redis 记忆并使缓存失效
+     * 在每次新工作流开始时调用，避免旧修复记录干扰新工作流
+     *
+     * @param appId 应用 ID
+     */
+    public void clearFixerMemory(long appId) {
+        // 清空 Redis 中的 Fixer 记忆
+        String memoryId = "fixer_" + appId;
+        redisChatMemoryStore.deleteMessages(memoryId);
+        // 使 Caffeine 缓存失效，强制下次创建新实例
+        invalidateCache(appId);
+        log.info("已清空 appId: {} 的 Fixer 记忆", appId);
     }
 }

@@ -12,13 +12,21 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 @Configuration
-@ConfigurationProperties(prefix = "langchain4j.open-ai.chat-model")
+@ConfigurationProperties(prefix = "langchain4j.open-ai.streaming-chat-model")
 @Data
 public class ReasoningStreamingChatModelConfig {
 
     private String baseUrl;
 
     private String apiKey;
+
+    private String modelName;
+
+    private Integer maxTokens;
+
+    private Boolean logRequests;
+
+    private Boolean logResponses;
 
     @Autowired(required = false)
     private List<ChatModelListener> chatModelListeners;
@@ -28,19 +36,13 @@ public class ReasoningStreamingChatModelConfig {
      */
     @Bean
     public StreamingChatModel reasoningStreamingChatModel() {
-        // 为了测试方便临时修改
-        final String modelName = "deepseek-chat";
-        final int maxTokens = 8192;
-        // 生产环境使用：
-        // final String modelName = "deepseek-reasoner";
-        // final int maxTokens = 32768;
         var builder = OpenAiStreamingChatModel.builder()
                 .apiKey(apiKey)
                 .baseUrl(baseUrl)
-                .modelName(modelName)
-                .maxTokens(maxTokens)
-                .logRequests(true)
-                .logResponses(true);
+                .modelName(modelName != null ? modelName : "deepseek-chat")
+                .maxTokens(maxTokens != null ? maxTokens : 8192)
+                .logRequests(logRequests != null ? logRequests : true)
+                .logResponses(logResponses != null ? logResponses : true);
         // 注册监听器
         if (chatModelListeners != null && !chatModelListeners.isEmpty()) {
             builder.listeners(chatModelListeners);

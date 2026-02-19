@@ -18,7 +18,7 @@ import java.util.List;
  * @author dango
  */
 @Configuration
-@ConfigurationProperties(prefix = "langchain4j.open-ai.streaming-chat-model")
+@ConfigurationProperties(prefix = "langchain4j.open-ai.chat-model")
 @Data
 public class OpenAiStreamingChatModelConfig {
 

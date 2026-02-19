@@ -20,6 +20,7 @@ import org.bsc.langgraph4j.prebuilt.MessagesState;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -179,6 +180,16 @@ public class CodeModifierNode {
      * 检查现有项目目录来确定类型
      */
     private static CodeGenTypeEnum inferGenerationType(Long appId) {
+        if (appId == null || appId <= 0) {
+            return CodeGenTypeEnum.VUE_PROJECT;
+        }
+        String baseDir = System.getProperty("user.dir") + File.separator + "tmp" + File.separator + "code_output";
+        for (CodeGenTypeEnum type : CodeGenTypeEnum.values()) {
+            Path path = Path.of(baseDir, type.getValue() + "_" + appId);
+            if (java.nio.file.Files.exists(path)) {
+                return type;
+            }
+        }
         return CodeGenTypeEnum.VUE_PROJECT;
     }
 

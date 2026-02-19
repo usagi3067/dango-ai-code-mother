@@ -78,7 +78,7 @@ public class ModeRouterNode {
         }
 
         // 2. 检查是否有历史代码：有则修改，无则创建
-        if (hasExistingCode(context.getAppId())) {
+        if (hasExistingCode(context.getAppId(), context.getGenerationType())) {
             log.info("检测到历史代码，使用修改模式");
             return OperationModeEnum.MODIFY;
         }
@@ -89,18 +89,20 @@ public class ModeRouterNode {
 
     /**
      * 检查应用是否有现有代码
-     * 检查 vue_project_appId 目录是否存在
+     * 根据 generationType 检查对应的项目目录是否存在
      *
      * @param appId 应用 ID
+     * @param generationType 代码生成类型
      * @return 是否存在现有代码
      */
-    public static boolean hasExistingCode(Long appId) {
+    public static boolean hasExistingCode(Long appId, CodeGenTypeEnum generationType) {
         if (appId == null || appId <= 0) {
             return false;
         }
 
         String baseDir = System.getProperty("user.dir") + "/tmp/code_output";
-        Path codePath = Path.of(baseDir, "vue_project_" + appId);
+        String dirName = (generationType != null ? generationType.getValue() : "vue_project") + "_" + appId;
+        Path codePath = Path.of(baseDir, dirName);
         if (Files.exists(codePath)) {
             log.debug("找到现有代码目录: {}", codePath);
             return true;

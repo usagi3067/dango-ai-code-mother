@@ -1,50 +1,54 @@
-# Vue 项目生成稳定性改造 - 任务计划
+# Dango AI Code 项目任务计划
 
-## 状态: ✅ 全部完成
+## 当前状态: 无进行中任务
 
-## 设计文档
-- 总体设计: [`docs/plans/2026-02-15-vue-project-stability-design.md`](docs/plans/2026-02-15-vue-project-stability-design.md)
-- 实现计划: [`docs/plans/2026-02-15-vue-stability-phase1-plan.md`](docs/plans/2026-02-15-vue-stability-phase1-plan.md)
+## 已完成的功能迭代
 
-## Phase 1: 模板脚手架 + 构建驱动修复循环 ✅
+### 2026-02-15 ~ 02-16: Vue 项目生成稳定性改造 ✅
+- Phase 1: 模板脚手架 + 构建驱动修复循环 (`2be402a`)
+- Phase 2: 统一代码生成类型为 VUE_PROJECT (`d317fd2`)
+- Phase 3: HTML 上传自动转换为 Vue 项目 (`06438bf`)
+- 设计文档: `docs/plans/2026-02-15-vue-project-stability-design.md`
 
-| Task | 描述 | 状态 |
-|------|------|------|
-| 1 | 创建 Vue 项目模板文件 + 验证可构建 | ✅ |
-| 2 | 创建 VueProjectScaffoldService | ✅ |
-| 3 | CodeGeneratorNode 调用脚手架 | ✅ |
-| 4 | VueProjectBuilder 增强构建错误捕获 | ✅ |
-| 5 | 创建 BuildCheckNode | ✅ |
-| 6 | CodeGenWorkflow 用构建检查替换质量检查子图 | ✅ |
-| 7 | 更新 Vue 项目生成 Prompt | ✅ |
-| 8 | 更新 Vue 项目修复 Prompt | ✅ |
-| 9 | 更新 Vue 项目修改 Prompt | ✅ |
-| 10 | CodeFixerNode 适配构建错误 | ✅ |
-| 11 | 最终验证 + 提交 (`2be402a`) | ✅ |
+### 2026-02-18 ~ 02-19: DDD 领域驱动重构 ✅
+- App 聚合根充血模型 + Repository 模式
+- ChatHistory 聚合根充血模型 + Repository 模式
+- Controller 瘦身，Application Service 用例方法
+- 去除 IService 继承
 
-## Phase 2: 统一代码生成类型为 VUE_PROJECT ✅
+### 2026-02-19: 基础设施文件保护 ✅
+- 防止 AI 覆盖 index.html、package.json 等模板文件 (`1875fb2`)
 
-| Task | 描述 | 状态 |
-|------|------|------|
-| 1 | 删除 RouterNode + 路由 Prompt | ✅ |
-| 2 | 删除 HTML/MULTI_FILE Prompt 文件（6 个） | ✅ |
-| 3 | 简化 AI Service 接口 | ✅ |
-| 4 | 简化 AiCodeGeneratorFacade | ✅ |
-| 5 | 删除 Parser + Saver 类（8 个文件） | ✅ |
-| 6 | 简化 Factory 类（3 个） | ✅ |
-| 7 | 简化 Node 类 | ✅ |
-| 8 | 简化 AppServiceImpl | ✅ |
-| 9 | 删除 AiCodeGenTypeRoutingService | ✅ |
-| 10 | 清理辅助类 | ✅ |
-| 11 | 更新测试 | ✅ |
-| 12 | 编译验证 + 提交 (`d317fd2`) | ✅ |
+### 2026-02-19: AI 进度输出格式化 ✅
+- 修改/修复提示词增加子步骤进度格式
+- 修复指南增加修复计划格式
 
-## Phase 3: HTML 上传自动转换为 Vue 项目 ✅
+### 2026-02-19: npm 依赖预构建 ✅
+- NodeModulesPrebuilder 服务启动时预构建
+- 符号链接共享 node_modules，跳过重复 npm install (`933a3bf`)
 
-| Task | 描述 | 状态 |
-|------|------|------|
-| 1 | 实现 HtmlToVueConverterService | ✅ |
-| 2 | 修改 createAppFromHtml 流程 | ✅ |
-| 3 | ModeRouterNode 检测裸 HTML 项目 | ✅ |
-| 4 | 上传后自动触发 AI 转换（前端 autoSend） | ✅ |
-| 5 | 编译验证 + 提交 (`06438bf`, `b0ce529`) | ✅ |
+### 2026-02-19: MVP 功能选择 + 精简生成 ✅
+- 新增功能分析 AI 服务（FeatureAnalyzerFacade）
+- 前端 FeatureSelectionModal 组件
+- 主页集成功能选择弹窗
+- 代码生成提示词 MVP 优化（token 15000，文件 15 个）
+- 设计文档: `docs/plans/2026-02-19-mvp-feature-selection-design.md`
+
+### 2026-02-19: Ant Design Vue 集成 ✅
+- 模板 package.json 加入 ant-design-vue 依赖
+- 模板 main.js 全局注册 Antd
+- 代码生成/修改/修复/规划提示词更新
+- 组件速查表加入生成和修改提示词
+- 构建验证通过
+
+## 未提交的变更（工作区）
+
+| 文件 | 说明 |
+|------|------|
+| RedisChatMemoryStoreConfig.java | Redis 聊天记忆配置 |
+| DangoAiCodeAppApplication.java | 应用启动类 |
+| App.java / ChatHistory.java | DDD 实体 |
+| 5 个 ServiceFactory 类 | AI 服务工厂 |
+| AppMapper.xml | MyBatis 映射 |
+| SaTokenConfigure.java | Sa-Token 配置 |
+| JedisBackedChatMemoryStore.java | 新增：Jedis 聊天记忆存储 |
