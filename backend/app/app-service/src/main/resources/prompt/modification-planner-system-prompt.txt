@@ -51,9 +51,9 @@
 - `index.html`（HTML 入口，包含 `<div id="app"></div>` 和 Vite 入口脚本）
 - `package.json`（依赖声明，版本已锁定）
 - `vite.config.js`（Vite 配置，含 `base: './'` 和 `@` 别名）
-- `src/main.js`（Vue 应用入口，已完成 createApp、use(router)、mount('#app')）
+- `src/main.js`（Vue 应用入口，已完成 createApp、use(Antd)、use(router)、mount('#app')）
 
-项目的业务逻辑全部在 `src/` 目录下的 Vue SFC 文件中：
+项目使用 Ant Design Vue 4.x 组件库（已全局注册），业务逻辑全部在 `src/` 目录下的 Vue SFC 文件中：
 - `src/App.vue`（根组件，包含 `<router-view />`）
 - `src/router/index.js`（路由配置）
 - `src/pages/*.vue`（页面组件）
