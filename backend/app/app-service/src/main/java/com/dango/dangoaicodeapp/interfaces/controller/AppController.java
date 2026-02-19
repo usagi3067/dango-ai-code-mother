@@ -3,23 +3,18 @@ package com.dango.dangoaicodeapp.interfaces.controller;
 
 import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
-import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 
-import com.dango.dangoaicodeapp.domain.codegen.service.AppInfoGeneratorFacade;
 import com.dango.dangoaicodeapp.application.service.ProjectDownloadService;
 import com.dango.dangoaicodecommon.ratelimit.annotation.RateLimit;
 import com.dango.dangoaicodecommon.ratelimit.enums.RateLimitType;
 import com.dango.dangoaicodeapp.model.constant.AppConstant;
 import com.dango.dangoaicodeapp.model.dto.app.*;
-import com.dango.dangoaicodeapp.domain.app.entity.App;
 import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
 import com.dango.dangoaicodeapp.model.vo.AppVO;
 import com.dango.dangoaicodeapp.application.service.AppApplicationService;
-import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
 import com.dango.dangoaicodeapp.application.service.CodeGenApplicationService;
-import com.dango.dangoaicodeapp.application.service.AppSearchService;
 import com.dango.dangoaicodecommon.common.BaseResponse;
 import com.dango.dangoaicodecommon.common.DeleteRequest;
 import com.dango.dangoaicodecommon.common.ResultUtils;
@@ -27,7 +22,6 @@ import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
 import com.dango.dangoaicodecommon.exception.ThrowUtils;
 import com.mybatisflex.core.paginate.Page;
-import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -41,8 +35,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.File;
-import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -60,22 +52,13 @@ public class AppController {
     private AppApplicationService appService;
 
     @Resource
-    private AppInfoGeneratorFacade appInfoGeneratorFacade;
-
-    @Resource
-    private ChatHistoryService chatHistoryService;
-
-    @Resource
-    private AppSearchService appSearchService;
-
-    @Resource
     private CodeGenApplicationService codeGenApplicationService;
+
+    @Resource
+    private ProjectDownloadService projectDownloadService;
 
     /**
      * 创建应用
-     *
-     * @param appAddRequest 创建应用请求
-     * @return 应用 id
      */
     @PostMapping("/add")
     public BaseResponse<Long> addApp(@RequestBody AppAddRequest appAddRequest) {
@@ -86,127 +69,70 @@ public class AppController {
 
     /**
      * 上传 Vue 项目文件夹创建应用
-     *
-     * @param files   项目文件数组
-     * @param paths   每个文件对应的相对路径
-     * @return 应用 ID
      */
     @PostMapping("/upload/vue-project")
     public BaseResponse<Long> uploadVueProject(
             @RequestParam("files") MultipartFile[] files,
             @RequestParam("paths") String[] paths) {
-        // 1. 校验参数
         ThrowUtils.throwIf(files == null || files.length == 0,
                 ErrorCode.PARAMS_ERROR, "文件不能为空");
         ThrowUtils.throwIf(paths == null || paths.length != files.length,
                 ErrorCode.PARAMS_ERROR, "文件路径数量不匹配");
-
-        // 2. 校验总大小（50MB 限制）
         long totalSize = 0;
         for (MultipartFile file : files) {
             totalSize += file.getSize();
         }
         ThrowUtils.throwIf(totalSize > 50 * 1024 * 1024,
                 ErrorCode.PARAMS_ERROR, "项目总大小不能超过 50MB");
-
-        // 3. 创建应用
         Long appId = appService.createAppFromVueProject(files, paths, StpUtil.getLoginIdAsLong());
-
         return ResultUtils.success(appId);
     }
 
     /**
      * 更新应用（用户只能更新自己的应用名称和标签）
-     *
-     * @param appUpdateRequest 更新请求
-     * @return 更新结果
      */
     @PostMapping("/update")
     public BaseResponse<Boolean> updateApp(@RequestBody AppUpdateRequest appUpdateRequest) {
         if (appUpdateRequest == null || appUpdateRequest.getId() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        long loginUserId = StpUtil.getLoginIdAsLong();
-        long id = appUpdateRequest.getId();
-        App oldApp = appService.getById(id);
-        ThrowUtils.throwIf(oldApp == null, ErrorCode.NOT_FOUND_ERROR);
-        // 使用聚合根的权限校验和信息更新
-        oldApp.checkOwnership(loginUserId);
-        oldApp.updateInfo(appUpdateRequest.getAppName(), appUpdateRequest.getTag());
-        boolean result = appService.updateById(oldApp);
-        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        appService.updateApp(appUpdateRequest.getId(), appUpdateRequest.getAppName(),
+                appUpdateRequest.getTag(), StpUtil.getLoginIdAsLong());
         return ResultUtils.success(true);
     }
 
     /**
      * 删除应用（用户只能删除自己的应用）
-     *
-     * @param deleteRequest 删除请求
-     * @return 删除结果
      */
     @PostMapping("/delete")
     public BaseResponse<Boolean> deleteApp(@RequestBody DeleteRequest deleteRequest) {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        long loginUserId = StpUtil.getLoginIdAsLong();
-        long id = deleteRequest.getId();
-        App oldApp = appService.getById(id);
-        ThrowUtils.throwIf(oldApp == null, ErrorCode.NOT_FOUND_ERROR);
-        // 仅本人或管理员可删除
-        if (!StpUtil.hasRole("admin")) {
-            oldApp.checkOwnership(loginUserId);
-        }
-        chatHistoryService.deleteByAppId(id);
-        boolean result = appService.removeById(id);
-        return ResultUtils.success(result);
+        appService.deleteApp(deleteRequest.getId(), StpUtil.getLoginIdAsLong());
+        return ResultUtils.success(true);
     }
 
     /**
      * 根据 id 获取应用详情
-     *
-     * @param id      应用 id
-     * @return 应用详情
      */
     @GetMapping("/get/vo")
     public BaseResponse<AppVO> getAppVOById(long id) {
         ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
-        // 查询数据库
-        App app = appService.getById(id);
-        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
-        // 获取封装类（包含用户信息）
-        return ResultUtils.success(appService.getAppVO(app));
+        return ResultUtils.success(appService.getAppDetail(id));
     }
 
     /**
      * 分页获取当前用户创建的应用列表
-     *
-     * @param appQueryRequest 查询请求
-     * @return 应用列表
      */
     @PostMapping("/my/list/page/vo")
     public BaseResponse<Page<AppVO>> listMyAppVOByPage(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
-        // 限制每页最多 20 个
-        long pageSize = appQueryRequest.getPageSize();
-        ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR, "每页最多查询 20 个应用");
-        long pageNum = appQueryRequest.getPageNum();
-        // 只查询当前用户的应用
-        appQueryRequest.setUserId(StpUtil.getLoginIdAsLong());
-        QueryWrapper queryWrapper = appService.getQueryWrapper(appQueryRequest);
-        Page<App> appPage = appService.page(Page.of(pageNum, pageSize), queryWrapper);
-        // 数据封装
-        Page<AppVO> appVOPage = new Page<>(pageNum, pageSize, appPage.getTotalRow());
-        List<AppVO> appVOList = appService.getAppVOList(appPage.getRecords());
-        appVOPage.setRecords(appVOList);
-        return ResultUtils.success(appVOPage);
+        return ResultUtils.success(appService.listMyApps(appQueryRequest, StpUtil.getLoginIdAsLong()));
     }
 
     /**
      * 分页获取精选应用列表
-     *
-     * @param appQueryRequest 查询请求
-     * @return 精选应用列表
      */
     @PostMapping("/good/list/page/vo")
     @Cacheable(
@@ -216,57 +142,20 @@ public class AppController {
     )
     public BaseResponse<Page<AppVO>> listGoodAppVOByPage(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
-        // 限制每页最多 20 个
-        long pageSize = appQueryRequest.getPageSize();
-        ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR, "每页最多查询 20 个应用");
-        long pageNum = appQueryRequest.getPageNum();
-        // 只查询精选的应用
-        appQueryRequest.setPriority(AppConstant.GOOD_APP_PRIORITY);
-        QueryWrapper queryWrapper = appService.getQueryWrapper(appQueryRequest);
-        // 分页查询
-        Page<App> appPage = appService.page(Page.of(pageNum, pageSize), queryWrapper);
-        // 数据封装
-        Page<AppVO> appVOPage = new Page<>(pageNum, pageSize, appPage.getTotalRow());
-        List<AppVO> appVOList = appService.getAppVOList(appPage.getRecords());
-        appVOPage.setRecords(appVOList);
-        return ResultUtils.success(appVOPage);
+        return ResultUtils.success(appService.listGoodApps(appQueryRequest));
     }
 
     /**
      * 游标分页获取应用列表（支持搜索和标签筛选）
-     * <p>
-     * 用于"全部案例"页面的无限滚动加载
-     *
-     * @param appQueryRequest 查询请求（包含 lastId、searchText、tag、pageSize）
-     * @return 应用列表
      */
     @PostMapping("/list/cursor/vo")
     public BaseResponse<Page<AppVO>> listAppByCursor(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
-        // 限制每页最多 20 个，默认 12 个
-        int pageSize = appQueryRequest.getPageSize();
-        if (pageSize <= 0) {
-            pageSize = 12;
-            appQueryRequest.setPageSize(pageSize);
-        }
-        ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR, "每页最多查询 20 个应用");
-
-        // 调用搜索服务（支持 MySQL/ES 切换）
-        Page<App> appPage = appSearchService.searchApps(appQueryRequest);
-
-        // 数据封装
-        Page<AppVO> appVOPage = new Page<>();
-        appVOPage.setPageSize(appPage.getPageSize());
-        List<AppVO> appVOList = appService.getAppVOList(appPage.getRecords());
-        appVOPage.setRecords(appVOList);
-        return ResultUtils.success(appVOPage);
+        return ResultUtils.success(appService.listAppsByCursor(appQueryRequest));
     }
 
     /**
      * 管理员删除应用
-     *
-     * @param deleteRequest 删除请求
-     * @return 删除结果
      */
     @PostMapping("/admin/delete")
     @SaCheckRole("admin")
@@ -274,21 +163,12 @@ public class AppController {
         if (deleteRequest == null || deleteRequest.getId() <= 0) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        long id = deleteRequest.getId();
-        // 判断是否存在
-        App oldApp = appService.getById(id);
-        ThrowUtils.throwIf(oldApp == null, ErrorCode.NOT_FOUND_ERROR);
-        // 级联删除该应用的所有对话历史
-        chatHistoryService.deleteByAppId(id);
-        boolean result = appService.removeById(id);
-        return ResultUtils.success(result);
+        appService.adminDeleteApp(deleteRequest.getId());
+        return ResultUtils.success(true);
     }
 
     /**
      * 管理员更新应用
-     *
-     * @param appAdminUpdateRequest 更新请求
-     * @return 更新结果
      */
     @PostMapping("/admin/update")
     @SaCheckRole("admin")
@@ -296,79 +176,42 @@ public class AppController {
         if (appAdminUpdateRequest == null || appAdminUpdateRequest.getId() == null) {
             throw new BusinessException(ErrorCode.PARAMS_ERROR);
         }
-        long id = appAdminUpdateRequest.getId();
-        // 判断是否存在
-        App oldApp = appService.getById(id);
-        ThrowUtils.throwIf(oldApp == null, ErrorCode.NOT_FOUND_ERROR);
-        App app = new App();
-        BeanUtil.copyProperties(appAdminUpdateRequest, app);
-        // 设置编辑时间
-        app.setEditTime(LocalDateTime.now());
-        boolean result = appService.updateById(app);
-        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        appService.adminUpdateApp(appAdminUpdateRequest);
         return ResultUtils.success(true);
     }
 
     /**
      * 管理员分页获取应用列表
-     *
-     * @param appQueryRequest 查询请求
-     * @return 应用列表
      */
     @PostMapping("/admin/list/page/vo")
     @SaCheckRole("admin")
     public BaseResponse<Page<AppVO>> listAppVOByPageByAdmin(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
-        long pageNum = appQueryRequest.getPageNum();
-        long pageSize = appQueryRequest.getPageSize();
-        QueryWrapper queryWrapper = appService.getQueryWrapper(appQueryRequest);
-        Page<App> appPage = appService.page(Page.of(pageNum, pageSize), queryWrapper);
-        // 数据封装
-        Page<AppVO> appVOPage = new Page<>(pageNum, pageSize, appPage.getTotalRow());
-        List<AppVO> appVOList = appService.getAppVOList(appPage.getRecords());
-        appVOPage.setRecords(appVOList);
-        return ResultUtils.success(appVOPage);
+        return ResultUtils.success(appService.adminListApps(appQueryRequest));
     }
 
     /**
      * 管理员根据 id 获取应用详情
-     *
-     * @param id 应用 id
-     * @return 应用详情
      */
     @GetMapping("/admin/get/vo")
     @SaCheckRole("admin")
     public BaseResponse<AppVO> getAppVOByIdByAdmin(long id) {
         ThrowUtils.throwIf(id <= 0, ErrorCode.PARAMS_ERROR);
-        // 查询数据库
-        App app = appService.getById(id);
-        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
-        // 获取封装类
-        return ResultUtils.success(appService.getAppVO(app));
+        return ResultUtils.success(appService.adminGetAppDetail(id));
     }
 
     /**
      * 应用聊天生成代码（流式 SSE）
-     * <p>
-     * 默认使用 Agent 模式（工作流模式）生成代码
-     *
-     * @param appId       应用 ID
-     * @param message     用户消息
-     * @param elementInfo 选中的元素信息（JSON 字符串，可选，用于修改模式）
-     * @return 生成结果流
      */
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     @RateLimit(limitType = RateLimitType.USER, rate = 5, rateInterval = 60, message = "AI 对话请求过于频繁，请稍后再试")
     public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
                                                        @RequestParam String message,
                                                        @RequestParam(required = false) String elementInfo) {
-        // 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
         ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
-        // 获取当前登录用户ID
         long loginUserId = StpUtil.getLoginIdAsLong();
 
-        // 解析 elementInfo JSON 字符串
         ElementInfo parsedElementInfo = null;
         if (StrUtil.isNotBlank(elementInfo)) {
             try {
@@ -380,12 +223,9 @@ public class AppController {
             }
         }
 
-        // 调用服务生成代码（流式），使用 Agent 模式
         Flux<String> contentFlux = codeGenApplicationService.chatToGenCode(appId, message, parsedElementInfo, loginUserId);
-        // 转换为 ServerSentEvent 格式
         return contentFlux
                 .map(chunk -> {
-                    // 将内容包装成JSON对象
                     Map<String, String> wrapper = Map.of("d", chunk);
                     String jsonData = JSONUtil.toJsonStr(wrapper);
                     return ServerSentEvent.<String>builder()
@@ -393,9 +233,6 @@ public class AppController {
                             .build();
                 })
                 .concatWith(Mono.just(
-                        // Mono.just 用于创建一个只发出单个元素的响应式流
-                        // 这里用于在数据流结束后追加一个"完成"事件
-                        // 告知客户端 SSE 流已经传输完毕
                         ServerSentEvent.<String>builder()
                                 .event("done")
                                 .data("")
@@ -405,9 +242,6 @@ public class AppController {
 
     /**
      * 将 ElementInfoDTO 转换为 ElementInfo 实体
-     *
-     * @param dto 元素信息 DTO
-     * @return 元素信息实体
      */
     private ElementInfo convertToElementInfo(ElementInfoDTO dto) {
         return ElementInfo.builder()
@@ -422,38 +256,31 @@ public class AppController {
 
     /**
      * 应用部署
-     *
-     * @param appDeployRequest 部署请求
-     * @return 部署 URL
      */
     @PostMapping("/deploy")
     public BaseResponse<String> deployApp(@RequestBody AppDeployRequest appDeployRequest) {
         ThrowUtils.throwIf(appDeployRequest == null, ErrorCode.PARAMS_ERROR);
         Long appId = appDeployRequest.getAppId();
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
-        // 调用服务部署应用
         String deployUrl = appService.deployApp(appId, StpUtil.getLoginIdAsLong());
         return ResultUtils.success(deployUrl);
     }
 
-    @Resource
-    private ProjectDownloadService projectDownloadService;
-
     /**
      * 下载应用代码
-     *
-     * @param appId    应用ID
-     * @param response 响应
      */
     @GetMapping("/download/{appId}")
     public void downloadAppCode(@PathVariable Long appId,
                                 HttpServletResponse response) {
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
-        App app = appService.getById(appId);
-        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
-        // 使用聚合根的权限校验和目录名获取
-        app.checkOwnership(StpUtil.getLoginIdAsLong());
-        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + app.getProjectDirName();
+        // 通过 getAppDetail 校验应用存在性
+        AppVO appVO = appService.getAppDetail(appId);
+        ThrowUtils.throwIf(appVO == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        // 权限校验：仅本人可下载
+        ThrowUtils.throwIf(!appVO.getUserId().equals(StpUtil.getLoginIdAsLong()),
+                ErrorCode.NO_AUTH_ERROR, "无权下载该应用");
+        String projectDirName = appVO.getCodeGenType() + "_" + appVO.getId();
+        String sourceDirPath = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + projectDirName;
         File sourceDir = new File(sourceDirPath);
         ThrowUtils.throwIf(!sourceDir.exists() || !sourceDir.isDirectory(),
                 ErrorCode.NOT_FOUND_ERROR, "应用代码不存在，请先生成代码");
@@ -463,19 +290,11 @@ public class AppController {
 
     /**
      * 初始化应用数据库
-     * <p>
-     * 为应用创建独立的数据库 Schema，并写入 Supabase 客户端配置
-     *
-     * @param appId   应用 ID
-     * @return 初始化结果
      */
     @PostMapping("/{appId}/database")
     public BaseResponse<Boolean> initializeDatabase(@PathVariable Long appId) {
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
-        // 调用服务初始化数据库
         appService.initializeDatabase(appId, StpUtil.getLoginIdAsLong());
         return ResultUtils.success(true);
     }
-
-
 }
