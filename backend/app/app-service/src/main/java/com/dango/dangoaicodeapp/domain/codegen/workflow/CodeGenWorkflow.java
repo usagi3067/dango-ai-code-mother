@@ -38,6 +38,7 @@ import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
  * 工作流结构（使用子图）：
  * START → mode_router → [条件边]
  *                       ├── create_subgraph (创建模式子图)
+ *                       ├── leetcode_create_subgraph (力扣创建模式子图)
  *                       └── modify_subgraph (修改模式子图)
  *                              ↓
  *                       build_check_subgraph (构建检查修复子图)
@@ -46,6 +47,9 @@ import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
  *
  * 创建模式子图：
  * image_plan → [并发分支] → image_aggregator → prompt_enhancer → code_generator
+ *
+ * 力扣创建模式子图：
+ * leetcode_prompt_enhancer → code_generator
  *
  * 修改模式子图（支持数据库操作）：
  * code_reader → modification_planner → [条件边] → database_operator → code_modifier
@@ -66,6 +70,7 @@ public class CodeGenWorkflow {
 
     // 子图节点名称
     private static final String SUBGRAPH_CREATE = "create_subgraph";
+    private static final String SUBGRAPH_LEETCODE_CREATE = "leetcode_create_subgraph";
     private static final String SUBGRAPH_MODIFY = "modify_subgraph";
     private static final String SUBGRAPH_BUILD_CHECK = "build_check_subgraph";
 
@@ -78,6 +83,9 @@ public class CodeGenWorkflow {
     private static final String NODE_IMAGE_AGGREGATOR = "image_aggregator";
     private static final String NODE_PROMPT_ENHANCER = "prompt_enhancer";
     private static final String NODE_CODE_GENERATOR = "code_generator";
+
+    // 力扣创建模式子图节点
+    private static final String NODE_LEETCODE_PROMPT_ENHANCER = "leetcode_prompt_enhancer";
 
     // 修改模式子图节点
     private static final String NODE_CODE_READER = "code_reader";
@@ -92,6 +100,7 @@ public class CodeGenWorkflow {
     // ========== 条件边路由常量 ==========
     // 模式路由
     private static final String ROUTE_CREATE = "create";
+    private static final String ROUTE_LEETCODE_CREATE = "leetcode_create";
     private static final String ROUTE_MODIFY = "modify";
 
     // 数据库操作路由
@@ -133,6 +142,7 @@ public class CodeGenWorkflow {
     public CompiledGraph<MessagesState<String>> createWorkflow() throws GraphStateException {
         // 获取未编译的子图
         StateGraph<MessagesState<String>> createSubGraph = buildCreateModeSubGraph();
+        StateGraph<MessagesState<String>> leetCodeCreateSubGraph = buildLeetCodeCreateSubGraph();
         StateGraph<MessagesState<String>> modifySubGraph = buildModifyModeSubGraph();
         StateGraph<MessagesState<String>> buildCheckSubGraph = buildBuildCheckSubGraph();
 
@@ -142,6 +152,7 @@ public class CodeGenWorkflow {
 
                 // 添加子图（使用 addNode 方法添加未编译的子图，确保上下文传递）
                 .addNode(SUBGRAPH_CREATE, createSubGraph)
+                .addNode(SUBGRAPH_LEETCODE_CREATE, leetCodeCreateSubGraph)
                 .addNode(SUBGRAPH_MODIFY, modifySubGraph)
                 .addNode(SUBGRAPH_BUILD_CHECK, buildCheckSubGraph)
 
@@ -153,11 +164,13 @@ public class CodeGenWorkflow {
                         edge_async(ModeRouterNode::routeToNextNode),
                         Map.of(
                                 ROUTE_CREATE, SUBGRAPH_CREATE,
+                                ROUTE_LEETCODE_CREATE, SUBGRAPH_LEETCODE_CREATE,
                                 ROUTE_MODIFY, SUBGRAPH_MODIFY
                         ))
 
                 // 子图出口汇聚到构建检查子图
                 .addEdge(SUBGRAPH_CREATE, SUBGRAPH_BUILD_CHECK)
+                .addEdge(SUBGRAPH_LEETCODE_CREATE, SUBGRAPH_BUILD_CHECK)
                 .addEdge(SUBGRAPH_MODIFY, SUBGRAPH_BUILD_CHECK)
 
                 // 构建检查子图完成后直接结束
@@ -217,6 +230,26 @@ public class CodeGenWorkflow {
                 .addEdge(NODE_PROMPT_ENHANCER, NODE_CODE_GENERATOR)
 
                 // 出口
+                .addEdge(NODE_CODE_GENERATOR, END);
+    }
+
+    /**
+     * 构建力扣创建模式子图
+     *
+     * 包含节点：
+     * - 力扣提示词增强节点：构建力扣题解专用提示词
+     * - 代码生成节点：调用 AI 生成代码
+     *
+     * 流程：leetcode_prompt_enhancer → code_generator
+     *
+     * @return 力扣创建模式子图
+     */
+    private StateGraph<MessagesState<String>> buildLeetCodeCreateSubGraph() throws GraphStateException {
+        return new MessagesStateGraph<String>()
+                .addNode(NODE_LEETCODE_PROMPT_ENHANCER, LeetCodePromptEnhancerNode.create())
+                .addNode(NODE_CODE_GENERATOR, CodeGeneratorNode.create())
+                .addEdge(START, NODE_LEETCODE_PROMPT_ENHANCER)
+                .addEdge(NODE_LEETCODE_PROMPT_ENHANCER, NODE_CODE_GENERATOR)
                 .addEdge(NODE_CODE_GENERATOR, END);
     }
 

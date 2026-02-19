@@ -1,5 +1,6 @@
 package com.dango.dangoaicodeapp.domain.codegen.node;
 
+import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.app.valueobject.OperationModeEnum;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.extern.slf4j.Slf4j;
@@ -112,8 +113,14 @@ public class ModeRouterNode {
      * 路由条件边
      * 返回下一个节点的名称
      *
+     * 路由逻辑：
+     * - CREATE 模式：根据 generationType 进一步区分
+     *   - LEETCODE_PROJECT → "leetcode_create"
+     *   - 其他 → "create"
+     * - MODIFY 模式 → "modify"
+     *
      * @param state 消息状态
-     * @return 下一个节点名称（"create" 或 "modify"）
+     * @return 下一个节点名称（"create"、"leetcode_create" 或 "modify"）
      */
     public static String routeToNextNode(MessagesState<String> state) {
         WorkflowContext context = WorkflowContext.getContext(state);
@@ -125,7 +132,13 @@ public class ModeRouterNode {
         }
 
         return switch (mode) {
-            case CREATE -> "create";
+            case CREATE -> {
+                if (context.getGenerationType() == CodeGenTypeEnum.LEETCODE_PROJECT) {
+                    log.info("力扣题解类型，路由到力扣创建子图");
+                    yield "leetcode_create";
+                }
+                yield "create";
+            }
             case MODIFY -> "modify";
             case FIX -> "create"; // FIX 模式暂时路由到创建模式
         };
