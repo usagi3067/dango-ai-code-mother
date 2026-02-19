@@ -39,7 +39,7 @@ public class LeetCodeScaffoldService implements ProjectScaffoldService {
             "src/components/visualizations/PlaceholderVis.vue",
             "src/composables/useAnimation.ts",
             "src/data/problem.ts",
-            "src/data/solutions.ts",
+            "src/data/solutions/index.ts",
             "src/styles/theme.css",
             "src/types/index.ts"
     );
