@@ -8,7 +8,8 @@ public enum CodeGenTypeEnum {
 
     HTML("HTML 单页面", "html"),
     MULTI_FILE("原生多文件模式", "multi_file"),
-    VUE_PROJECT("Vue 工程模式", "vue_project");
+    VUE_PROJECT("Vue 工程模式", "vue_project"),
+    LEETCODE_PROJECT("力扣题解", "leetcode_project");
 
 
     private final String text;
