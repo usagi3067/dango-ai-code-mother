@@ -12,5 +12,9 @@ public class AppAddRequest implements Serializable {
      */
     private String initPrompt;
 
+    private String appName;
+
+    private String tag;
+
     private static final long serialVersionUID = 1L;
 }
