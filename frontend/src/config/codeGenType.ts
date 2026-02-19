@@ -5,7 +5,8 @@ export enum CodeGenTypeEnum {
   HTML = 'html',
   MULTI_FILE = 'multi_file',
   VUE_PROJECT = 'vue_project',
-  LEETCODE_PROJECT = 'leetcode_project'
+  LEETCODE_PROJECT = 'leetcode_project',
+  INTERVIEW_PROJECT = 'interview_project'
 }
 
 /**
@@ -27,6 +28,10 @@ export const CODE_GEN_TYPE_CONFIG = {
   [CodeGenTypeEnum.LEETCODE_PROJECT]: {
     label: '力扣题解模式',
     value: CodeGenTypeEnum.LEETCODE_PROJECT,
+  },
+  [CodeGenTypeEnum.INTERVIEW_PROJECT]: {
+    label: '面试题解模式',
+    value: CodeGenTypeEnum.INTERVIEW_PROJECT,
   },
 } as const
 

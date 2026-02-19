@@ -53,6 +53,18 @@ export const routeConfigs: RouteConfig[] = [
       access: ACCESS_ENUM.USER
     }
   },
+  // 面试专题页
+  {
+    path: '/interview',
+    name: 'interview',
+    component: () => import('@/pages/InterviewPage.vue'),
+    meta: {
+      title: '面试专题',
+      menuLabel: '面试专题',
+      showInMenu: true,
+      access: ACCESS_ENUM.USER
+    }
+  },
   // 全部案例页（独立布局）
   {
     path: '/cases',
