@@ -40,6 +40,7 @@ import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
  * START → mode_router → [条件边]
  *                       ├── create_subgraph (创建模式子图)
  *                       ├── leetcode_create_subgraph (力扣创建模式子图)
+ *                       ├── interview_create_subgraph (面试题解创建模式子图)
  *                       └── modify_subgraph (修改模式子图)
  *                              ↓
  *                       build_check_subgraph (构建检查修复子图)
@@ -51,6 +52,9 @@ import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
  *
  * 力扣创建模式子图：
  * leetcode_prompt_enhancer → code_generator
+ *
+ * 面试题解创建模式子图：
+ * interview_prompt_enhancer → code_generator
  *
  * 修改模式子图（支持数据库操作）：
  * code_reader → modification_planner → [条件边] → database_operator → code_modifier
@@ -72,6 +76,7 @@ public class CodeGenWorkflow {
     // 子图节点名称
     private static final String SUBGRAPH_CREATE = "create_subgraph";
     private static final String SUBGRAPH_LEETCODE_CREATE = "leetcode_create_subgraph";
+    private static final String SUBGRAPH_INTERVIEW_CREATE = "interview_create_subgraph";
     private static final String SUBGRAPH_MODIFY = "modify_subgraph";
     private static final String SUBGRAPH_BUILD_CHECK = "build_check_subgraph";
 
@@ -88,6 +93,9 @@ public class CodeGenWorkflow {
     // 力扣创建模式子图节点
     private static final String NODE_LEETCODE_PROMPT_ENHANCER = "leetcode_prompt_enhancer";
 
+    // 面试题解创建模式子图节点
+    private static final String NODE_INTERVIEW_PROMPT_ENHANCER = "interview_prompt_enhancer";
+
     // 修改模式子图节点
     private static final String NODE_CODE_READER = "code_reader";
     private static final String NODE_MODIFICATION_PLANNER = "modification_planner";
@@ -102,6 +110,7 @@ public class CodeGenWorkflow {
     // 模式路由
     private static final String ROUTE_CREATE = "create";
     private static final String ROUTE_LEETCODE_CREATE = "leetcode_create";
+    private static final String ROUTE_INTERVIEW_CREATE = "interview_create";
     private static final String ROUTE_MODIFY = "modify";
 
     // 数据库操作路由
@@ -144,6 +153,7 @@ public class CodeGenWorkflow {
         // 获取未编译的子图
         StateGraph<MessagesState<String>> createSubGraph = buildCreateModeSubGraph();
         StateGraph<MessagesState<String>> leetCodeCreateSubGraph = buildLeetCodeCreateSubGraph();
+        StateGraph<MessagesState<String>> interviewCreateSubGraph = buildInterviewCreateSubGraph();
         StateGraph<MessagesState<String>> modifySubGraph = buildModifyModeSubGraph();
         StateGraph<MessagesState<String>> buildCheckSubGraph = buildBuildCheckSubGraph();
 
@@ -154,6 +164,7 @@ public class CodeGenWorkflow {
                 // 添加子图（使用 addNode 方法添加未编译的子图，确保上下文传递）
                 .addNode(SUBGRAPH_CREATE, createSubGraph)
                 .addNode(SUBGRAPH_LEETCODE_CREATE, leetCodeCreateSubGraph)
+                .addNode(SUBGRAPH_INTERVIEW_CREATE, interviewCreateSubGraph)
                 .addNode(SUBGRAPH_MODIFY, modifySubGraph)
                 .addNode(SUBGRAPH_BUILD_CHECK, buildCheckSubGraph)
 
@@ -166,12 +177,14 @@ public class CodeGenWorkflow {
                         Map.of(
                                 ROUTE_CREATE, SUBGRAPH_CREATE,
                                 ROUTE_LEETCODE_CREATE, SUBGRAPH_LEETCODE_CREATE,
+                                ROUTE_INTERVIEW_CREATE, SUBGRAPH_INTERVIEW_CREATE,
                                 ROUTE_MODIFY, SUBGRAPH_MODIFY
                         ))
 
                 // 子图出口汇聚到构建检查子图
                 .addEdge(SUBGRAPH_CREATE, SUBGRAPH_BUILD_CHECK)
                 .addEdge(SUBGRAPH_LEETCODE_CREATE, SUBGRAPH_BUILD_CHECK)
+                .addEdge(SUBGRAPH_INTERVIEW_CREATE, SUBGRAPH_BUILD_CHECK)
                 .addEdge(SUBGRAPH_MODIFY, SUBGRAPH_BUILD_CHECK)
 
                 // 构建检查子图完成后直接结束
@@ -251,6 +264,20 @@ public class CodeGenWorkflow {
                 .addNode(NODE_CODE_GENERATOR, CodeGeneratorNode.create())
                 .addEdge(START, NODE_LEETCODE_PROMPT_ENHANCER)
                 .addEdge(NODE_LEETCODE_PROMPT_ENHANCER, NODE_CODE_GENERATOR)
+                .addEdge(NODE_CODE_GENERATOR, END);
+    }
+
+    /**
+     * 构建面试题解创建模式子图
+     *
+     * 流程：interview_prompt_enhancer → code_generator
+     */
+    private StateGraph<MessagesState<String>> buildInterviewCreateSubGraph() throws GraphStateException {
+        return new MessagesStateGraph<String>()
+                .addNode(NODE_INTERVIEW_PROMPT_ENHANCER, InterviewPromptEnhancerNode.create())
+                .addNode(NODE_CODE_GENERATOR, CodeGeneratorNode.create())
+                .addEdge(START, NODE_INTERVIEW_PROMPT_ENHANCER)
+                .addEdge(NODE_INTERVIEW_PROMPT_ENHANCER, NODE_CODE_GENERATOR)
                 .addEdge(NODE_CODE_GENERATOR, END);
     }
 
