@@ -118,11 +118,12 @@ public class ModeRouterNode {
      * 路由逻辑：
      * - CREATE 模式：根据 generationType 进一步区分
      *   - LEETCODE_PROJECT → "leetcode_create"
+     *   - INTERVIEW_PROJECT → "interview_create"
      *   - 其他 → "create"
      * - MODIFY 模式 → "modify"
      *
      * @param state 消息状态
-     * @return 下一个节点名称（"create"、"leetcode_create" 或 "modify"）
+     * @return 下一个节点名称（"create"、"leetcode_create"、"interview_create" 或 "modify"）
      */
     public static String routeToNextNode(MessagesState<String> state) {
         WorkflowContext context = WorkflowContext.getContext(state);
@@ -138,6 +139,10 @@ public class ModeRouterNode {
                 if (context.getGenerationType() == CodeGenTypeEnum.LEETCODE_PROJECT) {
                     log.info("力扣题解类型，路由到力扣创建子图");
                     yield "leetcode_create";
+                }
+                if (context.getGenerationType() == CodeGenTypeEnum.INTERVIEW_PROJECT) {
+                    log.info("面试题解类型，路由到面试创建子图");
+                    yield "interview_create";
                 }
                 yield "create";
             }
