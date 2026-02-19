@@ -17,16 +17,31 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class VueProjectScaffoldService implements ProjectScaffoldService {
+public class LeetCodeScaffoldService implements ProjectScaffoldService {
 
-    private static final String TEMPLATE_BASE_PATH = "templates/vue-project/";
+    private static final String TEMPLATE_BASE_PATH = "templates/leetcode-project/";
 
     private static final List<String> TEMPLATE_FILES = List.of(
             "index.html",
             "package.json",
-            "vite.config.js",
-            "src/main.js",
-            "src/styles/main.css"
+            "vite.config.ts",
+            "tsconfig.json",
+            "env.d.ts",
+            "src/main.ts",
+            "src/App.vue",
+            "src/components/AnimationControls.vue",
+            "src/components/AnimationDemo.vue",
+            "src/components/CodePanel.vue",
+            "src/components/CompareTable.vue",
+            "src/components/CoreIdea.vue",
+            "src/components/ExplanationBox.vue",
+            "src/components/TabContainer.vue",
+            "src/components/visualizations/PlaceholderVis.vue",
+            "src/composables/useAnimation.ts",
+            "src/data/problem.ts",
+            "src/data/solutions.ts",
+            "src/styles/theme.css",
+            "src/types/index.ts"
     );
 
     private final NodeModulesPrebuilder nodeModulesPrebuilder;
@@ -40,20 +55,20 @@ public class VueProjectScaffoldService implements ProjectScaffoldService {
             return;
         }
 
-        log.info("开始复制 Vue 项目模板到: {}", targetDir);
+        log.info("开始复制 LeetCode 项目模板到: {}", targetDir);
         copyTemplateFiles(targetDir);
         linkSharedNodeModules(targetDir);
-        log.info("Vue 项目模板复制完成: {}", targetDir);
+        log.info("LeetCode 项目模板复制完成: {}", targetDir);
     }
 
     @Override
     public CodeGenTypeEnum getType() {
-        return CodeGenTypeEnum.VUE_PROJECT;
+        return CodeGenTypeEnum.LEETCODE_PROJECT;
     }
 
     private Path buildTargetDir(Long appId) {
         String baseDir = System.getProperty("user.dir") + File.separator + "tmp" + File.separator + "code_output";
-        String dirName = "vue_project_" + appId;
+        String dirName = "leetcode_project_" + appId;
         return Path.of(baseDir, dirName);
     }
 
