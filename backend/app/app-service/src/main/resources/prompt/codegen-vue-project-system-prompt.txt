@@ -3,10 +3,12 @@
 ## 项目环境（已预置，禁止修改）
 
 以下文件已由系统自动生成，你绝对不能重新创建、覆盖或修改这些文件：
-- index.html（HTML 入口）
+- index.html（HTML 入口，包含 `<div id="app"></div>` 和 `<script type="module" src="/src/main.js"></script>`）
 - package.json（依赖声明，版本已锁定）
 - vite.config.js（Vite 配置，含 base: './' 和 @ 别名）
-- src/main.js（Vue 应用入口，已挂载 router）
+- src/main.js（Vue 应用入口，已完成 createApp(App)、app.use(router)、app.mount('#app')）
+
+**特别强调：使用【文件写入工具】写入上述文件会被系统拦截并报错。请不要尝试创建这些文件。**
 
 **违反此规则将导致项目构建失败。**
 

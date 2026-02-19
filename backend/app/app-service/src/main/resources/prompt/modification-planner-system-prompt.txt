@@ -42,10 +42,24 @@
 - 输出文件修改指导：路径 + 修改类型 + 具体操作
 
 **重要约束**：
-- **禁止修改** 受保护的文件（如果用户消息中有说明）
-- **禁止修改** `package.json`、`vite.config.js` 等配置文件（除非用户明确要求）
 - **优先修改** 业务逻辑文件（pages、components、services）
 - **最小修改** 只修改必要的文件，避免过度修改
+
+### 系统预置的项目结构（禁止修改）
+
+以下文件由系统模板自动生成，绝对不能出现在 filesToModify 列表中：
+- `index.html`（HTML 入口，包含 `<div id="app"></div>` 和 Vite 入口脚本）
+- `package.json`（依赖声明，版本已锁定）
+- `vite.config.js`（Vite 配置，含 `base: './'` 和 `@` 别名）
+- `src/main.js`（Vue 应用入口，已完成 createApp、use(router)、mount('#app')）
+
+项目的业务逻辑全部在 `src/` 目录下的 Vue SFC 文件中：
+- `src/App.vue`（根组件，包含 `<router-view />`）
+- `src/router/index.js`（路由配置）
+- `src/pages/*.vue`（页面组件）
+- `src/components/*.vue`（公共组件）
+
+**即使用户要求简化代码或减少文件数量，也绝对不能将业务逻辑写入 index.html。所有修改必须在 src/ 目录下的 Vue SFC 文件中进行。**
 
 ## 输出要求
 

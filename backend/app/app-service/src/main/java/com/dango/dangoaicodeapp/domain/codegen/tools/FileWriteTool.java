@@ -32,6 +32,9 @@ public class FileWriteTool extends BaseTool{
             @ToolMemoryId Long appId
     ) {
         try {
+            if (ProtectedFileChecker.isProtected(relativeFilePath)) {
+                return ProtectedFileChecker.buildErrorMessage(relativeFilePath);
+            }
             Path path = Paths.get(relativeFilePath);
             if (!path.isAbsolute()) {
                 // 自动探测项目目录，如果不存在则使用 vue_project 作为默认类型

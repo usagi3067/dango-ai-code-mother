@@ -33,6 +33,9 @@ public class FileModifyTool extends BaseTool {
             @ToolMemoryId Long appId
     ) {
         try {
+            if (ProtectedFileChecker.isProtected(relativeFilePath)) {
+                return ProtectedFileChecker.buildErrorMessage(relativeFilePath);
+            }
             Path path = Paths.get(relativeFilePath);
             if (!path.isAbsolute()) {
                 // 自动探测项目目录（支持 html、multi_file、vue_project 三种类型）
