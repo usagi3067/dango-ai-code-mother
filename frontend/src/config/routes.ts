@@ -41,6 +41,18 @@ export const routeConfigs: RouteConfig[] = [
       showInMenu: true
     }
   },
+  // 力扣专题页
+  {
+    path: '/leetcode',
+    name: 'leetcode',
+    component: () => import('@/pages/LeetCodePage.vue'),
+    meta: {
+      title: '力扣专题',
+      menuLabel: '力扣专题',
+      showInMenu: true,
+      access: ACCESS_ENUM.USER
+    }
+  },
   // 全部案例页（独立布局）
   {
     path: '/cases',
