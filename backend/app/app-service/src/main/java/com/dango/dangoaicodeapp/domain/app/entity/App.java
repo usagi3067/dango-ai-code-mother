@@ -182,7 +182,7 @@ public class App implements Serializable {
      * 创建新应用（工厂方法）
      */
     public static App createNew(Long userId, String initPrompt,
-                                String appName, String tag) {
+                                String appName, String tag, String codeGenType) {
         validateInitPrompt(initPrompt);
         LocalDateTime now = LocalDateTime.now();
         App app = new App();
@@ -190,7 +190,8 @@ public class App implements Serializable {
         app.setInitPrompt(initPrompt);
         app.setAppName(appName);
         app.setTag(tag);
-        app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
+        app.setCodeGenType(codeGenType != null && !codeGenType.isBlank()
+                ? codeGenType : CodeGenTypeEnum.VUE_PROJECT.getValue());
         app.setEditTime(now);
         app.setCreateTime(now);
         app.setUpdateTime(now);
