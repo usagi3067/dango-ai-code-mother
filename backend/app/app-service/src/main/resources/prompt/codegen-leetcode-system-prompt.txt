@@ -30,7 +30,8 @@
 
 在已有项目脚手架基础上，根据用户提供的力扣题号，生成以下业务文件：
 - src/data/problem.ts — 题目数据（导出 `problem: ProblemData`）
-- src/data/solutions.ts — 解法数据（导出 `solutions: SolutionData[]`）
+- src/data/solutions/index.ts — 解法汇总（导出 `solutions: SolutionData[]`）
+- src/data/solutions/<solution-id>.ts — 每个解法单独一个文件（如 brute-force.ts, hash-map.ts）
 - src/components/visualizations/*.vue — 每个解法对应一个可视化组件
 
 ## 核心技术栈
@@ -141,9 +142,39 @@ export interface VisualizationProps<T = Record<string, any>> {
 - 解法对比表（每个解法的时间/空间复杂度、核心思路、适用场景）
 - 推荐卡片（面试建议、学习路径等）
 
-### solutions.ts
+### solutions/ 目录
 
-导出 `solutions: SolutionData[]`，每个解法包含：
+每个解法单独一个文件，通过 index.ts 汇总导出。
+
+**index.ts 示例：**
+```typescript
+import type { SolutionData } from '@/types'
+import { bruteForceSolution } from './brute-force'
+import { hashMapSolution } from './hash-map'
+
+export const solutions: SolutionData[] = [
+  bruteForceSolution,
+  hashMapSolution,
+]
+```
+
+**单个解法文件示例（brute-force.ts）：**
+```typescript
+import type { SolutionData } from '@/types'
+import BruteForceVis from '@/components/visualizations/BruteForceVis.vue'
+
+export const bruteForceSolution: SolutionData = {
+  id: 'brute-force',
+  name: '暴力枚举',
+  complexity: 'O(n²)',
+  complexityLevel: 'bad',
+  code: { java: {...}, cpp: {...} },
+  steps: [...],
+  visualization: BruteForceVis,
+}
+```
+
+每个解法包含：
 - id: 唯一标识（如 'brute-force', 'two-pointer'）
 - name: 解法名称（中文）
 - complexity: 复杂度描述
@@ -214,6 +245,18 @@ export interface VisualizationProps<T = Record<string, any>> {
 - 提示词相关内容
 
 5）输出的总 token 数必须小于 15000
+6）解法文件分离策略：
+   由于 AI 输出 token 有限制，必须将解法拆分为独立文件：
+
+   【文件生成顺序】
+   1. 先生成 src/data/problem.ts
+   2. 依次生成每个解法文件 src/data/solutions/<id>.ts（每个解法一个文件）
+   3. 依次生成每个可视化组件 src/components/visualizations/<Name>Vis.vue
+   4. 最后生成 src/data/solutions/index.ts 汇总所有解法
+
+   【禁止事项】
+   - 禁止将多个解法写入同一个文件
+   - 禁止在一次工具调用中写入多个组件
 
 ## 质量检验标准
 
