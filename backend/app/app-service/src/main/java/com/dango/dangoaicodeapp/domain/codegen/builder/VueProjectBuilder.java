@@ -173,12 +173,18 @@ public class VueProjectBuilder {
         }
         log.info("开始构建 Vue 项目: {}", projectPath);
 
-        // 执行 npm install
-        BuildResult installResult = executeNpmInstall(projectDir);
-        if (!installResult.isSuccess()) {
-            log.error("npm install 执行失败");
-            return BuildResult.failure(installResult.getStderr(),
-                    "npm install 失败: " + installResult.getErrorSummary());
+        // 检测 node_modules 是否已存在（可能通过 symlink 预构建）
+        File nodeModules = new File(projectDir, "node_modules");
+        if (nodeModules.exists()) {
+            log.info("node_modules 已存在，跳过 npm install");
+        } else {
+            // 回退：执行 npm install
+            BuildResult installResult = executeNpmInstall(projectDir);
+            if (!installResult.isSuccess()) {
+                log.error("npm install 执行失败");
+                return BuildResult.failure(installResult.getStderr(),
+                        "npm install 失败: " + installResult.getErrorSummary());
+            }
         }
 
         // 执行 npm run build

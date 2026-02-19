@@ -4,6 +4,7 @@ import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   base: './',
+  cacheDir: './.vite-cache',
   plugins: [vue()],
   resolve: {
     alias: {
