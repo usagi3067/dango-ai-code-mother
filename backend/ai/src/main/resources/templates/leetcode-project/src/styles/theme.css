@@ -1,3 +1,21 @@
+/* ===== CSS 变量定义 ===== */
+:root {
+  --primary: #4a9eff;
+  --primary-rgb: 74, 158, 255;
+  --accent: #ff7b4a;
+  --accent-rgb: 255, 123, 74;
+  --bg-card: #16213e;
+  --text-primary: #ffffff;
+  --text-secondary: #aaaaaa;
+  --border: #0f3460;
+  --success: #4ecca3;
+  --success-rgb: 78, 204, 163;
+  --warning: #ffd700;
+  --warning-rgb: 255, 215, 0;
+  --danger: #e94560;
+  --danger-rgb: 233, 69, 96;
+}
+
 /* ===== 基础 ===== */
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body {
