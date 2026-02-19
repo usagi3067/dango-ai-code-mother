@@ -150,6 +150,10 @@ onMounted(() => {
 
 // 头像上传
 const handleAvatarUpload = async (file: File) => {
+  if (file.size > 2 * 1024 * 1024) {
+    message.error('头像文件不能超过 2MB')
+    return false
+  }
   avatarUploading.value = true
   try {
     const res = await uploadAvatar(file)
