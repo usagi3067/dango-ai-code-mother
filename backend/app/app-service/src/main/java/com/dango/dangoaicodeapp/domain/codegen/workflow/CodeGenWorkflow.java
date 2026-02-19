@@ -5,6 +5,7 @@ import cn.hutool.core.thread.ThreadFactoryBuilder;
 import cn.hutool.json.JSONUtil;
 import com.dango.aicodegenerate.model.QualityResult;
 import com.dango.aicodegenerate.model.message.AiResponseMessage;
+import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
 import com.dango.dangoaicodeapp.infrastructure.monitor.MonitorContext;
 import com.dango.dangoaicodeapp.domain.codegen.node.*;
@@ -515,7 +516,7 @@ public class CodeGenWorkflow {
      * @return 流式输出的代码内容
      */
     public Flux<String> executeWorkflowWithFlux(String originalPrompt, Long appId, ElementInfo elementInfo, MonitorContext monitorContext) {
-        return executeWorkflowWithFlux(originalPrompt, appId, elementInfo, false, null, monitorContext);
+        return executeWorkflowWithFlux(originalPrompt, appId, elementInfo, false, null, monitorContext, null);
     }
 
     /**
@@ -531,6 +532,15 @@ public class CodeGenWorkflow {
      */
     public Flux<String> executeWorkflowWithFlux(String originalPrompt, Long appId, ElementInfo elementInfo,
                                                 boolean databaseEnabled, String databaseSchema, MonitorContext monitorContext) {
+        return executeWorkflowWithFlux(originalPrompt, appId, elementInfo, databaseEnabled, databaseSchema, monitorContext, null);
+    }
+
+    /**
+     * 执行工作流（Flux 流式输出版本，完整参数版本，支持 generationType）
+     */
+    public Flux<String> executeWorkflowWithFlux(String originalPrompt, Long appId, ElementInfo elementInfo,
+                                                boolean databaseEnabled, String databaseSchema, MonitorContext monitorContext,
+                                                CodeGenTypeEnum generationType) {
         return Flux.create(sink -> {
             // 生成唯一的执行 ID
             String executionId = appId + "_" + System.currentTimeMillis();
@@ -554,6 +564,7 @@ public class CodeGenWorkflow {
                             .databaseEnabled(databaseEnabled)
                             .databaseSchema(databaseSchema)
                             .monitorContext(monitorContext)
+                            .generationType(generationType != null ? generationType : CodeGenTypeEnum.VUE_PROJECT)
                             .build();
 
                     GraphRepresentation graph = workflow.getGraph(GraphRepresentation.Type.MERMAID);

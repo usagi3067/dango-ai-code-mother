@@ -111,7 +111,7 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
         log.info("使用 Agent 模式（工作流）生成代码, appId: {}, hasElementInfo: {}, databaseEnabled: {}",
                 appId, elementInfo != null, databaseEnabled);
         Flux<String> codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(
-                message, appId, elementInfo, databaseEnabled, databaseSchema, monitorContext);
+                message, appId, elementInfo, databaseEnabled, databaseSchema, monitorContext, codeGenTypeEnum);
         // 9. 收集 AI 响应内容并在完成后记录到对话历史
         return streamHandlerExecutor.doExecute(codeStream, chatHistoryService, appId, userId)
                 .doFinally(signalType -> {
