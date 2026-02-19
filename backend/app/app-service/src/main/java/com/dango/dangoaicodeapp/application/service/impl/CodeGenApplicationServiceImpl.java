@@ -2,10 +2,10 @@ package com.dango.dangoaicodeapp.application.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 
-import com.dango.dangoaicodeapp.application.service.AppApplicationService;
 import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
 import com.dango.dangoaicodeapp.application.service.CodeGenApplicationService;
 import com.dango.dangoaicodeapp.domain.app.entity.App;
+import com.dango.dangoaicodeapp.domain.app.repository.AppRepository;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
 import com.dango.dangoaicodeapp.domain.codegen.handler.StreamHandlerExecutor;
@@ -20,7 +20,6 @@ import com.dango.supabase.service.SupabaseService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
-import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 
@@ -38,8 +37,7 @@ import java.util.stream.Collectors;
 public class CodeGenApplicationServiceImpl implements CodeGenApplicationService {
 
     @Resource
-    @Lazy
-    private AppApplicationService appApplicationService;
+    private AppRepository appRepository;
     @Resource
     private ChatHistoryService chatHistoryService;
     @Resource
@@ -71,7 +69,7 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
         ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
         // 2. 查询应用信息
-        App app = appApplicationService.getById(appId);
+        App app = appRepository.findById(appId).orElse(null);
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
         // 3. 验证用户是否有权限访问该应用，仅本人可以生成代码
         if (!app.getUserId().equals(userId)) {

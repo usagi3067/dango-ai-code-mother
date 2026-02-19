@@ -1,7 +1,7 @@
 package com.dango.dangoaicodeapp.integration;
 
 import com.dango.dangoaicodeapp.domain.app.entity.App;
-import com.dango.dangoaicodeapp.service.AppService;
+import com.dango.dangoaicodeapp.domain.app.repository.AppRepository;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.CodeGenWorkflow;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.manager.CosManager;
@@ -40,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class DatabaseInitMessageFlowTest {
 
     @Autowired
-    private AppService appService;
+    private AppRepository appRepository;
 
     @DubboReference
     private SupabaseService supabaseService;
@@ -113,7 +113,7 @@ class DatabaseInitMessageFlowTest {
         System.out.println("消息内容: \"" + AUTO_INIT_MESSAGE + "\"");
 
         // 1. 获取应用信息
-        App app = appService.getById(TEST_APP_ID);
+        App app = appRepository.findById(TEST_APP_ID).orElse(null);
         assertNotNull(app, "应用不存在");
         System.out.println("\n应用信息:");
         System.out.println("  - 应用名: " + app.getAppName());

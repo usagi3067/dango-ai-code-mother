@@ -1,8 +1,8 @@
 package com.dango.dangoaicodeapp.integration;
 
-import com.dango.dangoaicodeapp.config.SupabaseClientConfig;
 import com.dango.dangoaicodeapp.domain.app.entity.App;
-import com.dango.dangoaicodeapp.service.AppService;
+import com.dango.dangoaicodeapp.domain.app.repository.AppRepository;
+import com.dango.dangoaicodeapp.infrastructure.config.SupabaseClientConfig;
 import com.dango.dangoaicodecommon.manager.CosManager;
 import com.dango.supabase.service.SupabaseService;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class DatabaseIntegrationTest {
 
     @Autowired
-    private AppService appService;
+    private AppRepository appRepository;
 
     @Autowired
     private SupabaseClientConfig supabaseClientConfig;
@@ -193,7 +193,7 @@ class DatabaseIntegrationTest {
     void testAppInfo() {
         System.out.println("\n【测试 5】验证应用信息");
 
-        App app = appService.getById(TEST_APP_ID);
+        App app = appRepository.findById(TEST_APP_ID).orElse(null);
         assertNotNull(app, "应用应存在");
 
         System.out.println("✓ 应用 ID: " + app.getId());

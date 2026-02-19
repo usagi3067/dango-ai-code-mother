@@ -4,7 +4,8 @@ import cn.hutool.core.collection.CollUtil;
 import com.dango.dangoaicodeapp.infrastructure.esdao.AppEsDao;
 import com.dango.dangoaicodeapp.domain.app.entity.App;
 import com.dango.dangoaicodeapp.infrastructure.esdao.AppEsDTO;
-import com.dango.dangoaicodeapp.application.service.AppApplicationService;
+import com.dango.dangoaicodeapp.domain.app.repository.AppRepository;
+import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -25,14 +26,14 @@ import java.util.stream.Collectors;
 public class FullSyncAppToEs implements CommandLineRunner {
 
     @Resource
-    private AppApplicationService appApplicationService;
+    private AppRepository appRepository;
 
     @Resource
     private AppEsDao appEsDao;
 
     @Override
     public void run(String... args) {
-        List<App> appList = appApplicationService.list();
+        List<App> appList = appRepository.findAll(QueryWrapper.create());
         if (CollUtil.isEmpty(appList)) {
             log.info("FullSyncAppToEs: 无数据需要同步");
             return;

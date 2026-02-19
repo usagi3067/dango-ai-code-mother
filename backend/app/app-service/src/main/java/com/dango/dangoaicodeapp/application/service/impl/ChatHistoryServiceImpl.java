@@ -5,8 +5,8 @@ import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.util.StrUtil;
 
-import com.dango.dangoaicodeapp.application.service.AppApplicationService;
 import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
+import com.dango.dangoaicodeapp.domain.app.repository.AppRepository;
 import com.dango.dangoaicodeapp.infrastructure.mapper.ChatHistoryMapper;
 import com.dango.dangoaicodeapp.model.dto.chathistory.ChatHistoryQueryRequest;
 import com.dango.dangoaicodeapp.domain.app.entity.App;
@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
 public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatHistory> implements ChatHistoryService {
 
     @Resource
-    private AppApplicationService appApplicationService;
+    private AppRepository appRepository;
 
     @Override
     public boolean saveUserMessage(Long appId, Long userId, String message) {
@@ -84,7 +84,7 @@ public class ChatHistoryServiceImpl extends ServiceImpl<ChatHistoryMapper, ChatH
         }
 
         // 查询应用信息
-        App app = appApplicationService.getById(appId);
+        App app = appRepository.findById(appId).orElse(null);
         ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
 
         // 权限校验：仅应用创建者或管理员可以查看

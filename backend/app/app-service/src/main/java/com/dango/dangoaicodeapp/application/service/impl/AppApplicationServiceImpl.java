@@ -6,15 +6,18 @@ import cn.hutool.core.collection.CollUtil;
 import com.dango.aicodegenerate.model.AppNameAndTagResult;
 
 import com.dango.dangoaicodeapp.application.service.AppApplicationService;
+import com.dango.dangoaicodeapp.application.service.AppSearchService;
+import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
+import com.dango.dangoaicodeapp.domain.app.entity.App;
+import com.dango.dangoaicodeapp.domain.app.repository.AppRepository;
 import com.dango.dangoaicodeapp.domain.app.service.AppDomainService;
-import com.dango.dangoaicodeapp.domain.codegen.service.AppInfoGeneratorFacade;
+import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.codegen.builder.VueProjectBuilder;
-import com.dango.dangoaicodeapp.infrastructure.mapper.AppMapper;
+import com.dango.dangoaicodeapp.domain.codegen.service.AppInfoGeneratorFacade;
 import com.dango.dangoaicodeapp.model.constant.AppConstant;
 import com.dango.dangoaicodeapp.model.dto.app.AppAddRequest;
+import com.dango.dangoaicodeapp.model.dto.app.AppAdminUpdateRequest;
 import com.dango.dangoaicodeapp.model.dto.app.AppQueryRequest;
-import com.dango.dangoaicodeapp.domain.app.entity.App;
-import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.model.vo.AppVO;
 import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
@@ -22,8 +25,8 @@ import com.dango.dangoaicodecommon.exception.ThrowUtils;
 import com.dango.dangoaicodeuser.dto.UserDTO;
 import com.dango.dangoaicodeuser.model.vo.UserVO;
 import com.dango.dangoaicodeuser.service.InnerUserService;
+import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
-import com.mybatisflex.spring.service.impl.ServiceImpl;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
@@ -35,6 +38,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -48,8 +52,10 @@ import java.util.stream.Collectors;
  */
 @Slf4j
 @Service
-public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> implements AppApplicationService {
+public class AppApplicationServiceImpl implements AppApplicationService {
 
+    @Resource
+    private AppRepository appRepository;
     @DubboReference
     private InnerUserService innerUserService;
     @Resource
@@ -58,120 +64,90 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
     private VueProjectBuilder vueProjectBuilder;
     @Resource
     private AppInfoGeneratorFacade appInfoGeneratorFacade;
+    @Resource
+    private AppSearchService appSearchService;
+    @Resource
+    private ChatHistoryService chatHistoryService;
 
+    // ========== 查询用例 ==========
 
     @Override
-    public AppVO getAppVO(App app) {
-        if (app == null) {
-            return null;
+    public AppVO getAppDetail(Long appId) {
+        ThrowUtils.throwIf(appId <= 0, ErrorCode.PARAMS_ERROR);
+        App app = appRepository.findById(appId).orElse(null);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
+        return getAppVO(app);
+    }
+
+    @Override
+    public Page<AppVO> listMyApps(AppQueryRequest request, Long userId) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        long pageSize = request.getPageSize();
+        ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR, "每页最多查询 20 个应用");
+        request.setUserId(userId);
+        QueryWrapper queryWrapper = getQueryWrapper(request);
+        Page<App> appPage = appRepository.findPage(Page.of(request.getPageNum(), pageSize), queryWrapper);
+        Page<AppVO> voPage = new Page<>(request.getPageNum(), pageSize, appPage.getTotalRow());
+        voPage.setRecords(getAppVOList(appPage.getRecords()));
+        return voPage;
+    }
+
+    @Override
+    public Page<AppVO> listGoodApps(AppQueryRequest request) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        long pageSize = request.getPageSize();
+        ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR, "每页最多查询 20 个应用");
+        request.setPriority(AppConstant.GOOD_APP_PRIORITY);
+        QueryWrapper queryWrapper = getQueryWrapper(request);
+        Page<App> appPage = appRepository.findPage(Page.of(request.getPageNum(), pageSize), queryWrapper);
+        Page<AppVO> voPage = new Page<>(request.getPageNum(), pageSize, appPage.getTotalRow());
+        voPage.setRecords(getAppVOList(appPage.getRecords()));
+        return voPage;
+    }
+
+    @Override
+    public Page<AppVO> listAppsByCursor(AppQueryRequest request) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        int pageSize = request.getPageSize();
+        if (pageSize <= 0) {
+            pageSize = 12;
+            request.setPageSize(pageSize);
         }
-        AppVO appVO = new AppVO();
-        BeanUtil.copyProperties(app, appVO);
-        // 关联查询用户信息
-        Long userId = app.getUserId();
-        if (userId != null) {
-            UserDTO userDTO = innerUserService.getById(userId);
-            UserVO userVO = innerUserService.toUserVO(userDTO);
-            appVO.setUser(userVO);
-        }
-        return appVO;
+        ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR, "每页最多查询 20 个应用");
+        Page<App> appPage = appSearchService.searchApps(request);
+        Page<AppVO> voPage = new Page<>();
+        voPage.setPageSize(appPage.getPageSize());
+        voPage.setRecords(getAppVOList(appPage.getRecords()));
+        return voPage;
     }
 
     @Override
-    public QueryWrapper getQueryWrapper(AppQueryRequest appQueryRequest) {
-        if (appQueryRequest == null) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
-        }
-        Long id = appQueryRequest.getId();
-        String appName = appQueryRequest.getAppName();
-        String cover = appQueryRequest.getCover();
-        String initPrompt = appQueryRequest.getInitPrompt();
-        String codeGenType = appQueryRequest.getCodeGenType();
-        String tag = appQueryRequest.getTag();
-        String deployKey = appQueryRequest.getDeployKey();
-        Integer priority = appQueryRequest.getPriority();
-        Long userId = appQueryRequest.getUserId();
-        String sortField = appQueryRequest.getSortField();
-        String sortOrder = appQueryRequest.getSortOrder();
-        return QueryWrapper.create()
-                .eq("id", id)
-                .like("appName", appName)
-                .like("cover", cover)
-                .like("initPrompt", initPrompt)
-                .eq("codeGenType", codeGenType)
-                .eq("tag", tag)
-                .eq("deployKey", deployKey)
-                .eq("priority", priority)
-                .eq("userId", userId)
-                .orderBy(sortField, "ascend".equals(sortOrder));
+    public Page<AppVO> adminListApps(AppQueryRequest request) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        QueryWrapper queryWrapper = getQueryWrapper(request);
+        Page<App> appPage = appRepository.findPage(Page.of(request.getPageNum(), request.getPageSize()), queryWrapper);
+        Page<AppVO> voPage = new Page<>(request.getPageNum(), request.getPageSize(), appPage.getTotalRow());
+        voPage.setRecords(getAppVOList(appPage.getRecords()));
+        return voPage;
     }
 
     @Override
-    public List<AppVO> getAppVOList(List<App> appList) {
-        if (CollUtil.isEmpty(appList)) {
-            return new ArrayList<>();
-        }
-        // 批量获取用户信息，避免 N+1 查询问题
-        Set<Long> userIds = appList.stream()
-                .map(App::getUserId)
-                .collect(Collectors.toSet());
-        Map<Long, UserVO> userVOMap = innerUserService.listByIds(userIds).stream()
-                .collect(Collectors.toMap(UserDTO::getId, innerUserService::toUserVO));
-        return appList.stream().map(app -> {
-            AppVO appVO = getAppVO(app);
-            UserVO userVO = userVOMap.get(app.getUserId());
-            appVO.setUser(userVO);
-            return appVO;
-        }).collect(Collectors.toList());
+    public AppVO adminGetAppDetail(Long appId) {
+        ThrowUtils.throwIf(appId <= 0, ErrorCode.PARAMS_ERROR);
+        App app = appRepository.findById(appId).orElse(null);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
+        return getAppVO(app);
     }
 
-    @Override
-    public String deployApp(Long appId, long userId) {
-        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
-        App app = this.getById(appId);
-        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
-        // 使用聚合根的权限校验
-        app.checkOwnership(userId);
-        // 委托领域服务执行核心部署逻辑
-        String deployKey = appDomainService.deployApp(app);
-        // 使用聚合根的状态变更方法
-        app.markDeployed(deployKey);
-        boolean updateResult = this.updateById(app);
-        ThrowUtils.throwIf(!updateResult, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
-        String appDeployUrl = String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
-        generateAppScreenshotAsync(appId, appDeployUrl);
-        return appDeployUrl;
-    }
-
-    /**
-     * 异步生成应用截图并更新封面
-     *
-     * @param appId  应用ID
-     * @param appUrl 应用访问URL
-     */
-    @Override
-    public void generateAppScreenshotAsync(Long appId, String appUrl) {
-        Thread.startVirtualThread(() -> {
-            String screenshotUrl = appDomainService.generateScreenshot(appId, appUrl);
-            App app = this.getById(appId);
-            if (app != null) {
-                app.updateCover(screenshotUrl);
-                boolean updated = this.updateById(app);
-                ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR, "更新应用封面字段失败");
-            }
-        });
-    }
+    // ========== 命令用例 ==========
 
     @Override
     public Long createApp(AppAddRequest appAddRequest, long userId) {
         String initPrompt = appAddRequest.getInitPrompt();
         App.validateInitPrompt(initPrompt);
-        // 使用 AI 智能生成应用名称和标签
         AppNameAndTagResult appInfo = appInfoGeneratorFacade.generateAppInfo(initPrompt);
-        // 使用工厂方法创建应用
         App app = App.createNew(userId, initPrompt, appInfo.getAppName(), appInfo.getTag());
-        boolean result = this.save(app);
-        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+        appRepository.save(app);
         log.info("应用创建成功，ID: {}, 类型: {}", app.getId(), CodeGenTypeEnum.VUE_PROJECT.getValue());
         return app.getId();
     }
@@ -216,10 +192,8 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
         app.setTag(appInfo.getTag());
         app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
 
-        boolean result = this.save(app);
-        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "创建应用失败");
-
-        Long appId = app.getId();
+        App savedApp = appRepository.save(app);
+        Long appId = savedApp.getId();
 
         // 4. 保存文件到项目目录
         String baseDir = System.getProperty("user.dir") + "/tmp/code_output";
@@ -231,8 +205,7 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
                 Files.write(targetFile, files[i].getBytes());
             }
         } catch (IOException e) {
-            // 保存失败，清理已创建的记录
-            this.removeById(appId);
+            appRepository.deleteById(appId);
             log.error("保存项目文件失败", e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "保存项目文件失败");
         }
@@ -240,9 +213,8 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
         // 5. 构建校验
         VueProjectBuilder.BuildResult buildResult = vueProjectBuilder.buildProjectWithResult(projectDir.toString());
         if (!buildResult.isSuccess()) {
-            // 构建失败，清理文件和数据库记录
             cn.hutool.core.io.FileUtil.del(projectDir.toFile());
-            this.removeById(appId);
+            appRepository.deleteById(appId);
             throw new BusinessException(ErrorCode.OPERATION_ERROR,
                     "项目构建失败：" + buildResult.getErrorSummary());
         }
@@ -252,24 +224,152 @@ public class AppApplicationServiceImpl extends ServiceImpl<AppMapper, App> imple
     }
 
     @Override
-    public void initializeDatabase(Long appId, long userId) {
-        App app = this.getById(appId);
-        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
-        // 使用聚合根的权限校验
+    public void updateApp(Long appId, String appName, String tag, long userId) {
+        App app = appRepository.findById(appId).orElse(null);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
         app.checkOwnership(userId);
-        // 使用聚合根的数据库启用方法（含业务校验）
+        app.updateInfo(appName, tag);
+        boolean result = appRepository.updateById(app);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+    }
+
+    @Override
+    public void deleteApp(Long appId, long userId) {
+        App app = appRepository.findById(appId).orElse(null);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
+        app.checkOwnership(userId);
+        chatHistoryService.deleteByAppId(appId);
+        appRepository.deleteById(appId);
+    }
+
+    @Override
+    public String deployApp(Long appId, long userId) {
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
+        App app = appRepository.findById(appId).orElse(null);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        app.checkOwnership(userId);
+        String deployKey = appDomainService.deployApp(app);
+        app.markDeployed(deployKey);
+        boolean updateResult = appRepository.updateById(app);
+        ThrowUtils.throwIf(!updateResult, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
+        String appDeployUrl = String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        generateAppScreenshotAsync(appId, appDeployUrl);
+        return appDeployUrl;
+    }
+
+    @Override
+    public void initializeDatabase(Long appId, long userId) {
+        App app = appRepository.findById(appId).orElse(null);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        app.checkOwnership(userId);
         app.enableDatabase();
-        // 校验项目目录是否存在
         String projectDir = AppConstant.CODE_OUTPUT_ROOT_DIR + File.separator + app.getProjectDirName();
         File projectDirFile = new File(projectDir);
         if (!projectDirFile.exists() || !projectDirFile.isDirectory()) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "项目目录不存在，请先生成代码");
         }
-        // 委托领域服务执行核心数据库初始化逻辑
         appDomainService.initializeDatabase(app);
-        // 持久化状态变更
-        boolean result = this.updateById(app);
+        boolean result = appRepository.updateById(app);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "更新应用状态失败");
         log.info("应用数据库初始化成功，appId: {}", appId);
+    }
+
+    // ========== 管理员命令 ==========
+
+    @Override
+    public void adminUpdateApp(AppAdminUpdateRequest request) {
+        Long id = request.getId();
+        ThrowUtils.throwIf(id == null, ErrorCode.PARAMS_ERROR);
+        App app = appRepository.findById(id).orElse(null);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
+        BeanUtil.copyProperties(request, app);
+        app.setEditTime(LocalDateTime.now());
+        boolean result = appRepository.updateById(app);
+        ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
+    }
+
+    @Override
+    public void adminDeleteApp(Long appId) {
+        App app = appRepository.findById(appId).orElse(null);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR);
+        chatHistoryService.deleteByAppId(appId);
+        appRepository.deleteById(appId);
+    }
+
+    // ========== 其他 ==========
+
+    @Override
+    public void generateAppScreenshotAsync(Long appId, String appUrl) {
+        Thread.startVirtualThread(() -> {
+            String screenshotUrl = appDomainService.generateScreenshot(appId, appUrl);
+            App app = appRepository.findById(appId).orElse(null);
+            if (app != null) {
+                app.updateCover(screenshotUrl);
+                boolean updated = appRepository.updateById(app);
+                ThrowUtils.throwIf(!updated, ErrorCode.OPERATION_ERROR, "更新应用封面字段失败");
+            }
+        });
+    }
+
+    // ========== 私有方法 ==========
+
+    private AppVO getAppVO(App app) {
+        if (app == null) {
+            return null;
+        }
+        AppVO appVO = new AppVO();
+        BeanUtil.copyProperties(app, appVO);
+        Long userId = app.getUserId();
+        if (userId != null) {
+            UserDTO userDTO = innerUserService.getById(userId);
+            UserVO userVO = innerUserService.toUserVO(userDTO);
+            appVO.setUser(userVO);
+        }
+        return appVO;
+    }
+
+    private QueryWrapper getQueryWrapper(AppQueryRequest appQueryRequest) {
+        if (appQueryRequest == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "请求参数为空");
+        }
+        Long id = appQueryRequest.getId();
+        String appName = appQueryRequest.getAppName();
+        String cover = appQueryRequest.getCover();
+        String initPrompt = appQueryRequest.getInitPrompt();
+        String codeGenType = appQueryRequest.getCodeGenType();
+        String tag = appQueryRequest.getTag();
+        String deployKey = appQueryRequest.getDeployKey();
+        Integer priority = appQueryRequest.getPriority();
+        Long userId = appQueryRequest.getUserId();
+        String sortField = appQueryRequest.getSortField();
+        String sortOrder = appQueryRequest.getSortOrder();
+        return QueryWrapper.create()
+                .eq("id", id)
+                .like("appName", appName)
+                .like("cover", cover)
+                .like("initPrompt", initPrompt)
+                .eq("codeGenType", codeGenType)
+                .eq("tag", tag)
+                .eq("deployKey", deployKey)
+                .eq("priority", priority)
+                .eq("userId", userId)
+                .orderBy(sortField, "ascend".equals(sortOrder));
+    }
+
+    private List<AppVO> getAppVOList(List<App> appList) {
+        if (CollUtil.isEmpty(appList)) {
+            return new ArrayList<>();
+        }
+        Set<Long> userIds = appList.stream()
+                .map(App::getUserId)
+                .collect(Collectors.toSet());
+        Map<Long, UserVO> userVOMap = innerUserService.listByIds(userIds).stream()
+                .collect(Collectors.toMap(UserDTO::getId, innerUserService::toUserVO));
+        return appList.stream().map(app -> {
+            AppVO appVO = getAppVO(app);
+            UserVO userVO = userVOMap.get(app.getUserId());
+            appVO.setUser(userVO);
+            return appVO;
+        }).collect(Collectors.toList());
     }
 }
