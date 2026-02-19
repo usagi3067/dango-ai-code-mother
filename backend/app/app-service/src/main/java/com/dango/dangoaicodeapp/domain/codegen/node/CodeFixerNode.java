@@ -9,7 +9,7 @@ import com.dango.aicodegenerate.model.message.AiResponseMessage;
 import com.dango.aicodegenerate.model.message.StreamMessage;
 import com.dango.aicodegenerate.model.message.ToolExecutedMessage;
 import com.dango.aicodegenerate.model.message.ToolRequestMessage;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.AiCodeFixerService;
+import com.dango.dangoaicodeapp.domain.codegen.ai.service.CodeFixerService;
 import com.dango.dangoaicodeapp.domain.codegen.ai.factory.AiCodeFixerServiceFactory;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
@@ -103,10 +103,10 @@ public class CodeFixerNode {
 
                 // 获取修复专用 AI 服务
                 AiCodeFixerServiceFactory fixerServiceFactory = SpringContextUtil.getBean(AiCodeFixerServiceFactory.class);
-                AiCodeFixerService fixerService = fixerServiceFactory.getFixerService(appId, generationType);
+                CodeFixerService fixerService = fixerServiceFactory.getFixerService(appId, generationType);
 
                 // 调用修复方法
-                TokenStream tokenStream = fixerService.fixVueProjectCodeStream(appId, fixRequest);
+                TokenStream tokenStream = fixerService.fixCodeStream(appId, fixRequest);
 
                 // 使用 CountDownLatch 等待流式生成完成
                 CountDownLatch latch = new CountDownLatch(1);
@@ -245,6 +245,13 @@ public class CodeFixerNode {
      * @return 输出格式指南字符串
      */
     public static String getOutputFormatGuide(CodeGenTypeEnum generationType) {
+        return switch (generationType) {
+            case LEETCODE_PROJECT -> getLeetCodeFixGuide();
+            default -> getVueFixGuide();
+        };
+    }
+
+    private static String getVueFixGuide() {
         return """
                 ## 修复指南（Vue 工程模式 - 构建错误修复）
 
@@ -284,6 +291,50 @@ public class CodeFixerNode {
                 - 必须使用工具进行修复，不要直接输出代码块
                 - 只修复编译器报告的具体错误，不要做无关的重构
                 - 所有组件导入路径使用 `@` 别名（如 `@/components/Xxx.vue`）
+                """;
+    }
+
+    private static String getLeetCodeFixGuide() {
+        return """
+                ## 修复指南（力扣题解模式 - 构建错误修复）
+
+                以上错误信息来自真实的 `npm run build` 编译器输出，请根据编译器给出的具体文件路径和错误信息进行针对性修复。
+
+                ### 修复输出格式（必须遵守）
+
+                #### 第一步：输出修复计划
+                📋 修复计划（共 N 个问题）：
+                  1. [文件路径] - [错误简述]
+                     - [修复操作描述]
+
+                #### 第二步：按计划逐一修复
+                📝 正在修复 [序号]/[总数]: [文件路径]
+                [使用工具执行修复]
+
+                ### 禁止修改的文件
+                以下文件是项目模板的基础设施文件，已经过验证，**严禁修改**：
+                - `package.json`
+                - `vite.config.ts`
+                - `tsconfig.json`
+                - `env.d.ts`
+                - `index.html`
+                - `src/main.ts`
+                - `src/App.vue`
+                - `src/components/AnimationControls.vue`
+                - `src/components/AnimationDemo.vue`
+                - `src/components/CodePanel.vue`
+                - `src/components/CompareTable.vue`
+                - `src/components/CoreIdea.vue`
+                - `src/components/ExplanationBox.vue`
+                - `src/components/TabContainer.vue`
+                - `src/composables/useAnimation.ts`
+                - `src/styles/theme.css`
+                - `src/types/index.ts`
+
+                ### 重要约束
+                - 必须使用工具进行修复，不要直接输出代码块
+                - 只修复编译器报告的具体错误，不要做无关的重构
+                - 只能修改 `src/data/` 和 `src/components/visualizations/` 下的文件
                 """;
     }
 

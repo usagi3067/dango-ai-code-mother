@@ -3,7 +3,7 @@ package com.dango.dangoaicodeapp.domain.codegen.node;
 import cn.hutool.core.util.StrUtil;
 import com.dango.aicodegenerate.model.QualityResult;
 import com.dango.dangoaicodeapp.domain.codegen.service.AiCodeGeneratorFacade;
-import com.dango.dangoaicodeapp.domain.codegen.scaffold.VueProjectScaffoldService;
+import com.dango.dangoaicodeapp.domain.codegen.scaffold.ProjectScaffoldServiceFactory;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.utils.SpringContextUtil;
@@ -40,7 +40,10 @@ public class CodeGeneratorNode {
 
             // 构造用户消息（包含原始提示词和可能的错误修复信息）
             String userMessage = buildUserMessage(context);
-            CodeGenTypeEnum generationType = CodeGenTypeEnum.VUE_PROJECT;
+            CodeGenTypeEnum generationType = context.getGenerationType();
+            if (generationType == null) {
+                generationType = CodeGenTypeEnum.VUE_PROJECT;
+            }
             Long appId = context.getAppId();
 
             // 判断是否是修复模式
@@ -60,8 +63,8 @@ public class CodeGeneratorNode {
                 AiCodeGeneratorFacade codeGeneratorFacade = SpringContextUtil.getBean(AiCodeGeneratorFacade.class);
 
                 // 复制模板脚手架到项目目录（创建模式时）
-                VueProjectScaffoldService scaffoldService = SpringContextUtil.getBean(VueProjectScaffoldService.class);
-                scaffoldService.scaffold(appId);
+                ProjectScaffoldServiceFactory scaffoldFactory = SpringContextUtil.getBean(ProjectScaffoldServiceFactory.class);
+                scaffoldFactory.getService(generationType).scaffold(appId);
                 context.emitNodeMessage(NODE_NAME, "项目模板已就绪\n");
 
                 // 使用流式生成，实时输出代码内容
