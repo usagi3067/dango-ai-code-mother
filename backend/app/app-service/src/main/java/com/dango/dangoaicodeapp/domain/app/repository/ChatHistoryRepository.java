@@ -1,6 +1,8 @@
 package com.dango.dangoaicodeapp.domain.app.repository;
 
 import com.dango.dangoaicodeapp.domain.app.entity.ChatHistory;
+import com.mybatisflex.core.paginate.Page;
+import com.mybatisflex.core.query.QueryWrapper;
 
 import java.util.List;
 import java.util.Optional;
@@ -13,4 +15,7 @@ public interface ChatHistoryRepository {
     ChatHistory save(ChatHistory chatHistory);
     List<ChatHistory> findByAppId(Long appId, int limit);
     boolean deleteByAppId(Long appId);
+    Page<ChatHistory> findPage(Page<ChatHistory> page, QueryWrapper queryWrapper);
+    boolean removeByQuery(QueryWrapper queryWrapper);
+    List<ChatHistory> findAll(QueryWrapper queryWrapper);
 }

@@ -3,6 +3,7 @@ package com.dango.dangoaicodeapp.infrastructure.repository;
 import com.dango.dangoaicodeapp.domain.app.repository.ChatHistoryRepository;
 import com.dango.dangoaicodeapp.infrastructure.mapper.ChatHistoryMapper;
 import com.dango.dangoaicodeapp.domain.app.entity.ChatHistory;
+import com.mybatisflex.core.paginate.Page;
 import com.mybatisflex.core.query.QueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -46,5 +47,20 @@ public class ChatHistoryRepositoryImpl implements ChatHistoryRepository {
         QueryWrapper queryWrapper = QueryWrapper.create()
                 .where(CHAT_HISTORY.APP_ID.eq(appId));
         return chatHistoryMapper.deleteByQuery(queryWrapper) > 0;
+    }
+
+    @Override
+    public Page<ChatHistory> findPage(Page<ChatHistory> page, QueryWrapper queryWrapper) {
+        return chatHistoryMapper.paginate(page, queryWrapper);
+    }
+
+    @Override
+    public boolean removeByQuery(QueryWrapper queryWrapper) {
+        return chatHistoryMapper.deleteByQuery(queryWrapper) > 0;
+    }
+
+    @Override
+    public List<ChatHistory> findAll(QueryWrapper queryWrapper) {
+        return chatHistoryMapper.selectListByQuery(queryWrapper);
     }
 }
