@@ -16,5 +16,7 @@ public class AppAddRequest implements Serializable {
 
     private String tag;
 
+    private String codeGenType;
+
     private static final long serialVersionUID = 1L;
 }
