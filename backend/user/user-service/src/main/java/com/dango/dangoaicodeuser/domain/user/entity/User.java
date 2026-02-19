@@ -91,6 +91,18 @@ public class User implements Serializable {
     }
 
     /**
+     * 修改密码（验证旧密码后加密新密码）
+     */
+    public void changePassword(String rawOldPassword, String newPassword) {
+        if (!validatePassword(rawOldPassword)) {
+            throw new IllegalArgumentException("旧密码不正确");
+        }
+        validatePasswordFormat(newPassword);
+        this.userPassword = PASSWORD_ENCODER.encode(newPassword);
+        this.editTime = LocalDateTime.now();
+    }
+
+    /**
      * 初始化新用户
      */
     public static User createNewUser(String userAccount, String rawPassword) {
