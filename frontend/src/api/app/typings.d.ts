@@ -1,6 +1,9 @@
 declare namespace API {
   type AppAddRequest = {
     initPrompt?: string
+    appName?: string
+    tag?: string
+    codeGenType?: string
   }
 
   type AppAdminUpdateRequest = {
