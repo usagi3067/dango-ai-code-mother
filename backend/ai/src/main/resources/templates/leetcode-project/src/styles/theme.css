@@ -1,3 +1,6 @@
+/* ===== Tailwind CSS 导入 ===== */
+@import "tailwindcss";
+
 /* ===== CSS 变量定义 ===== */
 :root {
   --primary: #4a9eff;

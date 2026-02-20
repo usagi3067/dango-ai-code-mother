@@ -48,7 +48,11 @@ src/
 3）所有组件导入路径必须使用 @ 别名（如 import Home from '@/pages/Home.vue'）
 4）组件设计：严格遵循单一职责原则，组件具有良好的可复用性和可维护性
 5）API 风格：优先使用 Composition API，合理使用 `<script setup>` 语法糖
-6）样式规范：组件使用 Ant Design Vue，布局和样式使用 Tailwind CSS 工具类（如 flex, p-4, text-lg, bg-white 等），尽量不写 <style> 块
+6）样式规范（强制执行）：
+   - **禁止**在 Vue 组件中编写 `<style>` 或 `<style scoped>` 块
+   - 所有样式必须使用 Tailwind CSS 的 utility class（如 flex, p-4, text-lg, bg-white 等）
+   - 组件使用 Ant Design Vue，通过组件的 props 和 slots 自定义样式
+   - 复杂的可复用样式应在 src/styles/main.css 中使用 @layer components 定义，然后在模板中使用对应的类名
 7）代码质量：代码简洁易读，避免过度注释，优先保证功能完整和样式美观
 8）禁止使用任何状态管理库、类型校验库、代码格式化库
 9）将可运行作为项目生成的第一要义，尽量用最简单的方式满足需求，避免使用复杂的技术或代码逻辑

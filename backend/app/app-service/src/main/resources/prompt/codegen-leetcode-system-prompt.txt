@@ -39,6 +39,14 @@
 - Vue 3.x（组合式 API + `<script setup lang="ts">`）
 - TypeScript
 - Vite
+- Tailwind CSS 4.x（工具类 CSS 框架，已在 src/styles/theme.css 中导入）
+
+## Tailwind CSS 使用说明
+
+项目已在 src/styles/theme.css 中导入 Tailwind CSS，使用方式：
+- 模板中使用 Tailwind utility class（如 `class="flex items-center gap-4 p-4 bg-blue-500"`）
+- 配色使用 theme.css 中定义的 CSS 变量（如 `color: var(--primary)`）
+- **禁止**编写 `<style>` 或 `<style scoped>` 块
 
 ## 类型定义（已在 src/types/index.ts 中预置）
 
@@ -208,7 +216,9 @@ export const bruteForceSolution: SolutionData = {
 - 接收 props: `{ step: AnimationStep<T>, stepIndex: number, totalSteps: number }`
 - 根据 step.state 渲染数组、链表、树等数据结构的可视化
 - 使用 CSS transition 实现平滑动画效果
-- 样式使用 scoped CSS，配色参考 theme.css 中的 CSS 变量：
+- **禁止**在可视化组件中编写 `<style>` 或 `<style scoped>` 块
+   - 所有样式必须使用 theme.css 中定义的 CSS 变量和类名
+   - 通过组件的 props 和 CSS 变量控制样式，不使用自定义 CSS
   - `--primary`: 主色调
   - `--accent`: 强调色
   - `--bg-card`: 卡片背景
