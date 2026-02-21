@@ -305,7 +305,7 @@
 
     <!-- 区块 6：完整工作流架构图 -->
     <a-card title="完整工作流架构图" :bordered="false" style="margin-top: 24px">
-      <div id="workflow-graph" style="width: 100%; height: 560px"></div>
+      <div id="workflow-graph" style="width: 100%; height: 680px"></div>
     </a-card>
 
     <!-- 联系方式 -->
@@ -400,10 +400,13 @@ const COLORS: Record<string, { fill: string; stroke: string; text: string }> = {
   dark: { fill: '#434343', stroke: '#434343', text: '#ffffff' },
 }
 
-function n(id: string, label: string, color: string) {
+function n(id: string, label: string, color: string, combo?: string) {
   const c = COLORS[color]
-  return {
+  const isTerminal = label === 'START' || label === 'END'
+  const node: any = {
     id,
+    type: isTerminal ? 'circle' : 'rect',
+    combo,
     style: {
       labelText: label,
       labelFill: c.text,
@@ -413,9 +416,18 @@ function n(id: string, label: string, color: string) {
       fill: c.fill,
       stroke: c.stroke,
       lineWidth: 1.5,
-      radius: 4,
     },
   }
+  if (isTerminal) {
+    node.style.size = 32
+    node.style.labelFontSize = 9
+  } else {
+    // 根据文字长度动态计算宽度
+    const width = Math.max(label.length * 8 + 24, 80)
+    node.style.size = [width, 28]
+    node.style.radius = 4
+  }
+  return node
 }
 
 function e(source: string, target: string, label?: string, color?: string) {
@@ -442,37 +454,72 @@ function e(source: string, target: string, label?: string, color?: string) {
 }
 
 const nodes = [
-  n('start', 'START', 'blue'),
+  n('start', 'START', 'dark'),
   n('mode_router', 'mode_router', 'blue'),
-  // create
-  n('image_plan', 'image_plan', 'blue'),
-  n('content_img', 'content_image', 'blue'),
-  n('illustration', 'illustration', 'blue'),
-  n('diagram', 'diagram', 'blue'),
-  n('logo', 'logo', 'blue'),
-  n('img_agg', 'image_aggregator', 'blue'),
-  n('prompt_enh', 'prompt_enhancer', 'green'),
-  n('code_gen_1', 'code_generator', 'green'),
-  // leetcode
-  n('anim_adv', 'animation_advisor', 'cyan'),
-  n('lc_enh', 'lc_prompt_enhancer', 'cyan'),
-  n('code_gen_2', 'code_generator', 'green'),
-  // interview
-  n('iv_adv', 'interview_advisor', 'purple'),
-  n('iv_enh', 'iv_prompt_enhancer', 'purple'),
-  n('code_gen_3', 'code_generator', 'green'),
-  // existing_code
-  n('reader', 'code_reader', 'orange'),
-  n('classifier', 'intent_classifier', 'orange'),
-  n('planner', 'modification_planner', 'red'),
-  n('db_op', 'database_operator', 'red'),
-  n('modifier', 'code_modifier', 'red'),
-  n('qa', 'qa_node', 'gray'),
-  n('end_qa', 'END', 'dark'),
+  // create (combo: create_group)
+  n('image_plan', 'image_plan', 'blue', 'create_group'),
+  n('content_img', 'content_image', 'blue', 'create_group'),
+  n('illustration', 'illustration', 'blue', 'create_group'),
+  n('diagram', 'diagram', 'blue', 'create_group'),
+  n('logo', 'logo', 'blue', 'create_group'),
+  n('img_agg', 'image_aggregator', 'blue', 'create_group'),
+  n('prompt_enh', 'prompt_enhancer', 'green', 'create_group'),
+  n('code_gen_1', 'code_generator', 'green', 'create_group'),
+  // leetcode (combo: create_group)
+  n('anim_adv', 'animation_advisor', 'cyan', 'create_group'),
+  n('lc_enh', 'lc_prompt_enhancer', 'cyan', 'create_group'),
+  n('code_gen_2', 'code_generator', 'green', 'create_group'),
+  // interview (combo: create_group)
+  n('iv_adv', 'interview_advisor', 'purple', 'create_group'),
+  n('iv_enh', 'iv_prompt_enhancer', 'purple', 'create_group'),
+  n('code_gen_3', 'code_generator', 'green', 'create_group'),
+  // existing_code (combo: existing_group)
+  n('reader', 'code_reader', 'orange', 'existing_group'),
+  n('classifier', 'intent_classifier', 'orange', 'existing_group'),
+  n('planner', 'modification_planner', 'red', 'existing_group'),
+  n('db_op', 'database_operator', 'red', 'existing_group'),
+  n('modifier', 'code_modifier', 'red', 'existing_group'),
+  n('qa', 'qa_node', 'gray', 'existing_group'),
+  n('end_qa', 'END', 'dark', 'existing_group'),
   // build check
   n('build', 'build_check', 'green'),
   n('fixer', 'code_fixer', 'red'),
   n('end', 'END', 'dark'),
+]
+
+const combos = [
+  {
+    id: 'create_group',
+    style: {
+      labelText: '创建模式',
+      labelFontSize: 12,
+      labelFill: '#1890ff',
+      labelFontWeight: 600,
+      fill: '#f0f8ff',
+      stroke: '#1890ff',
+      lineWidth: 1,
+      lineDash: [4, 4],
+      radius: 8,
+      labelPosition: 'top',
+      padding: 16,
+    },
+  },
+  {
+    id: 'existing_group',
+    style: {
+      labelText: '已有代码模式',
+      labelFontSize: 12,
+      labelFill: '#fa8c16',
+      labelFontWeight: 600,
+      fill: '#fffaf0',
+      stroke: '#fa8c16',
+      lineWidth: 1,
+      lineDash: [4, 4],
+      radius: 8,
+      labelPosition: 'top',
+      padding: 16,
+    },
+  },
 ]
 
 const edges = [
@@ -533,14 +580,20 @@ onMounted(() => {
         endArrow: true,
       },
     },
+    combo: {
+      type: 'rect',
+      style: {
+        padding: 16,
+      },
+    },
     layout: {
       type: 'dagre',
       rankdir: 'TB',
-      nodesep: 20,
-      ranksep: 40,
+      nodesep: 16,
+      ranksep: 36,
     },
     behaviors: ['zoom-canvas', 'drag-canvas'],
-    data: { nodes, edges },
+    data: { nodes, edges, combos },
   })
 
   graph.render()
