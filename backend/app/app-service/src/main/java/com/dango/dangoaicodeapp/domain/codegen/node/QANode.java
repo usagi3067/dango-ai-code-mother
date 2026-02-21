@@ -42,7 +42,7 @@ public class QANode {
                 userInput
             );
 
-            StreamingChatModel streamingModel = SpringContextUtil.getBean(StreamingChatModel.class);
+            StreamingChatModel streamingModel = SpringContextUtil.getBean("odinaryStreamingChatModel", StreamingChatModel.class);
             QAService qaService = AiServices.builder(QAService.class)
                     .streamingChatModel(streamingModel)
                     .build();

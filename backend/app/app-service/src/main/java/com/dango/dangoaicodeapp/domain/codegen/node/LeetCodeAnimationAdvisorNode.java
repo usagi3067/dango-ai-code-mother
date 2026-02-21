@@ -37,7 +37,7 @@ public class LeetCodeAnimationAdvisorNode {
 
             String userPrompt = context.getEnhancedPrompt();
 
-            StreamingChatModel streamingModel = SpringContextUtil.getBean(StreamingChatModel.class);
+            StreamingChatModel streamingModel = SpringContextUtil.getBean("odinaryStreamingChatModel", StreamingChatModel.class);
             LeetCodeAnimationAdvisorService advisor = AiServices.builder(LeetCodeAnimationAdvisorService.class)
                     .streamingChatModel(streamingModel)
                     .build();
