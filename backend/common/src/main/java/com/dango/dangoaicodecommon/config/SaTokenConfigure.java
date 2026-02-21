@@ -3,6 +3,7 @@ package com.dango.dangoaicodecommon.config;
 import cn.dev33.satoken.interceptor.SaInterceptor;
 import cn.dev33.satoken.router.SaRouter;
 import cn.dev33.satoken.stp.StpUtil;
+import com.dango.dangoaicodecommon.log.IoLoggingInterceptor;
 import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -12,8 +13,19 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 @Configuration
 public class SaTokenConfigure implements WebMvcConfigurer {
+
+    private final IoLoggingInterceptor ioLoggingInterceptor;
+
+    public SaTokenConfigure(IoLoggingInterceptor ioLoggingInterceptor) {
+        this.ioLoggingInterceptor = ioLoggingInterceptor;
+    }
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        // IO 日志拦截器
+        registry.addInterceptor(ioLoggingInterceptor)
+                .addPathPatterns("/**")
+                .excludePathPatterns("/actuator/**");
         registry.addInterceptor(new SaInterceptor(handle -> {
             SaRouter.match("/**").check(r -> StpUtil.checkLogin());
         }) {
