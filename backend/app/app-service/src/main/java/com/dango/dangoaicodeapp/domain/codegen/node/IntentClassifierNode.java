@@ -1,10 +1,9 @@
 package com.dango.dangoaicodeapp.domain.codegen.node;
 
+import com.dango.dangoaicodeapp.domain.codegen.ai.factory.AiIntentClassifierServiceFactory;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.IntentClassifierService;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.utils.SpringContextUtil;
-import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.service.AiServices;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
@@ -40,10 +39,8 @@ public class IntentClassifierNode {
                 userInput
             );
 
-            ChatModel chatModel = SpringContextUtil.getBean(ChatModel.class);
-            IntentClassifierService classifier = AiServices.builder(IntentClassifierService.class)
-                    .chatModel(chatModel)
-                    .build();
+            AiIntentClassifierServiceFactory factory = SpringContextUtil.getBean(AiIntentClassifierServiceFactory.class);
+            IntentClassifierService classifier = factory.createService();
 
             String intent = classifier.classify(classifyInput).trim().toUpperCase();
             if (!"MODIFY".equals(intent) && !"QA".equals(intent)) {

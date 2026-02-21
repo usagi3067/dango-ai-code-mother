@@ -1,10 +1,9 @@
 package com.dango.dangoaicodeapp.domain.codegen.node;
 
+import com.dango.dangoaicodeapp.domain.codegen.ai.factory.AiQAServiceFactory;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.QAService;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.utils.SpringContextUtil;
-import dev.langchain4j.model.chat.StreamingChatModel;
-import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.TokenStream;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
@@ -42,10 +41,8 @@ public class QANode {
                 userInput
             );
 
-            StreamingChatModel streamingModel = SpringContextUtil.getBean("odinaryStreamingChatModel", StreamingChatModel.class);
-            QAService qaService = AiServices.builder(QAService.class)
-                    .streamingChatModel(streamingModel)
-                    .build();
+            AiQAServiceFactory factory = SpringContextUtil.getBean(AiQAServiceFactory.class);
+            QAService qaService = factory.createService();
 
             TokenStream tokenStream = qaService.answer(qaInput);
             CountDownLatch latch = new CountDownLatch(1);

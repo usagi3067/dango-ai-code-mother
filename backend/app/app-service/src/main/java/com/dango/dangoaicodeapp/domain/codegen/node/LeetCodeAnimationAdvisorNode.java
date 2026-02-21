@@ -1,10 +1,9 @@
 package com.dango.dangoaicodeapp.domain.codegen.node;
 
+import com.dango.dangoaicodeapp.domain.codegen.ai.factory.AiAnimationAdvisorServiceFactory;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.LeetCodeAnimationAdvisorService;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.utils.SpringContextUtil;
-import dev.langchain4j.model.chat.StreamingChatModel;
-import dev.langchain4j.service.AiServices;
 import dev.langchain4j.service.TokenStream;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
@@ -37,10 +36,8 @@ public class LeetCodeAnimationAdvisorNode {
 
             String userPrompt = context.getEnhancedPrompt();
 
-            StreamingChatModel streamingModel = SpringContextUtil.getBean("odinaryStreamingChatModel", StreamingChatModel.class);
-            LeetCodeAnimationAdvisorService advisor = AiServices.builder(LeetCodeAnimationAdvisorService.class)
-                    .streamingChatModel(streamingModel)
-                    .build();
+            AiAnimationAdvisorServiceFactory factory = SpringContextUtil.getBean(AiAnimationAdvisorServiceFactory.class);
+            LeetCodeAnimationAdvisorService advisor = factory.createService();
 
             TokenStream tokenStream = advisor.advise(userPrompt);
             StringBuilder adviceBuilder = new StringBuilder();
