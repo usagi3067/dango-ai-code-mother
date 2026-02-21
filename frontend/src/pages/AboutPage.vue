@@ -305,107 +305,7 @@
 
     <!-- 区块 6：完整工作流架构图 -->
     <a-card title="完整工作流架构图" :bordered="false" style="margin-top: 24px">
-      <div class="sm" ref="smRef">
-        <!-- SVG 连线层 -->
-        <svg class="sm-lines">
-          <defs>
-            <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-              <polygon points="0 0, 8 3, 0 6" fill="#d9d9d9" />
-            </marker>
-            <marker id="arrowhead-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-              <polygon points="0 0, 8 3, 0 6" fill="#f5222d" />
-            </marker>
-          </defs>
-          <!-- START → mode_router -->
-          <line x1="460" y1="22" x2="460" y2="58" />
-          <!-- mode_router → 4 分支 -->
-          <line x1="460" y1="82" x2="120" y2="118" />
-          <line x1="460" y1="82" x2="330" y2="118" />
-          <line x1="460" y1="82" x2="540" y2="118" />
-          <line x1="460" y1="82" x2="750" y2="118" />
-          <!-- create: image_plan → 4 并发 -->
-          <line x1="120" y1="142" x2="40" y2="178" />
-          <line x1="120" y1="142" x2="100" y2="178" />
-          <line x1="120" y1="142" x2="150" y2="178" />
-          <line x1="120" y1="142" x2="210" y2="178" />
-          <!-- 4 并发 → aggregator -->
-          <line x1="40" y1="202" x2="120" y2="238" />
-          <line x1="100" y1="202" x2="120" y2="238" />
-          <line x1="150" y1="202" x2="120" y2="238" />
-          <line x1="210" y1="202" x2="120" y2="238" />
-          <!-- aggregator → enhancer → generator -->
-          <line x1="120" y1="262" x2="120" y2="298" />
-          <line x1="120" y1="322" x2="120" y2="358" />
-          <!-- leetcode: advisor → enhancer → generator -->
-          <line x1="330" y1="142" x2="330" y2="178" />
-          <line x1="330" y1="202" x2="330" y2="238" />
-          <!-- interview: advisor → enhancer → generator -->
-          <line x1="540" y1="142" x2="540" y2="178" />
-          <line x1="540" y1="202" x2="540" y2="238" />
-          <!-- existing: reader → classifier -->
-          <line x1="750" y1="142" x2="750" y2="178" />
-          <!-- classifier → MODIFY / QA -->
-          <line x1="750" y1="202" x2="690" y2="238" />
-          <line x1="750" y1="202" x2="820" y2="238" />
-          <!-- MODIFY: planner → db_op → modifier -->
-          <line x1="690" y1="262" x2="690" y2="298" />
-          <line x1="690" y1="322" x2="690" y2="358" />
-          <!-- QA → END(qa) -->
-          <line x1="820" y1="262" x2="820" y2="298" />
-          <!-- 3 create 分支 → build_check -->
-          <line x1="120" y1="382" x2="420" y2="418" />
-          <line x1="330" y1="262" x2="420" y2="418" />
-          <line x1="540" y1="262" x2="420" y2="418" />
-          <!-- MODIFY → build_check -->
-          <line x1="690" y1="382" x2="420" y2="418" />
-          <!-- build_check → PASS / FAIL -->
-          <line x1="420" y1="442" x2="350" y2="478" />
-          <line x1="420" y1="442" x2="500" y2="478" />
-          <!-- code_fixer → build_check (循环) -->
-          <path d="M 540,490 C 580,490 580,430 540,430" fill="none" class="sm-loop" />
-        </svg>
-
-        <!-- 节点层 -->
-        <div class="sm-node sm-node--blue" style="left:410px;top:0">START</div>
-        <div class="sm-node sm-node--blue" style="left:400px;top:60px">mode_router</div>
-
-        <!-- create 分支 -->
-        <div class="sm-node sm-node--blue" style="left:75px;top:120px">image_plan</div>
-        <div class="sm-node sm-node--blue sm-node--xs" style="left:5px;top:180px">content</div>
-        <div class="sm-node sm-node--blue sm-node--xs" style="left:65px;top:180px">illustr</div>
-        <div class="sm-node sm-node--blue sm-node--xs" style="left:120px;top:180px">diagram</div>
-        <div class="sm-node sm-node--blue sm-node--xs" style="left:180px;top:180px">logo</div>
-        <div class="sm-node sm-node--blue" style="left:62px;top:240px">img_aggregator</div>
-        <div class="sm-node sm-node--green" style="left:60px;top:300px">prompt_enhancer</div>
-        <div class="sm-node sm-node--green" style="left:62px;top:360px">code_generator</div>
-
-        <!-- leetcode 分支 -->
-        <div class="sm-node sm-node--cyan" style="left:275px;top:120px">anim_advisor</div>
-        <div class="sm-node sm-node--cyan" style="left:265px;top:180px">lc_prompt_enh</div>
-        <div class="sm-node sm-node--green" style="left:272px;top:240px">code_generator</div>
-
-        <!-- interview 分支 -->
-        <div class="sm-node sm-node--purple" style="left:485px;top:120px">iv_advisor</div>
-        <div class="sm-node sm-node--purple" style="left:475px;top:180px">iv_prompt_enh</div>
-        <div class="sm-node sm-node--green" style="left:482px;top:240px">code_generator</div>
-
-        <!-- existing_code 分支 -->
-        <div class="sm-node sm-node--orange" style="left:700px;top:120px">code_reader</div>
-        <div class="sm-node sm-node--orange" style="left:690px;top:180px">intent_classifier</div>
-        <div class="sm-node sm-node--red" style="left:635px;top:240px">mod_planner</div>
-        <div class="sm-node sm-node--red" style="left:640px;top:300px">db_operator</div>
-        <div class="sm-node sm-node--red" style="left:635px;top:360px">code_modifier</div>
-        <div class="sm-node sm-node--gray" style="left:785px;top:240px">qa_node</div>
-        <div class="sm-node sm-node--dark" style="left:795px;top:300px">END</div>
-
-        <!-- build_check -->
-        <div class="sm-node sm-node--green" style="left:372px;top:420px">build_check</div>
-        <div class="sm-node sm-node--dark" style="left:325px;top:480px">END</div>
-        <div class="sm-node sm-node--red" style="left:455px;top:480px">code_fixer</div>
-        <span class="sm-label" style="left:290px;top:455px">PASS</span>
-        <span class="sm-label" style="left:470px;top:455px">FAIL</span>
-        <span class="sm-label sm-label--loop" style="left:555px;top:450px">循环</span>
-      </div>
+      <div id="workflow-graph" style="width: 100%; height: 560px"></div>
     </a-card>
 
     <!-- 联系方式 -->
@@ -483,6 +383,175 @@ const moreModes = [
     description: '输入面试题，AI 自动生成带图解的可视化讲解页面（Advisor → Prompt 增强 → 代码生成）',
   },
 ]
+
+import { onMounted, onUnmounted } from 'vue'
+import { Graph } from '@antv/g6'
+
+let graph: Graph | null = null
+
+const COLORS: Record<string, { fill: string; stroke: string; text: string }> = {
+  blue: { fill: '#e6f7ff', stroke: '#1890ff', text: '#096dd9' },
+  cyan: { fill: '#e6fffb', stroke: '#13c2c2', text: '#08979c' },
+  purple: { fill: '#f9f0ff', stroke: '#722ed1', text: '#531dab' },
+  green: { fill: '#f6ffed', stroke: '#52c41a', text: '#389e0d' },
+  orange: { fill: '#fff7e6', stroke: '#fa8c16', text: '#d46b08' },
+  red: { fill: '#fff1f0', stroke: '#f5222d', text: '#cf1322' },
+  gray: { fill: '#f5f5f5', stroke: '#d9d9d9', text: '#595959' },
+  dark: { fill: '#434343', stroke: '#434343', text: '#ffffff' },
+}
+
+function n(id: string, label: string, color: string) {
+  const c = COLORS[color]
+  return {
+    id,
+    style: {
+      labelText: label,
+      labelFill: c.text,
+      labelFontSize: 11,
+      labelFontWeight: 600,
+      labelFontFamily: "'SFMono-Regular', Consolas, monospace",
+      fill: c.fill,
+      stroke: c.stroke,
+      lineWidth: 1.5,
+      radius: 4,
+    },
+  }
+}
+
+function e(source: string, target: string, label?: string, color?: string) {
+  const edge: any = {
+    source,
+    target,
+    style: {
+      stroke: color || '#d9d9d9',
+      lineWidth: 1.2,
+      endArrow: true,
+      endArrowFill: color || '#d9d9d9',
+      endArrowSize: 6,
+    },
+  }
+  if (label) {
+    edge.style.labelText = label
+    edge.style.labelFontSize = 9
+    edge.style.labelFill = color || '#8c8c8c'
+    edge.style.labelBackground = true
+    edge.style.labelBackgroundFill = '#fafafa'
+    edge.style.labelBackgroundRadius = 2
+  }
+  return edge
+}
+
+const nodes = [
+  n('start', 'START', 'blue'),
+  n('mode_router', 'mode_router', 'blue'),
+  // create
+  n('image_plan', 'image_plan', 'blue'),
+  n('content_img', 'content_image', 'blue'),
+  n('illustration', 'illustration', 'blue'),
+  n('diagram', 'diagram', 'blue'),
+  n('logo', 'logo', 'blue'),
+  n('img_agg', 'image_aggregator', 'blue'),
+  n('prompt_enh', 'prompt_enhancer', 'green'),
+  n('code_gen_1', 'code_generator', 'green'),
+  // leetcode
+  n('anim_adv', 'animation_advisor', 'cyan'),
+  n('lc_enh', 'lc_prompt_enhancer', 'cyan'),
+  n('code_gen_2', 'code_generator', 'green'),
+  // interview
+  n('iv_adv', 'interview_advisor', 'purple'),
+  n('iv_enh', 'iv_prompt_enhancer', 'purple'),
+  n('code_gen_3', 'code_generator', 'green'),
+  // existing_code
+  n('reader', 'code_reader', 'orange'),
+  n('classifier', 'intent_classifier', 'orange'),
+  n('planner', 'modification_planner', 'red'),
+  n('db_op', 'database_operator', 'red'),
+  n('modifier', 'code_modifier', 'red'),
+  n('qa', 'qa_node', 'gray'),
+  n('end_qa', 'END', 'dark'),
+  // build check
+  n('build', 'build_check', 'green'),
+  n('fixer', 'code_fixer', 'red'),
+  n('end', 'END', 'dark'),
+]
+
+const edges = [
+  e('start', 'mode_router'),
+  // mode_router → 4 branches
+  e('mode_router', 'image_plan', 'create', '#1890ff'),
+  e('mode_router', 'anim_adv', 'leetcode', '#13c2c2'),
+  e('mode_router', 'iv_adv', 'interview', '#722ed1'),
+  e('mode_router', 'reader', 'existing', '#fa8c16'),
+  // create branch
+  e('image_plan', 'content_img'),
+  e('image_plan', 'illustration'),
+  e('image_plan', 'diagram'),
+  e('image_plan', 'logo'),
+  e('content_img', 'img_agg'),
+  e('illustration', 'img_agg'),
+  e('diagram', 'img_agg'),
+  e('logo', 'img_agg'),
+  e('img_agg', 'prompt_enh'),
+  e('prompt_enh', 'code_gen_1'),
+  e('code_gen_1', 'build'),
+  // leetcode branch
+  e('anim_adv', 'lc_enh'),
+  e('lc_enh', 'code_gen_2'),
+  e('code_gen_2', 'build'),
+  // interview branch
+  e('iv_adv', 'iv_enh'),
+  e('iv_enh', 'code_gen_3'),
+  e('code_gen_3', 'build'),
+  // existing code branch
+  e('reader', 'classifier'),
+  e('classifier', 'planner', 'MODIFY', '#f5222d'),
+  e('classifier', 'qa', 'QA', '#8c8c8c'),
+  e('planner', 'db_op'),
+  e('db_op', 'modifier'),
+  e('modifier', 'build'),
+  e('qa', 'end_qa'),
+  // build check
+  e('build', 'end', 'PASS', '#52c41a'),
+  e('build', 'fixer', 'FAIL', '#f5222d'),
+  e('fixer', 'build', '循环', '#f5222d'),
+]
+
+onMounted(() => {
+  graph = new Graph({
+    container: 'workflow-graph',
+    autoFit: 'view',
+    padding: [20, 20, 20, 20],
+    node: {
+      type: 'rect',
+      style: {
+        size: [120, 28],
+      },
+    },
+    edge: {
+      type: 'cubic-vertical',
+      style: {
+        endArrow: true,
+      },
+    },
+    layout: {
+      type: 'dagre',
+      rankdir: 'TB',
+      nodesep: 20,
+      ranksep: 40,
+    },
+    behaviors: ['zoom-canvas', 'drag-canvas'],
+    data: { nodes, edges },
+  })
+
+  graph.render()
+})
+
+onUnmounted(() => {
+  if (graph) {
+    graph.destroy()
+    graph = null
+  }
+})
 </script>
 
 <style scoped>
@@ -608,80 +677,6 @@ const moreModes = [
   max-width: 700px;
   position: relative;
   margin-top: 4px;
-}
-
-/* 状态机风格工作流图 */
-.sm {
-  position: relative;
-  width: 870px;
-  height: 520px;
-  background: #fafafa;
-  border: 1px solid #f0f0f0;
-  border-radius: 8px;
-  overflow-x: auto;
-}
-
-.sm-lines {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
-
-.sm-lines line {
-  stroke: #d9d9d9;
-  stroke-width: 1.5;
-  marker-end: url(#arrowhead);
-}
-
-.sm-lines path.sm-loop {
-  stroke: #f5222d;
-  stroke-width: 1.5;
-  stroke-dasharray: 4 3;
-  marker-end: url(#arrowhead-red);
-}
-
-.sm-node {
-  position: absolute;
-  padding: 3px 10px;
-  border-radius: 4px;
-  border: 1.5px solid #d9d9d9;
-  font-size: 11px;
-  font-weight: 600;
-  font-family: 'SFMono-Regular', Consolas, monospace;
-  white-space: nowrap;
-  background: #fff;
-  text-align: center;
-  z-index: 1;
-}
-
-.sm-node--xs {
-  padding: 2px 6px;
-  font-size: 9px;
-}
-
-.sm-node--blue { border-color: #1890ff; background: #e6f7ff; color: #096dd9; }
-.sm-node--cyan { border-color: #13c2c2; background: #e6fffb; color: #08979c; }
-.sm-node--purple { border-color: #722ed1; background: #f9f0ff; color: #531dab; }
-.sm-node--green { border-color: #52c41a; background: #f6ffed; color: #389e0d; }
-.sm-node--orange { border-color: #fa8c16; background: #fff7e6; color: #d46b08; }
-.sm-node--red { border-color: #f5222d; background: #fff1f0; color: #cf1322; }
-.sm-node--gray { border-color: #d9d9d9; background: #f5f5f5; color: #595959; }
-.sm-node--dark { border-color: #434343; background: #434343; color: #fff; }
-
-.sm-label {
-  position: absolute;
-  font-size: 10px;
-  color: #8c8c8c;
-  font-family: 'SFMono-Regular', Consolas, monospace;
-  z-index: 1;
-}
-
-.sm-label--loop {
-  color: #f5222d;
-  font-style: italic;
 }
 
 
