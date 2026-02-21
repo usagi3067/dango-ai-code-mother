@@ -162,7 +162,7 @@ public class AppApplicationServiceImpl implements AppApplicationService {
 
         App app = App.createNew(userId, initPrompt, appName, tag, appAddRequest.getCodeGenType());
         appRepository.save(app);
-        log.info("应用创建成功，ID: {}, 类型: {}", app.getId(), CodeGenTypeEnum.VUE_PROJECT.getValue());
+        log.info("应用创建成功，ID: {}, 类型: {}", app.getId(), app.getCodeGenType());
         return app.getId();
     }
 

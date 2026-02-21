@@ -17,6 +17,7 @@ spring:
     allow-circular-references: true
 server:
   port: 8124
+  max-http-header-size: 131072
   servlet:
     context-path: /api
 sa-token:
