@@ -37,7 +37,7 @@ public class LeetCodeAnimationAdvisorNode {
             context.restoreMonitorContext();
             context.emitNodeMessage(NODE_NAME, "正在分析题目并生成动画设计建议...\n");
 
-            String userPrompt = context.getEnhancedPrompt();
+            String userPrompt = context.getOriginalPrompt();
 
             AiAnimationAdvisorServiceFactory factory = SpringContextUtil.getBean(AiAnimationAdvisorServiceFactory.class);
             LeetCodeAnimationAdvisorService advisor = factory.createService();
@@ -70,9 +70,7 @@ public class LeetCodeAnimationAdvisorNode {
             }
 
             String advice = adviceBuilder.toString();
-            String enhanced = context.getEnhancedPrompt() +
-                    "\n\n## 动画设计建议（由 AI 分析生成，请严格参考）\n" + advice;
-            context.setEnhancedPrompt(enhanced);
+            context.setEnhancedPrompt(advice);
 
             context.emitNodeMessage(NODE_NAME, "\n动画设计建议生成完成\n");
             context.emitNodeComplete(NODE_NAME);

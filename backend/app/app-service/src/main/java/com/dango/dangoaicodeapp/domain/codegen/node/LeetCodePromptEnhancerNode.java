@@ -29,6 +29,7 @@ public class LeetCodePromptEnhancerNode {
             context.emitNodeMessage(NODE_NAME, "正在构建力扣题解生成提示词...\n");
 
             String originalPrompt = context.getOriginalPrompt();
+            String advisorAdvice = context.getEnhancedPrompt();
 
             StringBuilder enhanced = new StringBuilder();
             enhanced.append(originalPrompt);
@@ -41,6 +42,11 @@ public class LeetCodePromptEnhancerNode {
             enhanced.append("- `src/solutions/<name>/steps.js` — 动画步骤数据\n");
             enhanced.append("- `src/solutions/<name>/Visualization.jsx` — GSAP 可视化组件\n");
             enhanced.append("- `src/solutions/index.js` — 解法注册\n");
+
+            if (advisorAdvice != null && !advisorAdvice.isBlank()) {
+                enhanced.append("\n## 动画设计建议（由 AI 分析生成，请严格参考）\n");
+                enhanced.append(advisorAdvice);
+            }
 
             context.setEnhancedPrompt(enhanced.toString());
 

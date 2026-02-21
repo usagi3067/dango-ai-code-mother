@@ -49,7 +49,7 @@ import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
  *   image_plan → [并发图片收集] → image_aggregator → prompt_enhancer → code_generator
  *
  * 力扣创建模式子图：
- *   leetcode_prompt_enhancer → animation_advisor → code_generator
+ *   animation_advisor → leetcode_prompt_enhancer → code_generator
  *
  * 面试题解创建模式子图：
  *   interview_prompt_enhancer → code_generator
@@ -247,16 +247,16 @@ public class CodeGenWorkflow {
     }
 
     /**
-     * 力扣创建模式子图：提示词增强 → 动画设计建议 → 代码生成
+     * 力扣创建模式子图：动画设计建议 → 提示词增强 → 代码生成
      */
     private StateGraph<MessagesState<String>> buildLeetCodeCreateSubGraph() throws GraphStateException {
         return new MessagesStateGraph<String>()
-                .addNode(NODE_LEETCODE_PROMPT_ENHANCER, LeetCodePromptEnhancerNode.create())
                 .addNode(NODE_ANIMATION_ADVISOR, LeetCodeAnimationAdvisorNode.create())
+                .addNode(NODE_LEETCODE_PROMPT_ENHANCER, LeetCodePromptEnhancerNode.create())
                 .addNode(NODE_CODE_GENERATOR, CodeGeneratorNode.create())
-                .addEdge(START, NODE_LEETCODE_PROMPT_ENHANCER)
-                .addEdge(NODE_LEETCODE_PROMPT_ENHANCER, NODE_ANIMATION_ADVISOR)
-                .addEdge(NODE_ANIMATION_ADVISOR, NODE_CODE_GENERATOR)
+                .addEdge(START, NODE_ANIMATION_ADVISOR)
+                .addEdge(NODE_ANIMATION_ADVISOR, NODE_LEETCODE_PROMPT_ENHANCER)
+                .addEdge(NODE_LEETCODE_PROMPT_ENHANCER, NODE_CODE_GENERATOR)
                 .addEdge(NODE_CODE_GENERATOR, END);
     }
 
