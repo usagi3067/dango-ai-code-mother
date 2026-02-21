@@ -305,9 +305,134 @@
 
     <!-- 区块 6：完整工作流架构图 -->
     <a-card title="完整工作流架构图" :bordered="false" style="margin-top: 24px">
-      <div class="workflow-diagram">
-        <pre>{{ workflowDiagram }}</pre>
+      <!-- 主工作流 -->
+      <a-divider orientation="left">主工作流</a-divider>
+      <div class="flow-tree">
+        <div class="flow-node flow-node--blue"><div class="flow-content"><strong>START</strong></div></div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node flow-node--blue">
+          <div class="flow-content"><strong>mode_router</strong></div>
+        </div>
+        <div class="flow-branch flow-branch--4col">
+          <div class="flow-branch-line-4"></div>
+          <div class="flow-branch-sides flow-branch-sides--4col">
+            <div class="flow-branch-col">
+              <div class="flow-branch-label"><a-tag color="blue">create</a-tag></div>
+              <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>创建子图</strong></div></div>
+            </div>
+            <div class="flow-branch-col">
+              <div class="flow-branch-label"><a-tag color="cyan">leetcode</a-tag></div>
+              <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>力扣子图</strong></div></div>
+            </div>
+            <div class="flow-branch-col">
+              <div class="flow-branch-label"><a-tag color="purple">interview</a-tag></div>
+              <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>面试子图</strong></div></div>
+            </div>
+            <div class="flow-branch-col">
+              <div class="flow-branch-label"><a-tag color="orange">existing_code</a-tag></div>
+              <div class="flow-node flow-node--orange flow-node--sm"><div class="flow-content"><strong>已有代码子图</strong></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="flow-arrow">↓ (MODIFY 分支)</div>
+        <div class="flow-node flow-node--green"><div class="flow-content"><strong>build_check_subgraph</strong></div></div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node flow-node--gray"><div class="flow-content"><strong>END</strong></div></div>
       </div>
+
+      <!-- 创建模式子图 -->
+      <a-divider orientation="left">创建模式子图（Vue 应用）</a-divider>
+      <div class="flow-tree">
+        <div class="flow-node flow-node--blue"><div class="flow-content"><strong>image_plan</strong></div></div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-parallel">
+          <div class="flow-parallel-label"><a-tag color="blue">4 路并发</a-tag></div>
+          <div class="flow-parallel-line"></div>
+          <div class="flow-parallel-items">
+            <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>content_image</strong></div></div>
+            <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>illustration</strong></div></div>
+            <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>diagram</strong></div></div>
+            <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>logo</strong></div></div>
+          </div>
+          <div class="flow-parallel-line-bottom"></div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node flow-node--blue"><div class="flow-content"><strong>image_aggregator</strong></div></div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node flow-node--green"><div class="flow-content"><strong>prompt_enhancer</strong></div></div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node flow-node--green"><div class="flow-content"><strong>code_generator</strong></div></div>
+      </div>
+
+      <!-- 已有代码子图 -->
+      <a-divider orientation="left">已有代码子图（修改 / 问答）</a-divider>
+      <div class="flow-tree">
+        <div class="flow-node flow-node--orange"><div class="flow-content"><strong>code_reader</strong></div></div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node flow-node--orange"><div class="flow-content"><strong>intent_classifier</strong></div></div>
+        <div class="flow-branch">
+          <div class="flow-branch-line"></div>
+          <div class="flow-branch-sides">
+            <div class="flow-branch-left">
+              <div class="flow-branch-label"><a-tag color="red">MODIFY</a-tag></div>
+              <div class="flow-node flow-node--red"><div class="flow-content"><strong>modification_planner</strong></div></div>
+              <div class="flow-arrow">↓</div>
+              <div class="flow-node flow-node--red"><div class="flow-content"><strong>database_operator</strong></div></div>
+              <div class="flow-arrow">↓</div>
+              <div class="flow-node flow-node--red"><div class="flow-content"><strong>code_modifier</strong></div></div>
+            </div>
+            <div class="flow-branch-right">
+              <div class="flow-branch-label"><a-tag>QA</a-tag></div>
+              <div class="flow-node flow-node--gray"><div class="flow-content"><strong>qa_node</strong></div></div>
+              <div class="flow-arrow">↓</div>
+              <div class="flow-node flow-node--gray"><div class="flow-content"><strong>END</strong></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 构建检查修复子图 -->
+      <a-divider orientation="left">构建检查修复子图</a-divider>
+      <div class="flow-tree">
+        <div class="flow-node flow-node--green"><div class="flow-content"><strong>build_check</strong></div></div>
+        <div class="flow-branch">
+          <div class="flow-branch-line"></div>
+          <div class="flow-branch-sides">
+            <div class="flow-branch-left">
+              <div class="flow-branch-label"><a-tag color="green">PASS</a-tag></div>
+              <div class="flow-node flow-node--green"><div class="flow-content"><strong>END</strong></div></div>
+            </div>
+            <div class="flow-branch-right">
+              <div class="flow-branch-label"><a-tag color="red">FAIL</a-tag></div>
+              <div class="flow-node flow-node--red"><div class="flow-content"><strong>code_fixer</strong></div></div>
+              <div class="flow-arrow">↑ 循环</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 力扣 & 面试子图 -->
+      <a-divider orientation="left">力扣 / 面试创建子图</a-divider>
+      <a-row :gutter="24">
+        <a-col :span="12">
+          <div class="flow-tree">
+            <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>animation_advisor</strong></div></div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>leetcode_prompt_enhancer</strong></div></div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-node flow-node--green flow-node--sm"><div class="flow-content"><strong>code_generator</strong></div></div>
+          </div>
+        </a-col>
+        <a-col :span="12">
+          <div class="flow-tree">
+            <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>interview_advisor</strong></div></div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>interview_prompt_enhancer</strong></div></div>
+            <div class="flow-arrow">↓</div>
+            <div class="flow-node flow-node--green flow-node--sm"><div class="flow-content"><strong>code_generator</strong></div></div>
+          </div>
+        </a-col>
+      </a-row>
     </a-card>
 
     <!-- 联系方式 -->
@@ -344,13 +469,11 @@ import {
   CheckCircleOutlined,
   ToolOutlined,
   CloudServerOutlined,
-  SendOutlined,
   EyeOutlined,
   ClusterOutlined,
   PlayCircleOutlined,
   ExperimentOutlined,
 } from '@ant-design/icons-vue'
-import { h } from 'vue'
 
 const infraFeatures = [
   {
@@ -387,56 +510,6 @@ const moreModes = [
     description: '输入面试题，AI 自动生成带图解的可视化讲解页面（Advisor → Prompt 增强 → 代码生成）',
   },
 ]
-
-const workflowDiagram = `┌─────────────────────────────────────────────────────────────────────────────────┐
-│                              主工作流 (Main Workflow)                            │
-│                                                                                 │
-│  START → mode_router → ┬─ [create] ──────────────────────────────┐              │
-│                         ├─ [leetcode_create] ─────────────────────┤              │
-│                         ├─ [interview_create] ────────────────────┤              │
-│                         └─ [existing_code] ──┬─ [MODIFY] ────────┤              │
-│                                              └─ [QA] ──→ END     │              │
-│                                                                   ↓              │
-│                                                          build_check_subgraph    │
-│                                                                   ↓              │
-│                                                                  END             │
-└─────────────────────────────────────────────────────────────────────────────────┘
-
-┌─ 创建模式子图 (Vue 应用) ───────────────────────────────────────────────────────┐
-│                                                                                 │
-│                         ┌→ content_image_collector ─┐                           │
-│  image_plan ───────────→├→ illustration_collector  ─┼→ image_aggregator         │
-│                         ├→ diagram_collector       ─┘        ↓                  │
-│                         └→ logo_collector ──────────→  prompt_enhancer           │
-│                                                              ↓                  │
-│                                                       code_generator            │
-└─────────────────────────────────────────────────────────────────────────────────┘
-
-┌─ 已有代码子图 (修改/问答) ──────────────────────────────────────────────────────┐
-│                                                                                 │
-│  code_reader → intent_classifier → ┬─ [MODIFY] → modification_planner          │
-│                                    │                     ↓                      │
-│                                    │              ┌─ [has_sql] → database_operator│
-│                                    │              └─ [skip_sql] ─┐               │
-│                                    │                     ↓       ↓               │
-│                                    │               code_modifier ←┘              │
-│                                    └─ [QA] → qa_node → END                      │
-└─────────────────────────────────────────────────────────────────────────────────┘
-
-┌─ 构建检查修复子图 ──────────────────────────────────────────────────────────────┐
-│                                                                                 │
-│  build_check ──→ [FAIL & 未达上限] ──→ code_fixer ──→ build_check (循环)        │
-│       ↓                                                                         │
-│  [PASS] → END                                                                   │
-└─────────────────────────────────────────────────────────────────────────────────┘
-
-┌─ 力扣创建子图 ──────────────────────────────────────────────────────────────────┐
-│  animation_advisor → leetcode_prompt_enhancer → code_generator                  │
-└─────────────────────────────────────────────────────────────────────────────────┘
-
-┌─ 面试题解创建子图 ──────────────────────────────────────────────────────────────┐
-│  interview_animation_advisor → interview_prompt_enhancer → code_generator       │
-└─────────────────────────────────────────────────────────────────────────────────┘`
 </script>
 
 <style scoped>
@@ -480,23 +553,6 @@ const workflowDiagram = `┌─────────────────�
   font-size: 13px;
   line-height: 1.6;
   color: #333;
-}
-
-.workflow-diagram {
-  background: #fafafa;
-  border: 1px solid #f0f0f0;
-  border-radius: 6px;
-  padding: 16px;
-  overflow-x: auto;
-}
-
-.workflow-diagram pre {
-  margin: 0;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  color: #333;
-  white-space: pre;
 }
 
 @media (max-width: 768px) {
@@ -579,6 +635,37 @@ const workflowDiagram = `┌─────────────────�
   max-width: 700px;
   position: relative;
   margin-top: 4px;
+}
+
+/* 4 列分支（主工作流 mode_router） */
+.flow-branch--4col {
+  max-width: 800px;
+}
+
+.flow-branch-line-4 {
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 20px;
+  border-left: 2px solid #d9d9d9;
+  border-right: 2px solid #d9d9d9;
+  border-top: 2px solid #d9d9d9;
+  border-radius: 8px 8px 0 0;
+}
+
+.flow-branch-sides--4col {
+  display: flex;
+  gap: 16px;
+  padding-top: 24px;
+  justify-content: center;
+}
+
+.flow-branch-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
 }
 
 .flow-branch-line {
