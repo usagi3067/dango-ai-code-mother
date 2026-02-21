@@ -14,7 +14,9 @@ public enum OperationModeEnum {
 
     CREATE("create", "创建模式"),
     MODIFY("modify", "修改模式"),
-    FIX("fix", "修复模式");
+    FIX("fix", "修复模式"),
+    EXISTING_CODE("existing_code", "已有代码模式"),
+    QA("qa", "问答模式");
 
     private final String value;
     private final String text;
