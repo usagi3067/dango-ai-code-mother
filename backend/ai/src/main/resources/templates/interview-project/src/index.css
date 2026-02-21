@@ -1,0 +1,6 @@
+@import "tailwindcss";
+
+body {
+  @apply bg-[#1a1a2e] text-gray-200 min-h-screen;
+  font-family: -apple-system, "Microsoft YaHei", "PingFang SC", sans-serif;
+}
