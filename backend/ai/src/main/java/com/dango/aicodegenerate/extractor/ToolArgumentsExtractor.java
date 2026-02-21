@@ -205,7 +205,8 @@ public class ToolArgumentsExtractor {
         if (currentStreamingParam == null) {
             for (String param : toolConfig.streamingParams()) {
                 String searchKey = "\"" + param + "\"";
-                int keyIndex = raw.indexOf(searchKey, parsePosition);
+                // 从 buffer 开头搜索，支持 content 在 triggerParam 前面的情况（如 Claude 模型）
+                int keyIndex = raw.indexOf(searchKey);
                 if (keyIndex != -1) {
                     int colonIndex = raw.indexOf(':', keyIndex + searchKey.length());
                     if (colonIndex != -1) {
