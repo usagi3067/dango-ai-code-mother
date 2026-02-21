@@ -83,7 +83,6 @@ public class CodeGenWorkflow {
     private static final String SUBGRAPH_CREATE = "create_subgraph";
     private static final String SUBGRAPH_LEETCODE_CREATE = "leetcode_create_subgraph";
     private static final String SUBGRAPH_INTERVIEW_CREATE = "interview_create_subgraph";
-    private static final String SUBGRAPH_MODIFY = "modify_subgraph";
     private static final String SUBGRAPH_EXISTING_CODE = "existing_code_subgraph";
     private static final String SUBGRAPH_BUILD_CHECK = "build_check_subgraph";
 
@@ -308,58 +307,6 @@ public class CodeGenWorkflow {
     }
 
     /**
-     * 构建修改模式子图
-     *
-     * 包含节点：
-     * - 修改规划节点：分析是否需要数据库操作
-     * - 数据库操作节点：执行 SQL 语句（仅有 SQL 时）
-     * - 代码修改节点：使用修改专用提示词进行增量修改
-     *
-     * 注意：code_reader 已提前到 existing_code_subgraph 中执行
-     *
-     * 流程：
-     * ModificationPlanner → [条件边] → DatabaseOperator → CodeModifier
-     *                         ↓
-     *                   (无需SQL时直接跳过)
-     *                         ↓
-     *                   CodeModifier
-     *
-     * @return 修改模式子图
-     */
-    private StateGraph<MessagesState<String>> buildModifyModeSubGraph() throws GraphStateException {
-        // 获取 DatabaseOperatorNode Bean（因为它需要 Dubbo 注入）
-        DatabaseOperatorNode databaseOperatorNode = com.dango.dangoaicodecommon.utils.SpringContextUtil
-                .getBean(DatabaseOperatorNode.class);
-
-        return new MessagesStateGraph<String>()
-                // 修改规划节点
-                .addNode(NODE_MODIFICATION_PLANNER, ModificationPlannerNode.create())
-
-                // 数据库操作节点（使用实例方法，因为需要 Dubbo 注入）
-                .addNode(NODE_DATABASE_OPERATOR, databaseOperatorNode.create())
-
-                // 代码修改节点
-                .addNode(NODE_CODE_MODIFIER, CodeModifierNode.create())
-
-                // 入口边：直接从修改规划开始（code_reader 已在 existing_code_subgraph 中执行）
-                .addEdge(START, NODE_MODIFICATION_PLANNER)
-
-                // 修改规划后的条件边：根据 sqlStatements 决定是否执行 SQL
-                .addConditionalEdges(NODE_MODIFICATION_PLANNER,
-                        edge_async(this::routeAfterModificationPlanning),
-                        Map.of(
-                                ROUTE_EXECUTE_SQL, NODE_DATABASE_OPERATOR,
-                                ROUTE_SKIP_SQL, NODE_CODE_MODIFIER
-                        ))
-
-                // 数据库操作完成后进入代码修改
-                .addEdge(NODE_DATABASE_OPERATOR, NODE_CODE_MODIFIER)
-
-                // 出口
-                .addEdge(NODE_CODE_MODIFIER, END);
-    }
-
-    /**
      * 修改规划后的路由逻辑
      *
      * 判断逻辑：
@@ -397,18 +344,23 @@ public class CodeGenWorkflow {
      * 包含节点：
      * - 代码读取节点：读取现有项目结构
      * - 意图识别节点：判断用户意图为修改代码还是问答
-     * - 修改模式子图：修改代码流程
+     * - 修改流程节点（展平）：modification_planner → database_operator → code_modifier
      * - 问答节点：回答用户问题
      *
      * 流程：
      * code_reader → intent_classifier → [条件边]
-     *                                   ├── modify_subgraph → END
+     *                                   ├── modification_planner → [条件边] → database_operator → code_modifier → END
+     *                                   │                           └── (skip_sql) → code_modifier → END
      *                                   └── qa_node → END
+     *
+     * 注意：修改流程直接展平在此子图中，避免 LangGraph4j 不支持的子图嵌套
      *
      * @return 已有代码子图
      */
     private StateGraph<MessagesState<String>> buildExistingCodeSubGraph() throws GraphStateException {
-        StateGraph<MessagesState<String>> modifySubGraph = buildModifyModeSubGraph();
+        // 获取 DatabaseOperatorNode Bean（因为它需要 Dubbo 注入）
+        DatabaseOperatorNode databaseOperatorNode = com.dango.dangoaicodecommon.utils.SpringContextUtil
+                .getBean(DatabaseOperatorNode.class);
 
         return new MessagesStateGraph<String>()
                 // 代码读取节点
@@ -417,8 +369,10 @@ public class CodeGenWorkflow {
                 // 意图识别节点
                 .addNode(NODE_INTENT_CLASSIFIER, IntentClassifierNode.create())
 
-                // 修改模式子图
-                .addNode(SUBGRAPH_MODIFY, modifySubGraph)
+                // 修改流程节点（展平）
+                .addNode(NODE_MODIFICATION_PLANNER, ModificationPlannerNode.create())
+                .addNode(NODE_DATABASE_OPERATOR, databaseOperatorNode.create())
+                .addNode(NODE_CODE_MODIFIER, CodeModifierNode.create())
 
                 // 问答节点
                 .addNode(NODE_QA, QANode.create())
@@ -433,12 +387,23 @@ public class CodeGenWorkflow {
                 .addConditionalEdges(NODE_INTENT_CLASSIFIER,
                         edge_async(IntentClassifierNode::routeByIntent),
                         Map.of(
-                                ROUTE_MODIFY, SUBGRAPH_MODIFY,
+                                ROUTE_MODIFY, NODE_MODIFICATION_PLANNER,
                                 ROUTE_QA, NODE_QA
                         ))
 
-                // 两个分支都到出口
-                .addEdge(SUBGRAPH_MODIFY, END)
+                // 修改规划后的条件边：根据 sqlStatements 决定是否执行 SQL
+                .addConditionalEdges(NODE_MODIFICATION_PLANNER,
+                        edge_async(this::routeAfterModificationPlanning),
+                        Map.of(
+                                ROUTE_EXECUTE_SQL, NODE_DATABASE_OPERATOR,
+                                ROUTE_SKIP_SQL, NODE_CODE_MODIFIER
+                        ))
+
+                // 数据库操作完成后进入代码修改
+                .addEdge(NODE_DATABASE_OPERATOR, NODE_CODE_MODIFIER)
+
+                // 出口
+                .addEdge(NODE_CODE_MODIFIER, END)
                 .addEdge(NODE_QA, END);
     }
 
