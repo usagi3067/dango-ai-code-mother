@@ -1,5 +1,6 @@
 package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
 
+import com.dango.dangoaicodeapp.domain.codegen.ai.service.InterviewAnimationAdvisorService;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.LeetCodeAnimationAdvisorService;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
@@ -17,6 +18,12 @@ public class AiAnimationAdvisorServiceFactory {
 
     public LeetCodeAnimationAdvisorService createService() {
         return AiServices.builder(LeetCodeAnimationAdvisorService.class)
+                .streamingChatModel(odinaryStreamingChatModel)
+                .build();
+    }
+
+    public InterviewAnimationAdvisorService createInterviewService() {
+        return AiServices.builder(InterviewAnimationAdvisorService.class)
                 .streamingChatModel(odinaryStreamingChatModel)
                 .build();
     }
