@@ -13,6 +13,7 @@ import org.bsc.langgraph4j.prebuilt.MessagesState;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
@@ -58,10 +59,14 @@ public class LeetCodeAnimationAdvisorNode {
                     })
                     .start();
 
-            latch.await();
+            latch.await(10, TimeUnit.MINUTES);
 
             if (errorRef.get() != null) {
                 throw new RuntimeException(errorRef.get());
+            }
+
+            if (adviceBuilder.isEmpty()) {
+                throw new RuntimeException("动画设计建议生成超时");
             }
 
             String advice = adviceBuilder.toString();

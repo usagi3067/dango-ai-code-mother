@@ -13,6 +13,7 @@ import org.bsc.langgraph4j.prebuilt.MessagesState;
 import org.springframework.stereotype.Component;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
@@ -44,9 +45,9 @@ public class QANode {
             );
 
             AiQAServiceFactory factory = SpringContextUtil.getBean(AiQAServiceFactory.class);
-            QAService qaService = factory.createService();
+            QAService qaService = factory.createService(context.getAppId());
 
-            TokenStream tokenStream = qaService.answer(qaInput);
+            TokenStream tokenStream = qaService.answer(context.getAppId(), qaInput);
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Throwable> errorRef = new AtomicReference<>();
 
@@ -59,7 +60,7 @@ public class QANode {
                     })
                     .start();
 
-            latch.await();
+            latch.await(10, TimeUnit.MINUTES);
 
             if (errorRef.get() != null) {
                 throw new RuntimeException(errorRef.get());

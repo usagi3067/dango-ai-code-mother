@@ -10,6 +10,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import java.time.Duration;
 import java.util.List;
 
 @Configuration
@@ -24,6 +25,7 @@ public class AnthropicReasoningStreamingChatModelConfig {
     private Integer maxTokens;
     private Boolean logRequests;
     private Boolean logResponses;
+    private Duration timeout;
 
     @Autowired(required = false)
     private List<ChatModelListener> chatModelListeners;
@@ -35,6 +37,7 @@ public class AnthropicReasoningStreamingChatModelConfig {
                 .apiKey(apiKey)
                 .modelName(modelName)
                 .maxTokens(maxTokens != null ? maxTokens : 65536)
+                .timeout(timeout != null ? timeout : Duration.ofSeconds(300))
                 .logRequests(logRequests != null ? logRequests : true)
                 .logResponses(logResponses != null ? logResponses : true);
         if (chatModelListeners != null && !chatModelListeners.isEmpty()) {
