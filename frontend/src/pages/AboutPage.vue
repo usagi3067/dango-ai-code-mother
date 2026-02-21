@@ -305,134 +305,111 @@
 
     <!-- 区块 6：完整工作流架构图 -->
     <a-card title="完整工作流架构图" :bordered="false" style="margin-top: 24px">
-      <!-- 主工作流 -->
-      <a-divider orientation="left">主工作流</a-divider>
-      <div class="flow-tree">
-        <div class="flow-node flow-node--blue"><div class="flow-content"><strong>START</strong></div></div>
-        <div class="flow-arrow">↓</div>
-        <div class="flow-node flow-node--blue">
-          <div class="flow-content"><strong>mode_router</strong></div>
+      <div class="maze">
+        <!-- 入口 -->
+        <div class="maze-row">
+          <div class="maze-cell maze-cell--blue">START</div>
         </div>
-        <div class="flow-branch flow-branch--4col">
-          <div class="flow-branch-line-4"></div>
-          <div class="flow-branch-sides flow-branch-sides--4col">
-            <div class="flow-branch-col">
-              <div class="flow-branch-label"><a-tag color="blue">create</a-tag></div>
-              <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>创建子图</strong></div></div>
-            </div>
-            <div class="flow-branch-col">
-              <div class="flow-branch-label"><a-tag color="cyan">leetcode</a-tag></div>
-              <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>力扣子图</strong></div></div>
-            </div>
-            <div class="flow-branch-col">
-              <div class="flow-branch-label"><a-tag color="purple">interview</a-tag></div>
-              <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>面试子图</strong></div></div>
-            </div>
-            <div class="flow-branch-col">
-              <div class="flow-branch-label"><a-tag color="orange">existing_code</a-tag></div>
-              <div class="flow-node flow-node--orange flow-node--sm"><div class="flow-content"><strong>已有代码子图</strong></div></div>
-            </div>
-          </div>
+        <div class="maze-arrow">↓</div>
+        <div class="maze-row">
+          <div class="maze-cell maze-cell--blue">mode_router</div>
         </div>
-        <div class="flow-arrow">↓ (MODIFY 分支)</div>
-        <div class="flow-node flow-node--green"><div class="flow-content"><strong>build_check_subgraph</strong></div></div>
-        <div class="flow-arrow">↓</div>
-        <div class="flow-node flow-node--gray"><div class="flow-content"><strong>END</strong></div></div>
-      </div>
 
-      <!-- 创建模式子图 -->
-      <a-divider orientation="left">创建模式子图（Vue 应用）</a-divider>
-      <div class="flow-tree">
-        <div class="flow-node flow-node--blue"><div class="flow-content"><strong>image_plan</strong></div></div>
-        <div class="flow-arrow">↓</div>
-        <div class="flow-parallel">
-          <div class="flow-parallel-label"><a-tag color="blue">4 路并发</a-tag></div>
-          <div class="flow-parallel-line"></div>
-          <div class="flow-parallel-items">
-            <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>content_image</strong></div></div>
-            <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>illustration</strong></div></div>
-            <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>diagram</strong></div></div>
-            <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>logo</strong></div></div>
-          </div>
-          <div class="flow-parallel-line-bottom"></div>
-        </div>
-        <div class="flow-arrow">↓</div>
-        <div class="flow-node flow-node--blue"><div class="flow-content"><strong>image_aggregator</strong></div></div>
-        <div class="flow-arrow">↓</div>
-        <div class="flow-node flow-node--green"><div class="flow-content"><strong>prompt_enhancer</strong></div></div>
-        <div class="flow-arrow">↓</div>
-        <div class="flow-node flow-node--green"><div class="flow-content"><strong>code_generator</strong></div></div>
-      </div>
+        <!-- 4 路分支 -->
+        <div class="maze-fork-4">
+          <div class="maze-fork-4-line"></div>
+          <div class="maze-fork-4-cols">
 
-      <!-- 已有代码子图 -->
-      <a-divider orientation="left">已有代码子图（修改 / 问答）</a-divider>
-      <div class="flow-tree">
-        <div class="flow-node flow-node--orange"><div class="flow-content"><strong>code_reader</strong></div></div>
-        <div class="flow-arrow">↓</div>
-        <div class="flow-node flow-node--orange"><div class="flow-content"><strong>intent_classifier</strong></div></div>
-        <div class="flow-branch">
-          <div class="flow-branch-line"></div>
-          <div class="flow-branch-sides">
-            <div class="flow-branch-left">
-              <div class="flow-branch-label"><a-tag color="red">MODIFY</a-tag></div>
-              <div class="flow-node flow-node--red"><div class="flow-content"><strong>modification_planner</strong></div></div>
-              <div class="flow-arrow">↓</div>
-              <div class="flow-node flow-node--red"><div class="flow-content"><strong>database_operator</strong></div></div>
-              <div class="flow-arrow">↓</div>
-              <div class="flow-node flow-node--red"><div class="flow-content"><strong>code_modifier</strong></div></div>
+            <!-- create 分支 -->
+            <div class="maze-col">
+              <div class="maze-tag"><a-tag color="blue">create</a-tag></div>
+              <div class="maze-cell maze-cell--blue">image_plan</div>
+              <div class="maze-arrow-sm">↓</div>
+              <div class="maze-parallel-4">
+                <div class="maze-cell maze-cell--blue maze-cell--xs">content_img</div>
+                <div class="maze-cell maze-cell--blue maze-cell--xs">illustration</div>
+                <div class="maze-cell maze-cell--blue maze-cell--xs">diagram</div>
+                <div class="maze-cell maze-cell--blue maze-cell--xs">logo</div>
+              </div>
+              <div class="maze-arrow-sm">↓</div>
+              <div class="maze-cell maze-cell--blue">image_aggregator</div>
+              <div class="maze-arrow-sm">↓</div>
+              <div class="maze-cell maze-cell--green">prompt_enhancer</div>
+              <div class="maze-arrow-sm">↓</div>
+              <div class="maze-cell maze-cell--green">code_generator</div>
             </div>
-            <div class="flow-branch-right">
-              <div class="flow-branch-label"><a-tag>QA</a-tag></div>
-              <div class="flow-node flow-node--gray"><div class="flow-content"><strong>qa_node</strong></div></div>
-              <div class="flow-arrow">↓</div>
-              <div class="flow-node flow-node--gray"><div class="flow-content"><strong>END</strong></div></div>
+
+            <!-- leetcode 分支 -->
+            <div class="maze-col">
+              <div class="maze-tag"><a-tag color="cyan">leetcode</a-tag></div>
+              <div class="maze-cell maze-cell--blue">animation_advisor</div>
+              <div class="maze-arrow-sm">↓</div>
+              <div class="maze-cell maze-cell--blue">lc_prompt_enhancer</div>
+              <div class="maze-arrow-sm">↓</div>
+              <div class="maze-cell maze-cell--green">code_generator</div>
+            </div>
+
+            <!-- interview 分支 -->
+            <div class="maze-col">
+              <div class="maze-tag"><a-tag color="purple">interview</a-tag></div>
+              <div class="maze-cell maze-cell--blue">interview_advisor</div>
+              <div class="maze-arrow-sm">↓</div>
+              <div class="maze-cell maze-cell--blue">iv_prompt_enhancer</div>
+              <div class="maze-arrow-sm">↓</div>
+              <div class="maze-cell maze-cell--green">code_generator</div>
+            </div>
+
+            <!-- existing_code 分支 -->
+            <div class="maze-col">
+              <div class="maze-tag"><a-tag color="orange">existing_code</a-tag></div>
+              <div class="maze-cell maze-cell--orange">code_reader</div>
+              <div class="maze-arrow-sm">↓</div>
+              <div class="maze-cell maze-cell--orange">intent_classifier</div>
+              <div class="maze-arrow-sm">↓</div>
+              <div class="maze-fork-2">
+                <div class="maze-fork-2-line"></div>
+                <div class="maze-fork-2-cols">
+                  <div class="maze-col">
+                    <div class="maze-tag"><a-tag color="red" :bordered="false">MODIFY</a-tag></div>
+                    <div class="maze-cell maze-cell--red">mod_planner</div>
+                    <div class="maze-arrow-sm">↓</div>
+                    <div class="maze-cell maze-cell--red">db_operator</div>
+                    <div class="maze-arrow-sm">↓</div>
+                    <div class="maze-cell maze-cell--red">code_modifier</div>
+                  </div>
+                  <div class="maze-col">
+                    <div class="maze-tag"><a-tag :bordered="false">QA</a-tag></div>
+                    <div class="maze-cell maze-cell--gray">qa_node</div>
+                    <div class="maze-arrow-sm">↓</div>
+                    <div class="maze-cell maze-cell--dark">END</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- 汇聚到构建检查 -->
+        <div class="maze-arrow">↓ 汇聚（MODIFY 分支也汇入）</div>
+        <div class="maze-row">
+          <div class="maze-cell maze-cell--green">build_check</div>
+        </div>
+        <div class="maze-fork-2 maze-fork-2--center">
+          <div class="maze-fork-2-line"></div>
+          <div class="maze-fork-2-cols">
+            <div class="maze-col">
+              <div class="maze-tag"><a-tag color="green">PASS</a-tag></div>
+              <div class="maze-cell maze-cell--dark">END</div>
+            </div>
+            <div class="maze-col">
+              <div class="maze-tag"><a-tag color="red">FAIL</a-tag></div>
+              <div class="maze-cell maze-cell--red">code_fixer</div>
+              <div class="maze-arrow-sm">↑ 循环</div>
             </div>
           </div>
         </div>
       </div>
-
-      <!-- 构建检查修复子图 -->
-      <a-divider orientation="left">构建检查修复子图</a-divider>
-      <div class="flow-tree">
-        <div class="flow-node flow-node--green"><div class="flow-content"><strong>build_check</strong></div></div>
-        <div class="flow-branch">
-          <div class="flow-branch-line"></div>
-          <div class="flow-branch-sides">
-            <div class="flow-branch-left">
-              <div class="flow-branch-label"><a-tag color="green">PASS</a-tag></div>
-              <div class="flow-node flow-node--green"><div class="flow-content"><strong>END</strong></div></div>
-            </div>
-            <div class="flow-branch-right">
-              <div class="flow-branch-label"><a-tag color="red">FAIL</a-tag></div>
-              <div class="flow-node flow-node--red"><div class="flow-content"><strong>code_fixer</strong></div></div>
-              <div class="flow-arrow">↑ 循环</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 力扣 & 面试子图 -->
-      <a-divider orientation="left">力扣 / 面试创建子图</a-divider>
-      <a-row :gutter="24">
-        <a-col :span="12">
-          <div class="flow-tree">
-            <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>animation_advisor</strong></div></div>
-            <div class="flow-arrow">↓</div>
-            <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>leetcode_prompt_enhancer</strong></div></div>
-            <div class="flow-arrow">↓</div>
-            <div class="flow-node flow-node--green flow-node--sm"><div class="flow-content"><strong>code_generator</strong></div></div>
-          </div>
-        </a-col>
-        <a-col :span="12">
-          <div class="flow-tree">
-            <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>interview_advisor</strong></div></div>
-            <div class="flow-arrow">↓</div>
-            <div class="flow-node flow-node--blue flow-node--sm"><div class="flow-content"><strong>interview_prompt_enhancer</strong></div></div>
-            <div class="flow-arrow">↓</div>
-            <div class="flow-node flow-node--green flow-node--sm"><div class="flow-content"><strong>code_generator</strong></div></div>
-          </div>
-        </a-col>
-      </a-row>
     </a-card>
 
     <!-- 联系方式 -->
@@ -637,36 +614,141 @@ const moreModes = [
   margin-top: 4px;
 }
 
-/* 4 列分支（主工作流 mode_router） */
-.flow-branch--4col {
-  max-width: 800px;
-}
-
-.flow-branch-line-4 {
-  position: absolute;
-  top: 0;
-  left: 12%;
-  right: 12%;
-  height: 20px;
-  border-left: 2px solid #d9d9d9;
-  border-right: 2px solid #d9d9d9;
-  border-top: 2px solid #d9d9d9;
-  border-radius: 8px 8px 0 0;
-}
-
-.flow-branch-sides--4col {
-  display: flex;
-  gap: 16px;
-  padding-top: 24px;
-  justify-content: center;
-}
-
-.flow-branch-col {
+/* 迷宫式完整工作流图 */
+.maze {
+  background: #fafafa;
+  border: 1px solid #f0f0f0;
+  border-radius: 8px;
+  padding: 24px 16px;
+  overflow-x: auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  flex: 1;
+  gap: 2px;
 }
+
+.maze-row {
+  display: flex;
+  justify-content: center;
+}
+
+.maze-cell {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: 1px solid #d9d9d9;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  white-space: nowrap;
+  background: #fff;
+}
+
+.maze-cell--xs {
+  padding: 2px 6px;
+  font-size: 10px;
+}
+
+.maze-cell--blue { border-color: #1890ff; background: #e6f7ff; color: #096dd9; }
+.maze-cell--green { border-color: #52c41a; background: #f6ffed; color: #389e0d; }
+.maze-cell--orange { border-color: #fa8c16; background: #fff7e6; color: #d46b08; }
+.maze-cell--red { border-color: #f5222d; background: #fff1f0; color: #cf1322; }
+.maze-cell--gray { border-color: #d9d9d9; background: #f5f5f5; color: #595959; }
+.maze-cell--dark { border-color: #434343; background: #434343; color: #fff; }
+
+.maze-arrow {
+  font-size: 12px;
+  color: #8c8c8c;
+  text-align: center;
+  line-height: 1.2;
+  padding: 2px 0;
+}
+
+.maze-arrow-sm {
+  font-size: 11px;
+  color: #bfbfbf;
+  text-align: center;
+  line-height: 1;
+  padding: 1px 0;
+}
+
+.maze-tag {
+  margin-bottom: 4px;
+  text-align: center;
+}
+
+.maze-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+/* 4 路分叉 */
+.maze-fork-4 {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  margin-top: 2px;
+}
+
+.maze-fork-4-line {
+  width: 80%;
+  height: 12px;
+  border-left: 2px solid #d9d9d9;
+  border-right: 2px solid #d9d9d9;
+  border-top: 2px solid #d9d9d9;
+  border-radius: 6px 6px 0 0;
+}
+
+.maze-fork-4-cols {
+  display: flex;
+  gap: 12px;
+  padding-top: 4px;
+  align-items: flex-start;
+}
+
+/* 2 路分叉 */
+.maze-fork-2 {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+}
+
+.maze-fork-2--center {
+  max-width: 300px;
+  margin-top: 2px;
+}
+
+.maze-fork-2-line {
+  width: 60%;
+  height: 10px;
+  border-left: 2px solid #d9d9d9;
+  border-right: 2px solid #d9d9d9;
+  border-top: 2px solid #d9d9d9;
+  border-radius: 4px 4px 0 0;
+}
+
+.maze-fork-2-cols {
+  display: flex;
+  gap: 10px;
+  padding-top: 2px;
+  align-items: flex-start;
+}
+
+/* 4 路并发小格子 */
+.maze-parallel-4 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3px;
+}
+
 
 .flow-branch-line {
   position: absolute;
