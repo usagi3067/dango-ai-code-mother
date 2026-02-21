@@ -54,6 +54,28 @@
         基于 LangGraph4j 构建的多阶段工作流，支持子图编排、并发执行、条件分流和循环修复。
       </a-typography-paragraph>
 
+      <a-divider orientation="left">前置：AI 功能规划</a-divider>
+      <a-typography-paragraph type="secondary" style="margin-bottom: 12px">
+        在代码生成前，AI 先分析用户需求，提取功能列表供用户确认，只生成用户需要的功能，遵循 MVP 原则。
+      </a-typography-paragraph>
+      <div class="flow-tree">
+        <div class="flow-node flow-node--purple">
+          <BulbOutlined class="flow-icon" />
+          <div class="flow-content">
+            <strong>功能分析 (feature_analyzer)</strong>
+            <p>AI 分析用户描述，提取功能列表（不超过 6 条）</p>
+          </div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node flow-node--purple">
+          <CheckCircleOutlined class="flow-icon" />
+          <div class="flow-content">
+            <strong>用户确认功能列表</strong>
+            <p>用户勾选需要的功能，可补充说明，确认后进入代码生成</p>
+          </div>
+        </div>
+      </div>
+
       <a-divider orientation="left">创建流程（Vue 应用）</a-divider>
       <div class="flow-tree">
         <div class="flow-node flow-node--blue">
@@ -463,6 +485,8 @@ function e(source: string, target: string, label?: string, color?: string) {
 
 const nodes = [
   n('start', 'START', 'dark'),
+  n('feature_analyzer', '功能分析', 'purple'),
+  n('user_confirm', '用户确认', 'purple'),
   n('mode_router', '模式路由', 'blue'),
   // create (combo: create_group)
   n('image_plan', '图片规划', 'blue', 'create_group'),
@@ -531,7 +555,9 @@ const combos = [
 ]
 
 const edges = [
-  e('start', 'mode_router'),
+  e('start', 'feature_analyzer'),
+  e('feature_analyzer', 'user_confirm'),
+  e('user_confirm', 'mode_router'),
   // mode_router → 4 branches
   e('mode_router', 'image_plan', 'create', '#1890ff'),
   e('mode_router', 'anim_adv', 'leetcode', '#13c2c2'),
