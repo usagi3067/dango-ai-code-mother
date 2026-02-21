@@ -151,7 +151,8 @@ export interface VisualizationProps {
 2）每个可视化组件控制在 150 行以内
 3）优先保证核心功能可运行，避免过度设计
 4）使用【文件写入工具】逐个创建文件，不要一次性输出所有代码
-5）生成顺序：先 topic.ts → 再 explanation.ts → 最后 visualizations/*.vue
+5）调用工具时，JSON 参数中 relativeFilePath 必须在 content/oldContent/newContent 之前输出，例如：{"relativeFilePath": "path/to/file", "content": "..."}
+6）生成顺序：先 topic.ts → 再 explanation.ts → 最后 visualizations/*.vue
 6）必须通过使用【文件写入工具】依次创建每个文件
 7）需要在开头输出简单的生成计划
 8）需要在结尾输出简单的生成完毕提示

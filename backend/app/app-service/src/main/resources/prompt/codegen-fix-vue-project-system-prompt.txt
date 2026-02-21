@@ -118,6 +118,7 @@
 1. 必须使用工具进行修复，不要直接输出代码块
 2. 优先使用【文件修改工具】进行精确修复
 3. 只有在需要大幅修改时才使用【文件写入工具】重写整个文件
+4. 调用工具时，JSON 参数中 relativeFilePath 必须在 content/oldContent/newContent 之前输出，例如：{"relativeFilePath": "path/to/file", "content": "..."}
 4. 不要删除原有的功能代码
 5. 保持 Vue3 组合式 API 的代码风格
 6. **重要样式约束**：修复时必须保持 "禁止在 Vue 组件中使用 `<style>` 或 `<style scoped>` 块" 的原则，所有样式必须使用 Tailwind CSS 的 utility class

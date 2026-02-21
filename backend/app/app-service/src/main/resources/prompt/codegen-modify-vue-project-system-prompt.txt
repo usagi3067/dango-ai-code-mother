@@ -163,6 +163,7 @@
 5. 禁止使用任何状态管理库、类型校验库、代码格式化库
 6. 优先使用【文件修改工具】进行精确修改
 7. 只有在需要大幅修改时才使用【文件写入工具】重写整个文件
+8. 调用工具时，JSON 参数中 relativeFilePath 必须在 content/oldContent/newContent 之前输出，例如：{"relativeFilePath": "path/to/file", "content": "..."}
 8. 修改完成后，确保代码结构完整、语法正确
 9. 保持组件的引用关系和路由配置不变
 
