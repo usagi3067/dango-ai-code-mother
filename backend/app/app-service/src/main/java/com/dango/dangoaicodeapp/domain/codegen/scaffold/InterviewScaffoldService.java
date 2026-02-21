@@ -24,23 +24,20 @@ public class InterviewScaffoldService implements ProjectScaffoldService {
     private static final List<String> TEMPLATE_FILES = List.of(
             "index.html",
             "package.json",
-            "vite.config.ts",
-            "tsconfig.json",
-            "env.d.ts",
-            "src/main.ts",
-            "src/App.vue",
-            "src/components/ConceptMap.vue",
-            "src/components/ComparisonTable.vue",
-            "src/components/FlowDiagram.vue",
-            "src/components/KeyPoints.vue",
-            "src/components/AnswerGuide.vue",
-            "src/components/TabContainer.vue",
-            "src/components/visualizations/PlaceholderVis.vue",
-            "src/composables/useInteraction.ts",
-            "src/data/topic.ts",
-            "src/data/explanation.ts",
-            "src/styles/theme.css",
-            "src/types/index.ts"
+            "vite.config.js",
+            "eslint.config.js",
+            "src/main.jsx",
+            "src/App.jsx",
+            "src/index.css",
+            "src/components/QuestionHeader.jsx",
+            "src/components/DiagramDemo.jsx",
+            "src/components/AnimationControls.jsx",
+            "src/components/ExplanationBox.jsx",
+            "src/components/KeyboardHelp.jsx",
+            "src/hooks/useAnimation.js",
+            "src/hooks/useKeyboard.js",
+            "src/data/question.js",
+            "src/diagrams/index.js"
     );
 
     private final NodeModulesPrebuilder nodeModulesPrebuilder;
