@@ -55,39 +55,63 @@
       </a-typography-paragraph>
 
       <a-divider orientation="left">创建流程（Vue 应用）</a-divider>
-      <a-timeline>
-        <a-timeline-item color="blue">
-          <template #dot><RocketOutlined /></template>
-          <strong>图片规划 (image_plan)</strong>
-          <br />AI 分析用户需求，规划需要收集的图片素材类型
-        </a-timeline-item>
-        <a-timeline-item color="blue">
-          <template #dot><PictureOutlined /></template>
-          <strong>并发图片收集（4 路并发）</strong>
-          <br />
-          <a-space :size="4" wrap>
-            <a-tag>content_image_collector</a-tag>
-            <a-tag>illustration_collector</a-tag>
-            <a-tag>diagram_collector</a-tag>
-            <a-tag>logo_collector</a-tag>
-          </a-space>
-        </a-timeline-item>
-        <a-timeline-item color="blue">
-          <template #dot><AppstoreOutlined /></template>
-          <strong>图片聚合 (image_aggregator)</strong>
-          <br />汇总所有收集到的图片素材
-        </a-timeline-item>
-        <a-timeline-item color="green">
-          <template #dot><ThunderboltOutlined /></template>
-          <strong>Prompt 增强 (prompt_enhancer)</strong>
-          <br />结合图片素材和用户需求，生成增强的代码生成提示词
-        </a-timeline-item>
-        <a-timeline-item color="green">
-          <template #dot><CodeOutlined /></template>
-          <strong>代码生成 (code_generator)</strong>
-          <br />AI 生成完整的 Vue 3 应用代码
-        </a-timeline-item>
-      </a-timeline>
+      <div class="flow-tree">
+        <div class="flow-node flow-node--blue">
+          <RocketOutlined class="flow-icon" />
+          <div class="flow-content">
+            <strong>图片规划 (image_plan)</strong>
+            <p>AI 分析用户需求，规划需要收集的图片素材类型</p>
+          </div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-parallel">
+          <div class="flow-parallel-label"><a-tag color="blue">4 路并发收集</a-tag></div>
+          <div class="flow-parallel-line"></div>
+          <div class="flow-parallel-items">
+            <div class="flow-node flow-node--blue flow-node--sm">
+              <PictureOutlined class="flow-icon" />
+              <div class="flow-content"><strong>内容图片</strong></div>
+            </div>
+            <div class="flow-node flow-node--blue flow-node--sm">
+              <PictureOutlined class="flow-icon" />
+              <div class="flow-content"><strong>插画素材</strong></div>
+            </div>
+            <div class="flow-node flow-node--blue flow-node--sm">
+              <PictureOutlined class="flow-icon" />
+              <div class="flow-content"><strong>图表素材</strong></div>
+            </div>
+            <div class="flow-node flow-node--blue flow-node--sm">
+              <PictureOutlined class="flow-icon" />
+              <div class="flow-content"><strong>Logo</strong></div>
+            </div>
+          </div>
+          <div class="flow-parallel-line-bottom"></div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node flow-node--blue">
+          <AppstoreOutlined class="flow-icon" />
+          <div class="flow-content">
+            <strong>图片聚合 (image_aggregator)</strong>
+            <p>汇总所有收集到的图片素材</p>
+          </div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node flow-node--green">
+          <ThunderboltOutlined class="flow-icon" />
+          <div class="flow-content">
+            <strong>Prompt 增强 (prompt_enhancer)</strong>
+            <p>结合图片素材和用户需求，生成增强的代码生成提示词</p>
+          </div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node flow-node--green">
+          <CodeOutlined class="flow-icon" />
+          <div class="flow-content">
+            <strong>代码生成 (code_generator)</strong>
+            <p>AI 生成完整的 Vue 3 应用代码</p>
+          </div>
+        </div>
+      </div>
 
       <a-divider orientation="left">修改流程（已有代码）</a-divider>
       <div class="flow-tree">
@@ -163,18 +187,41 @@
       </div>
 
       <a-divider orientation="left">构建检查修复</a-divider>
-      <a-timeline>
-        <a-timeline-item color="green">
-          <template #dot><CheckCircleOutlined /></template>
-          <strong>构建检查 (build_check)</strong>
-          <br />自动执行 npm run build，检查构建是否通过
-        </a-timeline-item>
-        <a-timeline-item color="red">
-          <template #dot><ToolOutlined /></template>
-          <strong>自动修复 (code_fixer)</strong>
-          <br />构建失败时 AI 自动分析错误并修复，循环直到通过或达到上限
-        </a-timeline-item>
-      </a-timeline>
+      <div class="flow-tree">
+        <div class="flow-loop">
+          <div class="flow-loop-body">
+            <div class="flow-node flow-node--green">
+              <CheckCircleOutlined class="flow-icon" />
+              <div class="flow-content">
+                <strong>构建检查 (build_check)</strong>
+                <p>自动执行 npm run build</p>
+              </div>
+            </div>
+            <div class="flow-branch">
+              <div class="flow-branch-line"></div>
+              <div class="flow-branch-sides">
+                <div class="flow-branch-left">
+                  <div class="flow-branch-label"><a-tag color="green">PASS</a-tag></div>
+                  <div class="flow-node flow-node--green">
+                    <div class="flow-content"><strong>→ END</strong></div>
+                  </div>
+                </div>
+                <div class="flow-branch-right">
+                  <div class="flow-branch-label"><a-tag color="red">FAIL & 未达上限</a-tag></div>
+                  <div class="flow-node flow-node--red">
+                    <ToolOutlined class="flow-icon" />
+                    <div class="flow-content">
+                      <strong>自动修复 (code_fixer)</strong>
+                      <p>AI 分析错误并修复</p>
+                    </div>
+                  </div>
+                  <div class="flow-arrow">↑ 循环回到 build_check</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
     </a-card>
 
     <!-- 区块 3：数据库集成 -->
@@ -494,7 +541,22 @@ const workflowDiagram = `┌─────────────────�
 .flow-node--orange { border-color: #fa8c16; background: #fff7e6; }
 .flow-node--red { border-color: #f5222d; background: #fff1f0; }
 .flow-node--green { border-color: #52c41a; background: #f6ffed; }
+.flow-node--blue { border-color: #1890ff; background: #e6f7ff; }
 .flow-node--gray { border-color: #d9d9d9; background: #fafafa; }
+
+.flow-node--sm {
+  min-width: auto;
+  max-width: 140px;
+  padding: 6px 10px;
+}
+
+.flow-node--sm .flow-icon {
+  font-size: 16px;
+}
+
+.flow-node--sm .flow-content strong {
+  font-size: 12px;
+}
 
 .flow-icon {
   font-size: 20px;
@@ -504,6 +566,7 @@ const workflowDiagram = `┌─────────────────�
 .flow-node--orange .flow-icon { color: #fa8c16; }
 .flow-node--red .flow-icon { color: #f5222d; }
 .flow-node--green .flow-icon { color: #52c41a; }
+.flow-node--blue .flow-icon { color: #1890ff; }
 .flow-node--gray .flow-icon { color: #8c8c8c; }
 
 .flow-content strong {
@@ -553,6 +616,81 @@ const workflowDiagram = `┌─────────────────�
 
 .flow-branch-label {
   margin-bottom: 8px;
+}
+
+/* 并发布局 */
+.flow-parallel {
+  width: 100%;
+  max-width: 700px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.flow-parallel-label {
+  margin-bottom: 8px;
+}
+
+.flow-parallel-line {
+  width: 70%;
+  height: 2px;
+  background: #1890ff;
+  position: relative;
+}
+
+.flow-parallel-line::before,
+.flow-parallel-line::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  width: 2px;
+  height: 12px;
+  background: #1890ff;
+}
+
+.flow-parallel-line::before { left: 0; }
+.flow-parallel-line::after { right: 0; }
+
+.flow-parallel-items {
+  display: flex;
+  gap: 8px;
+  padding-top: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.flow-parallel-line-bottom {
+  width: 70%;
+  height: 2px;
+  background: #1890ff;
+  margin-top: 12px;
+  position: relative;
+}
+
+.flow-parallel-line-bottom::before,
+.flow-parallel-line-bottom::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: 2px;
+  height: 12px;
+  background: #1890ff;
+}
+
+.flow-parallel-line-bottom::before { left: 0; }
+.flow-parallel-line-bottom::after { right: 0; }
+
+/* 循环布局 */
+.flow-loop {
+  width: 100%;
+  max-width: 700px;
+}
+
+.flow-loop-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 @media (max-width: 768px) {
