@@ -1,5 +1,7 @@
 package com.dango.dangoaicodeapp.domain.codegen.node;
 
+import cn.hutool.json.JSONUtil;
+import com.dango.aicodegenerate.model.message.AiResponseMessage;
 import com.dango.dangoaicodeapp.domain.codegen.ai.factory.AiQAServiceFactory;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.QAService;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
@@ -49,7 +51,7 @@ public class QANode {
             AtomicReference<Throwable> errorRef = new AtomicReference<>();
 
             tokenStream
-                    .onPartialResponse(chunk -> context.emit(chunk))
+                    .onPartialResponse(chunk -> context.emit(JSONUtil.toJsonStr(new AiResponseMessage(chunk))))
                     .onCompleteResponse(response -> latch.countDown())
                     .onError(error -> {
                         errorRef.set(error);
