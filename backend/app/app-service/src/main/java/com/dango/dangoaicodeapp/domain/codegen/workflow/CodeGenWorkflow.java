@@ -52,7 +52,7 @@ import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
  *   animation_advisor → leetcode_prompt_enhancer → code_generator
  *
  * 面试题解创建模式子图：
- *   interview_prompt_enhancer → code_generator
+ *   interview_animation_advisor → interview_prompt_enhancer → code_generator
  *
  * 已有代码子图（展平，LangGraph4j 不支持子图嵌套）：
  *   code_reader → intent_classifier → [条件边]
@@ -93,6 +93,7 @@ public class CodeGenWorkflow {
     private static final String NODE_ANIMATION_ADVISOR = "animation_advisor";
 
     // 面试题解创建模式子图
+    private static final String NODE_INTERVIEW_ANIMATION_ADVISOR = "interview_animation_advisor";
     private static final String NODE_INTERVIEW_PROMPT_ENHANCER = "interview_prompt_enhancer";
 
     // 已有代码子图（含展平的修改流程）
@@ -261,13 +262,15 @@ public class CodeGenWorkflow {
     }
 
     /**
-     * 面试题解创建模式子图：提示词增强 → 代码生成
+     * 面试题解创建模式子图：动画设计建议 → 提示词增强 → 代码生成
      */
     private StateGraph<MessagesState<String>> buildInterviewCreateSubGraph() throws GraphStateException {
         return new MessagesStateGraph<String>()
+                .addNode(NODE_INTERVIEW_ANIMATION_ADVISOR, InterviewAnimationAdvisorNode.create())
                 .addNode(NODE_INTERVIEW_PROMPT_ENHANCER, InterviewPromptEnhancerNode.create())
                 .addNode(NODE_CODE_GENERATOR, CodeGeneratorNode.create())
-                .addEdge(START, NODE_INTERVIEW_PROMPT_ENHANCER)
+                .addEdge(START, NODE_INTERVIEW_ANIMATION_ADVISOR)
+                .addEdge(NODE_INTERVIEW_ANIMATION_ADVISOR, NODE_INTERVIEW_PROMPT_ENHANCER)
                 .addEdge(NODE_INTERVIEW_PROMPT_ENHANCER, NODE_CODE_GENERATOR)
                 .addEdge(NODE_CODE_GENERATOR, END);
     }
