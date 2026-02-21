@@ -305,110 +305,106 @@
 
     <!-- 区块 6：完整工作流架构图 -->
     <a-card title="完整工作流架构图" :bordered="false" style="margin-top: 24px">
-      <div class="maze">
-        <!-- 入口 -->
-        <div class="maze-row">
-          <div class="maze-cell maze-cell--blue">START</div>
-        </div>
-        <div class="maze-arrow">↓</div>
-        <div class="maze-row">
-          <div class="maze-cell maze-cell--blue">mode_router</div>
-        </div>
+      <div class="sm" ref="smRef">
+        <!-- SVG 连线层 -->
+        <svg class="sm-lines">
+          <defs>
+            <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#d9d9d9" />
+            </marker>
+            <marker id="arrowhead-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#f5222d" />
+            </marker>
+          </defs>
+          <!-- START → mode_router -->
+          <line x1="460" y1="22" x2="460" y2="58" />
+          <!-- mode_router → 4 分支 -->
+          <line x1="460" y1="82" x2="120" y2="118" />
+          <line x1="460" y1="82" x2="330" y2="118" />
+          <line x1="460" y1="82" x2="540" y2="118" />
+          <line x1="460" y1="82" x2="750" y2="118" />
+          <!-- create: image_plan → 4 并发 -->
+          <line x1="120" y1="142" x2="40" y2="178" />
+          <line x1="120" y1="142" x2="100" y2="178" />
+          <line x1="120" y1="142" x2="150" y2="178" />
+          <line x1="120" y1="142" x2="210" y2="178" />
+          <!-- 4 并发 → aggregator -->
+          <line x1="40" y1="202" x2="120" y2="238" />
+          <line x1="100" y1="202" x2="120" y2="238" />
+          <line x1="150" y1="202" x2="120" y2="238" />
+          <line x1="210" y1="202" x2="120" y2="238" />
+          <!-- aggregator → enhancer → generator -->
+          <line x1="120" y1="262" x2="120" y2="298" />
+          <line x1="120" y1="322" x2="120" y2="358" />
+          <!-- leetcode: advisor → enhancer → generator -->
+          <line x1="330" y1="142" x2="330" y2="178" />
+          <line x1="330" y1="202" x2="330" y2="238" />
+          <!-- interview: advisor → enhancer → generator -->
+          <line x1="540" y1="142" x2="540" y2="178" />
+          <line x1="540" y1="202" x2="540" y2="238" />
+          <!-- existing: reader → classifier -->
+          <line x1="750" y1="142" x2="750" y2="178" />
+          <!-- classifier → MODIFY / QA -->
+          <line x1="750" y1="202" x2="690" y2="238" />
+          <line x1="750" y1="202" x2="820" y2="238" />
+          <!-- MODIFY: planner → db_op → modifier -->
+          <line x1="690" y1="262" x2="690" y2="298" />
+          <line x1="690" y1="322" x2="690" y2="358" />
+          <!-- QA → END(qa) -->
+          <line x1="820" y1="262" x2="820" y2="298" />
+          <!-- 3 create 分支 → build_check -->
+          <line x1="120" y1="382" x2="420" y2="418" />
+          <line x1="330" y1="262" x2="420" y2="418" />
+          <line x1="540" y1="262" x2="420" y2="418" />
+          <!-- MODIFY → build_check -->
+          <line x1="690" y1="382" x2="420" y2="418" />
+          <!-- build_check → PASS / FAIL -->
+          <line x1="420" y1="442" x2="350" y2="478" />
+          <line x1="420" y1="442" x2="500" y2="478" />
+          <!-- code_fixer → build_check (循环) -->
+          <path d="M 540,490 C 580,490 580,430 540,430" fill="none" class="sm-loop" />
+        </svg>
 
-        <!-- 4 路分支 -->
-        <div class="maze-fork-4">
-          <div class="maze-fork-4-line"></div>
-          <div class="maze-fork-4-cols">
+        <!-- 节点层 -->
+        <div class="sm-node sm-node--blue" style="left:410px;top:0">START</div>
+        <div class="sm-node sm-node--blue" style="left:400px;top:60px">mode_router</div>
 
-            <!-- create 分支 -->
-            <div class="maze-col">
-              <div class="maze-tag"><a-tag color="blue">create</a-tag></div>
-              <div class="maze-cell maze-cell--blue">image_plan</div>
-              <div class="maze-arrow-sm">↓</div>
-              <div class="maze-parallel-4">
-                <div class="maze-cell maze-cell--blue maze-cell--xs">content_img</div>
-                <div class="maze-cell maze-cell--blue maze-cell--xs">illustration</div>
-                <div class="maze-cell maze-cell--blue maze-cell--xs">diagram</div>
-                <div class="maze-cell maze-cell--blue maze-cell--xs">logo</div>
-              </div>
-              <div class="maze-arrow-sm">↓</div>
-              <div class="maze-cell maze-cell--blue">image_aggregator</div>
-              <div class="maze-arrow-sm">↓</div>
-              <div class="maze-cell maze-cell--green">prompt_enhancer</div>
-              <div class="maze-arrow-sm">↓</div>
-              <div class="maze-cell maze-cell--green">code_generator</div>
-            </div>
+        <!-- create 分支 -->
+        <div class="sm-node sm-node--blue" style="left:75px;top:120px">image_plan</div>
+        <div class="sm-node sm-node--blue sm-node--xs" style="left:5px;top:180px">content</div>
+        <div class="sm-node sm-node--blue sm-node--xs" style="left:65px;top:180px">illustr</div>
+        <div class="sm-node sm-node--blue sm-node--xs" style="left:120px;top:180px">diagram</div>
+        <div class="sm-node sm-node--blue sm-node--xs" style="left:180px;top:180px">logo</div>
+        <div class="sm-node sm-node--blue" style="left:62px;top:240px">img_aggregator</div>
+        <div class="sm-node sm-node--green" style="left:60px;top:300px">prompt_enhancer</div>
+        <div class="sm-node sm-node--green" style="left:62px;top:360px">code_generator</div>
 
-            <!-- leetcode 分支 -->
-            <div class="maze-col">
-              <div class="maze-tag"><a-tag color="cyan">leetcode</a-tag></div>
-              <div class="maze-cell maze-cell--blue">animation_advisor</div>
-              <div class="maze-arrow-sm">↓</div>
-              <div class="maze-cell maze-cell--blue">lc_prompt_enhancer</div>
-              <div class="maze-arrow-sm">↓</div>
-              <div class="maze-cell maze-cell--green">code_generator</div>
-            </div>
+        <!-- leetcode 分支 -->
+        <div class="sm-node sm-node--cyan" style="left:275px;top:120px">anim_advisor</div>
+        <div class="sm-node sm-node--cyan" style="left:265px;top:180px">lc_prompt_enh</div>
+        <div class="sm-node sm-node--green" style="left:272px;top:240px">code_generator</div>
 
-            <!-- interview 分支 -->
-            <div class="maze-col">
-              <div class="maze-tag"><a-tag color="purple">interview</a-tag></div>
-              <div class="maze-cell maze-cell--blue">interview_advisor</div>
-              <div class="maze-arrow-sm">↓</div>
-              <div class="maze-cell maze-cell--blue">iv_prompt_enhancer</div>
-              <div class="maze-arrow-sm">↓</div>
-              <div class="maze-cell maze-cell--green">code_generator</div>
-            </div>
+        <!-- interview 分支 -->
+        <div class="sm-node sm-node--purple" style="left:485px;top:120px">iv_advisor</div>
+        <div class="sm-node sm-node--purple" style="left:475px;top:180px">iv_prompt_enh</div>
+        <div class="sm-node sm-node--green" style="left:482px;top:240px">code_generator</div>
 
-            <!-- existing_code 分支 -->
-            <div class="maze-col">
-              <div class="maze-tag"><a-tag color="orange">existing_code</a-tag></div>
-              <div class="maze-cell maze-cell--orange">code_reader</div>
-              <div class="maze-arrow-sm">↓</div>
-              <div class="maze-cell maze-cell--orange">intent_classifier</div>
-              <div class="maze-arrow-sm">↓</div>
-              <div class="maze-fork-2">
-                <div class="maze-fork-2-line"></div>
-                <div class="maze-fork-2-cols">
-                  <div class="maze-col">
-                    <div class="maze-tag"><a-tag color="red" :bordered="false">MODIFY</a-tag></div>
-                    <div class="maze-cell maze-cell--red">mod_planner</div>
-                    <div class="maze-arrow-sm">↓</div>
-                    <div class="maze-cell maze-cell--red">db_operator</div>
-                    <div class="maze-arrow-sm">↓</div>
-                    <div class="maze-cell maze-cell--red">code_modifier</div>
-                  </div>
-                  <div class="maze-col">
-                    <div class="maze-tag"><a-tag :bordered="false">QA</a-tag></div>
-                    <div class="maze-cell maze-cell--gray">qa_node</div>
-                    <div class="maze-arrow-sm">↓</div>
-                    <div class="maze-cell maze-cell--dark">END</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+        <!-- existing_code 分支 -->
+        <div class="sm-node sm-node--orange" style="left:700px;top:120px">code_reader</div>
+        <div class="sm-node sm-node--orange" style="left:690px;top:180px">intent_classifier</div>
+        <div class="sm-node sm-node--red" style="left:635px;top:240px">mod_planner</div>
+        <div class="sm-node sm-node--red" style="left:640px;top:300px">db_operator</div>
+        <div class="sm-node sm-node--red" style="left:635px;top:360px">code_modifier</div>
+        <div class="sm-node sm-node--gray" style="left:785px;top:240px">qa_node</div>
+        <div class="sm-node sm-node--dark" style="left:795px;top:300px">END</div>
 
-          </div>
-        </div>
-
-        <!-- 汇聚到构建检查 -->
-        <div class="maze-arrow">↓ 汇聚（MODIFY 分支也汇入）</div>
-        <div class="maze-row">
-          <div class="maze-cell maze-cell--green">build_check</div>
-        </div>
-        <div class="maze-fork-2 maze-fork-2--center">
-          <div class="maze-fork-2-line"></div>
-          <div class="maze-fork-2-cols">
-            <div class="maze-col">
-              <div class="maze-tag"><a-tag color="green">PASS</a-tag></div>
-              <div class="maze-cell maze-cell--dark">END</div>
-            </div>
-            <div class="maze-col">
-              <div class="maze-tag"><a-tag color="red">FAIL</a-tag></div>
-              <div class="maze-cell maze-cell--red">code_fixer</div>
-              <div class="maze-arrow-sm">↑ 循环</div>
-            </div>
-          </div>
-        </div>
+        <!-- build_check -->
+        <div class="sm-node sm-node--green" style="left:372px;top:420px">build_check</div>
+        <div class="sm-node sm-node--dark" style="left:325px;top:480px">END</div>
+        <div class="sm-node sm-node--red" style="left:455px;top:480px">code_fixer</div>
+        <span class="sm-label" style="left:290px;top:455px">PASS</span>
+        <span class="sm-label" style="left:470px;top:455px">FAIL</span>
+        <span class="sm-label sm-label--loop" style="left:555px;top:450px">循环</span>
       </div>
     </a-card>
 
@@ -614,139 +610,78 @@ const moreModes = [
   margin-top: 4px;
 }
 
-/* 迷宫式完整工作流图 */
-.maze {
+/* 状态机风格工作流图 */
+.sm {
+  position: relative;
+  width: 870px;
+  height: 520px;
   background: #fafafa;
   border: 1px solid #f0f0f0;
   border-radius: 8px;
-  padding: 24px 16px;
   overflow-x: auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
 }
 
-.maze-row {
-  display: flex;
-  justify-content: center;
+.sm-lines {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
 }
 
-.maze-cell {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 12px;
+.sm-lines line {
+  stroke: #d9d9d9;
+  stroke-width: 1.5;
+  marker-end: url(#arrowhead);
+}
+
+.sm-lines path.sm-loop {
+  stroke: #f5222d;
+  stroke-width: 1.5;
+  stroke-dasharray: 4 3;
+  marker-end: url(#arrowhead-red);
+}
+
+.sm-node {
+  position: absolute;
+  padding: 3px 10px;
   border-radius: 4px;
-  border: 1px solid #d9d9d9;
+  border: 1.5px solid #d9d9d9;
   font-size: 11px;
   font-weight: 600;
   font-family: 'SFMono-Regular', Consolas, monospace;
   white-space: nowrap;
   background: #fff;
+  text-align: center;
+  z-index: 1;
 }
 
-.maze-cell--xs {
+.sm-node--xs {
   padding: 2px 6px;
+  font-size: 9px;
+}
+
+.sm-node--blue { border-color: #1890ff; background: #e6f7ff; color: #096dd9; }
+.sm-node--cyan { border-color: #13c2c2; background: #e6fffb; color: #08979c; }
+.sm-node--purple { border-color: #722ed1; background: #f9f0ff; color: #531dab; }
+.sm-node--green { border-color: #52c41a; background: #f6ffed; color: #389e0d; }
+.sm-node--orange { border-color: #fa8c16; background: #fff7e6; color: #d46b08; }
+.sm-node--red { border-color: #f5222d; background: #fff1f0; color: #cf1322; }
+.sm-node--gray { border-color: #d9d9d9; background: #f5f5f5; color: #595959; }
+.sm-node--dark { border-color: #434343; background: #434343; color: #fff; }
+
+.sm-label {
+  position: absolute;
   font-size: 10px;
-}
-
-.maze-cell--blue { border-color: #1890ff; background: #e6f7ff; color: #096dd9; }
-.maze-cell--green { border-color: #52c41a; background: #f6ffed; color: #389e0d; }
-.maze-cell--orange { border-color: #fa8c16; background: #fff7e6; color: #d46b08; }
-.maze-cell--red { border-color: #f5222d; background: #fff1f0; color: #cf1322; }
-.maze-cell--gray { border-color: #d9d9d9; background: #f5f5f5; color: #595959; }
-.maze-cell--dark { border-color: #434343; background: #434343; color: #fff; }
-
-.maze-arrow {
-  font-size: 12px;
   color: #8c8c8c;
-  text-align: center;
-  line-height: 1.2;
-  padding: 2px 0;
+  font-family: 'SFMono-Regular', Consolas, monospace;
+  z-index: 1;
 }
 
-.maze-arrow-sm {
-  font-size: 11px;
-  color: #bfbfbf;
-  text-align: center;
-  line-height: 1;
-  padding: 1px 0;
-}
-
-.maze-tag {
-  margin-bottom: 4px;
-  text-align: center;
-}
-
-.maze-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-}
-
-/* 4 路分叉 */
-.maze-fork-4 {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-  margin-top: 2px;
-}
-
-.maze-fork-4-line {
-  width: 80%;
-  height: 12px;
-  border-left: 2px solid #d9d9d9;
-  border-right: 2px solid #d9d9d9;
-  border-top: 2px solid #d9d9d9;
-  border-radius: 6px 6px 0 0;
-}
-
-.maze-fork-4-cols {
-  display: flex;
-  gap: 12px;
-  padding-top: 4px;
-  align-items: flex-start;
-}
-
-/* 2 路分叉 */
-.maze-fork-2 {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  position: relative;
-}
-
-.maze-fork-2--center {
-  max-width: 300px;
-  margin-top: 2px;
-}
-
-.maze-fork-2-line {
-  width: 60%;
-  height: 10px;
-  border-left: 2px solid #d9d9d9;
-  border-right: 2px solid #d9d9d9;
-  border-top: 2px solid #d9d9d9;
-  border-radius: 4px 4px 0 0;
-}
-
-.maze-fork-2-cols {
-  display: flex;
-  gap: 10px;
-  padding-top: 2px;
-  align-items: flex-start;
-}
-
-/* 4 路并发小格子 */
-.maze-parallel-4 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 3px;
+.sm-label--loop {
+  color: #f5222d;
+  font-style: italic;
 }
 
 
