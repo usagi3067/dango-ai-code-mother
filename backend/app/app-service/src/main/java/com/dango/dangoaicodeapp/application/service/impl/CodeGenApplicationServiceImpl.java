@@ -46,24 +46,6 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
     private SupabaseService supabaseService;
 
     @Override
-    @Deprecated
-    public Flux<String> chatToGenCode(Long appId, String message, long userId) {
-        return chatToGenCode(appId, message, null, userId);
-    }
-
-    @Override
-    @Deprecated
-    public Flux<String> chatToGenCode(Long appId, String message, long userId, boolean agent) {
-        return chatToGenCode(appId, message, null, userId);
-    }
-
-    @Override
-    @Deprecated
-    public Flux<String> chatToGenCode(Long appId, String message, ElementInfo elementInfo, long userId, boolean agent) {
-        return chatToGenCode(appId, message, elementInfo, userId);
-    }
-
-    @Override
     public Flux<String> chatToGenCode(Long appId, String message, ElementInfo elementInfo, long userId) {
         // 1. 参数校验
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");

@@ -40,7 +40,7 @@ public class OpenAiStreamingChatModelConfig {
     private List<ChatModelListener> chatModelListeners;
 
     /**
-     * 流式聊天模型（用于 HTML/MULTI_FILE 生成）
+     * 流式聊天模型
      */
     @Bean("openAiStreamingChatModel")
     public StreamingChatModel openAiStreamingChatModel() {

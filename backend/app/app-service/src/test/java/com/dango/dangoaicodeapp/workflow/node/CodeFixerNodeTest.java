@@ -334,10 +334,7 @@ class CodeFixerNodeTest {
         assertTrue(guide.contains("Vue 工程模式"));
         assertTrue(guide.contains("必须使用工具进行修复"));
 
-        // 即使传入其他类型，也返回 Vue 工程模式指南
-        String guideForHtml = CodeFixerNode.getOutputFormatGuide(CodeGenTypeEnum.HTML);
-        assertEquals(guide, guideForHtml);
-
+        // 传入 null 也返回 Vue 工程模式指南
         String guideForNull = CodeFixerNode.getOutputFormatGuide(null);
         assertEquals(guide, guideForNull);
     }

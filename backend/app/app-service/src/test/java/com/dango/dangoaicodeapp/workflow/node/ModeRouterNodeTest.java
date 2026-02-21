@@ -105,24 +105,24 @@ class ModeRouterNodeTest {
         Files.createDirectories(vueDir);
 
         // 执行：检查是否有现有代码
-        boolean hasCode = ModeRouterNode.hasExistingCode(appId);
+        boolean hasCode = ModeRouterNode.hasExistingCode(appId, CodeGenTypeEnum.VUE_PROJECT);
 
         // 验证：应该检测到代码
         assertTrue(hasCode);
     }
 
     @Test
-    @DisplayName("hasExistingCode 对于非 vue_project 目录应返回 false")
+    @DisplayName("hasExistingCode 对于非标准目录应返回 false")
     void testHasExistingCodeIgnoresNonVueProjectDirs() throws IOException {
-        // 准备：创建 HTML 代码目录（旧类型，不再检测）
+        // 准备：创建一个非标准命名的目录
         Long appId = 456L;
         Path codeOutputDir = tempDir.resolve("tmp/code_output");
         Files.createDirectories(codeOutputDir);
-        Path htmlDir = codeOutputDir.resolve("html_" + appId);
-        Files.createDirectories(htmlDir);
+        Path otherDir = codeOutputDir.resolve("other_" + appId);
+        Files.createDirectories(otherDir);
 
         // 执行：检查是否有现有代码
-        boolean hasCode = ModeRouterNode.hasExistingCode(appId);
+        boolean hasCode = ModeRouterNode.hasExistingCode(appId, CodeGenTypeEnum.VUE_PROJECT);
 
         // 验证：不应该检测到代码（只检查 vue_project_ 目录）
         assertFalse(hasCode);
@@ -132,13 +132,13 @@ class ModeRouterNodeTest {
     @DisplayName("hasExistingCode 对于无效 appId 应返回 false")
     void testHasExistingCodeWithInvalidAppId() {
         // 执行 & 验证：null appId
-        assertFalse(ModeRouterNode.hasExistingCode(null));
+        assertFalse(ModeRouterNode.hasExistingCode(null, CodeGenTypeEnum.VUE_PROJECT));
 
         // 执行 & 验证：0 appId
-        assertFalse(ModeRouterNode.hasExistingCode(0L));
+        assertFalse(ModeRouterNode.hasExistingCode(0L, CodeGenTypeEnum.VUE_PROJECT));
 
         // 执行 & 验证：负数 appId
-        assertFalse(ModeRouterNode.hasExistingCode(-1L));
+        assertFalse(ModeRouterNode.hasExistingCode(-1L, CodeGenTypeEnum.VUE_PROJECT));
     }
 
     @Test

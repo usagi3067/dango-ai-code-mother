@@ -16,8 +16,7 @@ import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
 
 /**
  * 项目构建节点
- * 仅处理 Vue 项目的 npm install 和 npm run build
- * HTML 和 MULTI_FILE 类型通过条件边跳过此节点
+ * 处理 Vue 项目的 npm install 和 npm run build
  */
 @Slf4j
 @Component
