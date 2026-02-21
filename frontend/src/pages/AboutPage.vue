@@ -360,12 +360,6 @@ const infraFeatures = [
     description: '多模型统一接入（Anthropic / DeepSeek / Kimi），OpenAI 兼容协议，Failover 故障转移',
   },
   {
-    icon: SendOutlined,
-    color: '#1890ff',
-    title: '工具流式输出',
-    description: 'AI 生成代码时实时流式展示（TOOL_STREAMING），用户可以看到 AI 正在写的每一行代码',
-  },
-  {
     icon: EyeOutlined,
     color: '#52c41a',
     title: '可观测性',
