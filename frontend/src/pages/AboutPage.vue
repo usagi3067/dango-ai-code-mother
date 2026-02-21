@@ -426,7 +426,12 @@ function n(id: string, label: string, color: string, combo?: string) {
     node.style.fill = '#434343'
     node.style.stroke = '#434343'
   } else {
-    const width = Math.max(label.length * 8 + 24, 80)
+    // 根据文字长度动态计算宽度（中文字符按 14px，英文按 7px）
+    let textWidth = 0
+    for (const ch of label) {
+      textWidth += ch.charCodeAt(0) > 127 ? 14 : 7
+    }
+    const width = Math.max(textWidth + 24, 80)
     node.style.size = [width, 28]
     node.style.radius = 4
   }
@@ -458,35 +463,35 @@ function e(source: string, target: string, label?: string, color?: string) {
 
 const nodes = [
   n('start', 'START', 'dark'),
-  n('mode_router', 'mode_router', 'blue'),
+  n('mode_router', '模式路由', 'blue'),
   // create (combo: create_group)
-  n('image_plan', 'image_plan', 'blue', 'create_group'),
-  n('content_img', 'content_image', 'blue', 'create_group'),
-  n('illustration', 'illustration', 'blue', 'create_group'),
-  n('diagram', 'diagram', 'blue', 'create_group'),
-  n('logo', 'logo', 'blue', 'create_group'),
-  n('img_agg', 'image_aggregator', 'blue', 'create_group'),
-  n('prompt_enh', 'prompt_enhancer', 'green', 'create_group'),
-  n('code_gen_1', 'code_generator', 'green', 'create_group'),
+  n('image_plan', '图片规划', 'blue', 'create_group'),
+  n('content_img', '内容图片', 'blue', 'create_group'),
+  n('illustration', '插画素材', 'blue', 'create_group'),
+  n('diagram', '图表素材', 'blue', 'create_group'),
+  n('logo', 'Logo', 'blue', 'create_group'),
+  n('img_agg', '图片聚合', 'blue', 'create_group'),
+  n('prompt_enh', 'Prompt 增强', 'green', 'create_group'),
+  n('code_gen_1', '代码生成', 'green', 'create_group'),
   // leetcode (combo: create_group)
-  n('anim_adv', 'animation_advisor', 'cyan', 'create_group'),
-  n('lc_enh', 'lc_prompt_enhancer', 'cyan', 'create_group'),
-  n('code_gen_2', 'code_generator', 'green', 'create_group'),
+  n('anim_adv', '动画建议', 'cyan', 'create_group'),
+  n('lc_enh', 'Prompt 增强', 'cyan', 'create_group'),
+  n('code_gen_2', '代码生成', 'green', 'create_group'),
   // interview (combo: create_group)
-  n('iv_adv', 'interview_advisor', 'purple', 'create_group'),
-  n('iv_enh', 'iv_prompt_enhancer', 'purple', 'create_group'),
-  n('code_gen_3', 'code_generator', 'green', 'create_group'),
+  n('iv_adv', '动画建议', 'purple', 'create_group'),
+  n('iv_enh', 'Prompt 增强', 'purple', 'create_group'),
+  n('code_gen_3', '代码生成', 'green', 'create_group'),
   // existing_code (combo: existing_group)
-  n('reader', 'code_reader', 'orange', 'existing_group'),
-  n('classifier', 'intent_classifier', 'orange', 'existing_group'),
-  n('planner', 'modification_planner', 'red', 'existing_group'),
-  n('db_op', 'database_operator', 'red', 'existing_group'),
-  n('modifier', 'code_modifier', 'red', 'existing_group'),
-  n('qa', 'qa_node', 'gray', 'existing_group'),
+  n('reader', '代码读取', 'orange', 'existing_group'),
+  n('classifier', '意图识别', 'orange', 'existing_group'),
+  n('planner', '修改规划', 'red', 'existing_group'),
+  n('db_op', '数据库操作', 'red', 'existing_group'),
+  n('modifier', '代码修改', 'red', 'existing_group'),
+  n('qa', 'QA 问答', 'gray', 'existing_group'),
   n('end_qa', 'END', 'dark', 'existing_group'),
   // build check
-  n('build', 'build_check', 'green'),
-  n('fixer', 'code_fixer', 'red'),
+  n('build', '构建检查', 'green'),
+  n('fixer', '自动修复', 'red'),
   n('end', 'END', 'dark'),
 ]
 
