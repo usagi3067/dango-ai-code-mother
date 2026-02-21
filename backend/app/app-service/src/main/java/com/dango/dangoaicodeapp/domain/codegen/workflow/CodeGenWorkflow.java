@@ -34,59 +34,51 @@ import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
 
 /**
  * 代码生成工作流
- * 使用 LangGraph4j 的子图能力实现创建/修改模式分离
+ * 使用 LangGraph4j 的子图能力实现多模式分离
  *
- * 工作流结构（使用子图）：
+ * 主工作流：
  * START → mode_router → [条件边]
- *                       ├── create_subgraph (创建模式子图)
- *                       ├── leetcode_create_subgraph (力扣创建模式子图)
- *                       ├── interview_create_subgraph (面试题解创建模式子图)
- *                       ├── existing_code_subgraph (已有代码子图：意图识别 → 修改/问答)
- *                       └── modify_subgraph (修改模式子图，由 existing_code_subgraph 内部调用)
- *                              ↓
- *                       build_check_subgraph (构建检查修复子图)
- *                              ↓
- *                       END
+ *                       ├── create_subgraph          → build_check_subgraph → END
+ *                       ├── leetcode_create_subgraph  → build_check_subgraph → END
+ *                       ├── interview_create_subgraph → build_check_subgraph → END
+ *                       └── existing_code_subgraph    → [条件边]
+ *                                                      ├── (MODIFY) → build_check_subgraph → END
+ *                                                      └── (QA)     → END
  *
  * 创建模式子图：
- * image_plan → [并发分支] → image_aggregator → prompt_enhancer → code_generator
+ *   image_plan → [并发图片收集] → image_aggregator → prompt_enhancer → code_generator
  *
  * 力扣创建模式子图：
- * leetcode_prompt_enhancer → animation_advisor → code_generator
+ *   leetcode_prompt_enhancer → animation_advisor → code_generator
  *
  * 面试题解创建模式子图：
- * interview_prompt_enhancer → code_generator
+ *   interview_prompt_enhancer → code_generator
  *
- * 已有代码子图：
- * code_reader → intent_classifier → [条件边]
- *                                   ├── modify_subgraph → build_check_subgraph → END
- *                                   └── qa_node → END（跳过 build_check）
- *
- * 修改模式子图（支持数据库操作）：
- * modification_planner → [条件边] → database_operator → code_modifier
- *                         ↓
- *                   (无需SQL时跳过)
- *                         ↓
- *                   code_modifier
+ * 已有代码子图（展平，LangGraph4j 不支持子图嵌套）：
+ *   code_reader → intent_classifier → [条件边]
+ *                                     ├── modification_planner → [条件边] → database_operator → code_modifier
+ *                                     │                          └── (skip_sql) → code_modifier
+ *                                     └── qa_node
  *
  * 构建检查修复子图：
- * build_check ←→ code_fixer (循环修复)
+ *   build_check ←→ code_fixer（循环修复）
  */
 @Slf4j
 public class CodeGenWorkflow {
 
     // ========== 节点 Key 常量 ==========
-    // 主工作流节点
+
+    // 主工作流
     private static final String NODE_MODE_ROUTER = "mode_router";
 
-    // 子图节点名称
+    // 子图
     private static final String SUBGRAPH_CREATE = "create_subgraph";
     private static final String SUBGRAPH_LEETCODE_CREATE = "leetcode_create_subgraph";
     private static final String SUBGRAPH_INTERVIEW_CREATE = "interview_create_subgraph";
     private static final String SUBGRAPH_EXISTING_CODE = "existing_code_subgraph";
     private static final String SUBGRAPH_BUILD_CHECK = "build_check_subgraph";
 
-    // 创建模式子图节点
+    // 创建模式子图
     private static final String NODE_IMAGE_PLAN = "image_plan";
     private static final String NODE_CONTENT_IMAGE_COLLECTOR = "content_image_collector";
     private static final String NODE_ILLUSTRATION_COLLECTOR = "illustration_collector";
@@ -96,43 +88,35 @@ public class CodeGenWorkflow {
     private static final String NODE_PROMPT_ENHANCER = "prompt_enhancer";
     private static final String NODE_CODE_GENERATOR = "code_generator";
 
-    // 力扣创建模式子图节点
+    // 力扣创建模式子图
     private static final String NODE_LEETCODE_PROMPT_ENHANCER = "leetcode_prompt_enhancer";
     private static final String NODE_ANIMATION_ADVISOR = "animation_advisor";
 
-    // 面试题解创建模式子图节点
+    // 面试题解创建模式子图
     private static final String NODE_INTERVIEW_PROMPT_ENHANCER = "interview_prompt_enhancer";
 
-    // 修改模式子图节点
+    // 已有代码子图（含展平的修改流程）
     private static final String NODE_CODE_READER = "code_reader";
+    private static final String NODE_INTENT_CLASSIFIER = "intent_classifier";
+    private static final String NODE_QA = "qa_node";
     private static final String NODE_MODIFICATION_PLANNER = "modification_planner";
     private static final String NODE_DATABASE_OPERATOR = "database_operator";
     private static final String NODE_CODE_MODIFIER = "code_modifier";
 
-    // 已有代码子图节点
-    private static final String NODE_INTENT_CLASSIFIER = "intent_classifier";
-    private static final String NODE_QA = "qa_node";
-
-    // 构建检查修复子图节点
+    // 构建检查修复子图
     private static final String NODE_BUILD_CHECK = "build_check";
     private static final String NODE_CODE_FIXER = "code_fixer";
 
     // ========== 条件边路由常量 ==========
-    // 模式路由
+
     private static final String ROUTE_CREATE = "create";
     private static final String ROUTE_LEETCODE_CREATE = "leetcode_create";
     private static final String ROUTE_INTERVIEW_CREATE = "interview_create";
-    private static final String ROUTE_MODIFY = "modify";
     private static final String ROUTE_EXISTING_CODE = "existing_code";
-
-    // 意图识别路由
+    private static final String ROUTE_MODIFY = "modify";
     private static final String ROUTE_QA = "qa";
-
-    // 数据库操作路由
     private static final String ROUTE_EXECUTE_SQL = "execute_sql";
     private static final String ROUTE_SKIP_SQL = "skip_sql";
-
-    // 构建检查子图内部路由
     private static final String ROUTE_FIX = "fix";
     private static final String ROUTE_PASS = "pass";
 
@@ -216,17 +200,10 @@ public class CodeGenWorkflow {
                 .compile();
     }
 
+    // ========== 子图构建 ==========
+
     /**
-     * 构建创建模式子图
-     *
-     * 包含节点：
-     * - 图片规划节点
-     * - 并发图片收集节点（内容图片、插画、架构图、Logo）
-     * - 图片聚合节点
-     * - 提示词增强节点
-     * - 代码生成节点
-     *
-     * @return 创建模式子图
+     * 创建模式子图：图片规划 → 并发图片收集 → 聚合 → 提示词增强 → 代码生成
      */
     private StateGraph<MessagesState<String>> buildCreateModeSubGraph() throws GraphStateException {
         return new MessagesStateGraph<String>()
@@ -270,16 +247,7 @@ public class CodeGenWorkflow {
     }
 
     /**
-     * 构建力扣创建模式子图
-     *
-     * 包含节点：
-     * - 力扣提示词增强节点：构建力扣题解专用提示词
-     * - 动画设计建议节点：AI 分析算法并输出动画设计建议
-     * - 代码生成节点：调用 AI 生成代码
-     *
-     * 流程：leetcode_prompt_enhancer → animation_advisor → code_generator
-     *
-     * @return 力扣创建模式子图
+     * 力扣创建模式子图：提示词增强 → 动画设计建议 → 代码生成
      */
     private StateGraph<MessagesState<String>> buildLeetCodeCreateSubGraph() throws GraphStateException {
         return new MessagesStateGraph<String>()
@@ -293,9 +261,7 @@ public class CodeGenWorkflow {
     }
 
     /**
-     * 构建面试题解创建模式子图
-     *
-     * 流程：interview_prompt_enhancer → code_generator
+     * 面试题解创建模式子图：提示词增强 → 代码生成
      */
     private StateGraph<MessagesState<String>> buildInterviewCreateSubGraph() throws GraphStateException {
         return new MessagesStateGraph<String>()
@@ -307,55 +273,8 @@ public class CodeGenWorkflow {
     }
 
     /**
-     * 修改规划后的路由逻辑
-     *
-     * 判断逻辑：
-     * 1. 修改规划为空 → 跳过 SQL 执行
-     * 2. 规划中的 SQL 语句为空 → 跳过 SQL 执行
-     * 3. 否则 → 执行 SQL
-     *
-     * @param state 消息状态
-     * @return 路由目标（"execute_sql" 或 "skip_sql"）
-     */
-    private String routeAfterModificationPlanning(MessagesState<String> state) {
-        WorkflowContext context = WorkflowContext.getContext(state);
-
-        // 修改规划为空，跳过
-        if (context.getModificationPlan() == null) {
-            log.info("修改规划为空，跳过 SQL 执行");
-            return ROUTE_SKIP_SQL;
-        }
-
-        // 没有需要执行的 SQL，跳过
-        if (context.getModificationPlan().getSqlStatements() == null
-            || context.getModificationPlan().getSqlStatements().isEmpty()) {
-            log.info("无需执行 SQL，跳过数据库操作节点");
-            return ROUTE_SKIP_SQL;
-        }
-
-        log.info("有 {} 条 SQL 需要执行，路由到数据库操作节点",
-            context.getModificationPlan().getSqlStatements().size());
-        return ROUTE_EXECUTE_SQL;
-    }
-
-    /**
-     * 构建已有代码子图
-     *
-     * 包含节点：
-     * - 代码读取节点：读取现有项目结构
-     * - 意图识别节点：判断用户意图为修改代码还是问答
-     * - 修改流程节点（展平）：modification_planner → database_operator → code_modifier
-     * - 问答节点：回答用户问题
-     *
-     * 流程：
-     * code_reader → intent_classifier → [条件边]
-     *                                   ├── modification_planner → [条件边] → database_operator → code_modifier → END
-     *                                   │                           └── (skip_sql) → code_modifier → END
-     *                                   └── qa_node → END
-     *
-     * 注意：修改流程直接展平在此子图中，避免 LangGraph4j 不支持的子图嵌套
-     *
-     * @return 已有代码子图
+     * 已有代码子图（修改流程展平，LangGraph4j 不支持子图嵌套）：
+     * code_reader → intent_classifier → [MODIFY: planner → db → modifier | QA: qa_node]
      */
     private StateGraph<MessagesState<String>> buildExistingCodeSubGraph() throws GraphStateException {
         // 获取 DatabaseOperatorNode Bean（因为它需要 Dubbo 注入）
@@ -408,39 +327,7 @@ public class CodeGenWorkflow {
     }
 
     /**
-     * 已有代码子图出口路由逻辑
-     *
-     * 判断逻辑：
-     * - 意图为 QA → 直接结束（不需要构建检查）
-     * - 意图为 MODIFY → 进入构建检查子图
-     *
-     * @param state 消息状态
-     * @return 路由目标（"modify" 或 "qa"）
-     */
-    private String routeAfterExistingCode(MessagesState<String> state) {
-        WorkflowContext context = WorkflowContext.getContext(state);
-        String intent = context.getIntentType();
-        if ("QA".equals(intent)) {
-            log.info("问答模式，跳过构建检查");
-            return ROUTE_QA;
-        }
-        log.info("修改模式，进入构建检查");
-        return ROUTE_MODIFY;
-    }
-
-    /**
-     * 构建构建检查修复子图
-     *
-     * 包含节点：
-     * - 构建检查节点（npm install + npm run build）
-     * - 代码修复节点
-     *
-     * 循环逻辑：
-     * - 构建失败且未达最大重试次数 → 修复节点
-     * - 修复完成 → 重新构建检查
-     * - 构建通过或达到最大重试次数 → 出口
-     *
-     * @return 构建检查修复子图
+     * 构建检查修复子图：build_check ←→ code_fixer（循环修复，达上限则强制通过）
      */
     private StateGraph<MessagesState<String>> buildBuildCheckSubGraph() throws GraphStateException {
         return new MessagesStateGraph<String>()
@@ -465,21 +352,51 @@ public class CodeGenWorkflow {
                 .addEdge(NODE_CODE_FIXER, NODE_BUILD_CHECK);
     }
 
+    // ========== 条件边路由方法 ==========
+
     /**
-     * 构建检查子图内部路由逻辑
-     *
-     * 判断逻辑：
-     * 1. 构建失败且未达最大重试次数 → 路由到修复节点
-     * 2. 构建通过或达到最大重试次数 → 路由到出口
-     *
-     * @param state 消息状态
-     * @return 路由目标（"fix" 或 "pass"）
+     * 已有代码子图出口路由：修改分支需要构建检查，问答分支直接结束
+     */
+    private String routeAfterExistingCode(MessagesState<String> state) {
+        WorkflowContext context = WorkflowContext.getContext(state);
+        String intent = context.getIntentType();
+        if ("QA".equals(intent)) {
+            log.info("问答模式，跳过构建检查");
+            return ROUTE_QA;
+        }
+        log.info("修改模式，进入构建检查");
+        return ROUTE_MODIFY;
+    }
+
+    /**
+     * 修改规划后路由：有 SQL 则执行，否则跳过
+     */
+    private String routeAfterModificationPlanning(MessagesState<String> state) {
+        WorkflowContext context = WorkflowContext.getContext(state);
+
+        if (context.getModificationPlan() == null) {
+            log.info("修改规划为空，跳过 SQL 执行");
+            return ROUTE_SKIP_SQL;
+        }
+
+        if (context.getModificationPlan().getSqlStatements() == null
+            || context.getModificationPlan().getSqlStatements().isEmpty()) {
+            log.info("无需执行 SQL，跳过数据库操作节点");
+            return ROUTE_SKIP_SQL;
+        }
+
+        log.info("有 {} 条 SQL 需要执行，路由到数据库操作节点",
+            context.getModificationPlan().getSqlStatements().size());
+        return ROUTE_EXECUTE_SQL;
+    }
+
+    /**
+     * 构建检查路由：失败且未达上限则修复，否则通过
      */
     private String routeInBuildCheck(MessagesState<String> state) {
         WorkflowContext context = WorkflowContext.getContext(state);
         QualityResult qualityResult = context.getQualityResult();
 
-        // 构建失败且未达最大重试次数，路由到修复节点
         if (qualityResult == null || !qualityResult.getIsValid()) {
             if (context.getFixRetryCount() < WorkflowContext.MAX_FIX_RETRY_COUNT) {
                 log.info("构建未通过，路由到修复节点 (重试次数: {}/{})",
@@ -493,6 +410,8 @@ public class CodeGenWorkflow {
         log.info("构建通过或达到最大重试次数，路由到出口");
         return ROUTE_PASS;
     }
+
+    // ========== 工作流执行 ==========
 
     /**
      * 创建并发执行配置
