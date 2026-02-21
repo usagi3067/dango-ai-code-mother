@@ -19,7 +19,7 @@ import java.util.List;
  * @author dango
  */
 @Configuration
-@ConditionalOnProperty(name = "ai.provider", havingValue = "openai", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "langchain4j.open-ai.chat-model", name = "api-key")
 @ConfigurationProperties(prefix = "langchain4j.open-ai.chat-model")
 @Data
 public class OpenAiStreamingChatModelConfig {
@@ -42,8 +42,8 @@ public class OpenAiStreamingChatModelConfig {
     /**
      * 流式聊天模型（用于 HTML/MULTI_FILE 生成）
      */
-    @Bean
-    public StreamingChatModel odinaryStreamingChatModel() {
+    @Bean("openAiStreamingChatModel")
+    public StreamingChatModel openAiStreamingChatModel() {
         var builder = OpenAiStreamingChatModel.builder()
                 .apiKey(apiKey)
                 .baseUrl(baseUrl)

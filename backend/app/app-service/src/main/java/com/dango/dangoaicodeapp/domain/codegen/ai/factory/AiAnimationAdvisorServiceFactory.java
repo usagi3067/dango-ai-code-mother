@@ -14,17 +14,17 @@ import org.springframework.stereotype.Component;
 public class AiAnimationAdvisorServiceFactory {
 
     @Resource
-    private StreamingChatModel odinaryStreamingChatModel;
+    private StreamingChatModel streamingChatModel;
 
     public LeetCodeAnimationAdvisorService createService() {
         return AiServices.builder(LeetCodeAnimationAdvisorService.class)
-                .streamingChatModel(odinaryStreamingChatModel)
+                .streamingChatModel(streamingChatModel)
                 .build();
     }
 
     public InterviewAnimationAdvisorService createInterviewService() {
         return AiServices.builder(InterviewAnimationAdvisorService.class)
-                .streamingChatModel(odinaryStreamingChatModel)
+                .streamingChatModel(streamingChatModel)
                 .build();
     }
 }

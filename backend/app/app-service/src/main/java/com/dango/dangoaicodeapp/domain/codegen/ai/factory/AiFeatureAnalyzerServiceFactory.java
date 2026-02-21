@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
 public class AiFeatureAnalyzerServiceFactory {
 
     @Resource
-    private ChatModel openAiChatModel;
+    private ChatModel chatModel;
 
     /**
      * 创建 AiFeatureAnalyzerService 实例
@@ -24,7 +24,7 @@ public class AiFeatureAnalyzerServiceFactory {
     @Bean
     public AiFeatureAnalyzerService aiFeatureAnalyzerService(ChatModel chatModel) {
         return AiServices.builder(AiFeatureAnalyzerService.class)
-                .chatModel(openAiChatModel)
+                .chatModel(chatModel)
                 .build();
     }
 }

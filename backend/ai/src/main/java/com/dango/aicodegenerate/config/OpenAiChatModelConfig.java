@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 @Configuration
-@ConditionalOnProperty(name = "ai.provider", havingValue = "openai", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "langchain4j.open-ai.chat-model", name = "api-key")
 @ConfigurationProperties(prefix = "langchain4j.open-ai.chat-model")
 @Data
 public class OpenAiChatModelConfig {
@@ -28,7 +28,7 @@ public class OpenAiChatModelConfig {
     @Autowired(required = false)
     private List<ChatModelListener> chatModelListeners;
 
-    @Bean
+    @Bean("openAiChatModel")
     public ChatModel openAiChatModel() {
         var builder = OpenAiChatModel.builder()
                 .apiKey(apiKey)

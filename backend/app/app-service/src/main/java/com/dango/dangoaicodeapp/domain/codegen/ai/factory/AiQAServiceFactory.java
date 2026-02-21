@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 public class AiQAServiceFactory {
 
     @Resource
-    private StreamingChatModel odinaryStreamingChatModel;
+    private StreamingChatModel streamingChatModel;
 
     @Resource
     private ChatMemoryStore redisChatMemoryStore;
@@ -39,7 +39,7 @@ public class AiQAServiceFactory {
         chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
 
         return AiServices.builder(QAService.class)
-                .streamingChatModel(odinaryStreamingChatModel)
+                .streamingChatModel(streamingChatModel)
                 .chatMemory(chatMemory)
                 .chatMemoryProvider(memoryId -> chatMemory)
                 .build();

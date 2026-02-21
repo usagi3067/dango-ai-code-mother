@@ -15,7 +15,7 @@ import org.springframework.context.annotation.Configuration;
 public class AiAppInfoGeneratorServiceFactory {
 
     @Resource
-    private ChatModel openAiChatModel;
+    private ChatModel chatModel;
 
     /**
      * 创建 AiAppInfoGeneratorService 实例
@@ -24,7 +24,7 @@ public class AiAppInfoGeneratorServiceFactory {
     @Bean
     public AiAppInfoGeneratorService aiAppInfoGeneratorService(ChatModel chatModel) {
         return AiServices.builder(AiAppInfoGeneratorService.class)
-                .chatModel(openAiChatModel)
+                .chatModel(chatModel)
                 .build();
     }
 }

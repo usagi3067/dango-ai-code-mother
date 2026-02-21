@@ -13,7 +13,7 @@ import org.springframework.context.annotation.Configuration;
 import java.util.List;
 
 @Configuration
-@ConditionalOnProperty(name = "ai.provider", havingValue = "openai", matchIfMissing = true)
+@ConditionalOnProperty(prefix = "langchain4j.open-ai.streaming-chat-model", name = "api-key")
 @ConfigurationProperties(prefix = "langchain4j.open-ai.streaming-chat-model")
 @Data
 public class ReasoningStreamingChatModelConfig {
@@ -36,8 +36,8 @@ public class ReasoningStreamingChatModelConfig {
     /**
      * 推理流式模型（用于 Vue 项目生成，带工具调用）
      */
-    @Bean
-    public StreamingChatModel reasoningStreamingChatModel() {
+    @Bean("openAiReasoningStreamingChatModel")
+    public StreamingChatModel openAiReasoningStreamingChatModel() {
         var builder = OpenAiStreamingChatModel.builder()
                 .apiKey(apiKey)
                 .baseUrl(baseUrl)

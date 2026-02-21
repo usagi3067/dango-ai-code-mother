@@ -13,11 +13,11 @@ import org.springframework.stereotype.Component;
 public class AiIntentClassifierServiceFactory {
 
     @Resource
-    private ChatModel openAiChatModel;
+    private ChatModel chatModel;
 
     public IntentClassifierService createService() {
         return AiServices.builder(IntentClassifierService.class)
-                .chatModel(openAiChatModel)
+                .chatModel(chatModel)
                 .build();
     }
 }

@@ -14,7 +14,7 @@ import java.time.Duration;
 import java.util.List;
 
 @Configuration
-@ConditionalOnProperty(name = "ai.provider", havingValue = "anthropic")
+@ConditionalOnProperty(prefix = "ai.anthropic.reasoning-streaming-chat-model", name = "api-key")
 @ConfigurationProperties(prefix = "ai.anthropic.reasoning-streaming-chat-model")
 @Data
 public class AnthropicReasoningStreamingChatModelConfig {
@@ -30,8 +30,8 @@ public class AnthropicReasoningStreamingChatModelConfig {
     @Autowired(required = false)
     private List<ChatModelListener> chatModelListeners;
 
-    @Bean
-    public StreamingChatModel reasoningStreamingChatModel() {
+    @Bean("anthropicReasoningStreamingChatModel")
+    public StreamingChatModel anthropicReasoningStreamingChatModel() {
         var builder = AnthropicStreamingChatModel.builder()
                 .baseUrl(baseUrl)
                 .apiKey(apiKey)

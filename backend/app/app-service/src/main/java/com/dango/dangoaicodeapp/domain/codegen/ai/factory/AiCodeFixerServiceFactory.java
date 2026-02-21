@@ -37,7 +37,7 @@ public class AiCodeFixerServiceFactory {
      * 而 LangChain4j 序列化/反序列化时会丢失该字段，导致后续 API 调用失败
      */
     @Resource
-    private StreamingChatModel odinaryStreamingChatModel;
+    private StreamingChatModel streamingChatModel;
 
     @Resource
     private ChatMemoryStore redisChatMemoryStore;
@@ -114,7 +114,7 @@ public class AiCodeFixerServiceFactory {
         };
 
         return AiServices.builder(serviceClass)
-                .streamingChatModel(odinaryStreamingChatModel)
+                .streamingChatModel(streamingChatModel)
                 .chatMemory(chatMemory)
                 .chatMemoryProvider(memoryId -> chatMemory)
                 .tools(

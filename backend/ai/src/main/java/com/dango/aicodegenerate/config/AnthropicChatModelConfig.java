@@ -14,7 +14,7 @@ import java.time.Duration;
 import java.util.List;
 
 @Configuration
-@ConditionalOnProperty(name = "ai.provider", havingValue = "anthropic")
+@ConditionalOnProperty(prefix = "ai.anthropic.chat-model", name = "api-key")
 @ConfigurationProperties(prefix = "ai.anthropic.chat-model")
 @Data
 public class AnthropicChatModelConfig {
@@ -30,8 +30,8 @@ public class AnthropicChatModelConfig {
     @Autowired(required = false)
     private List<ChatModelListener> chatModelListeners;
 
-    @Bean
-    public ChatModel openAiChatModel() {
+    @Bean("anthropicChatModel")
+    public ChatModel anthropicChatModel() {
         var builder = AnthropicChatModel.builder()
                 .baseUrl(baseUrl)
                 .apiKey(apiKey)
