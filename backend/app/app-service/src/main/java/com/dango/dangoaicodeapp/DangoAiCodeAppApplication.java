@@ -20,7 +20,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 
 @EnableScheduling
 @EnableCaching
-@SpringBootApplication(exclude = {RedisEmbeddingStoreAutoConfiguration.class, ElasticsearchRepositoriesAutoConfiguration.class, ElasticsearchDataAutoConfiguration.class, ElasticsearchRestClientAutoConfiguration.class})
+@SpringBootApplication(exclude = {RedisEmbeddingStoreAutoConfiguration.class, ElasticsearchRepositoriesAutoConfiguration.class, ElasticsearchDataAutoConfiguration.class, ElasticsearchRestClientAutoConfiguration.class, dev.langchain4j.openai.spring.AutoConfig.class, dev.langchain4j.anthropic.spring.AutoConfig.class})
 @MapperScan("com.dango.dangoaicodeapp.infrastructure.mapper")
 @ComponentScan(basePackages = {"com.dango.dangoaicodeapp", "com.dango.dangoaicodecommon", "com.dango.aicodegenerate"})
 @EnableDubbo

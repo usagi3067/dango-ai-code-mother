@@ -5,6 +5,7 @@ import dev.langchain4j.model.chat.listener.ChatModelListener;
 import dev.langchain4j.model.openai.OpenAiStreamingChatModel;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,6 +19,7 @@ import java.util.List;
  * @author dango
  */
 @Configuration
+@ConditionalOnProperty(name = "ai.provider", havingValue = "openai", matchIfMissing = true)
 @ConfigurationProperties(prefix = "langchain4j.open-ai.chat-model")
 @Data
 public class OpenAiStreamingChatModelConfig {
