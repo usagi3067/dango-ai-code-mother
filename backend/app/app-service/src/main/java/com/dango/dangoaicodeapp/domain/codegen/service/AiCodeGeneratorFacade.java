@@ -40,10 +40,7 @@ public class AiCodeGeneratorFacade {
      */
     public Flux<String> generateAndSaveCodeStream(String userMessage, CodeGenTypeEnum codeGenTypeEnum, Long appId) {
         CodeGeneratorService service = aiCodeGeneratorServiceFactory.getService(appId, codeGenTypeEnum);
-        // 转义 {{ 为 { {，避免 LangChain4j PromptTemplate 将其解析为模板变量
-        // （AI 生成的建议中可能包含 JSX 内联样式 style={{...}} 等双花括号语法）
-        String safeMessage = userMessage.replace("{{", "{ {").replace("}}", "} }");
-        TokenStream tokenStream = service.generateCodeStream(appId, safeMessage);
+        TokenStream tokenStream = service.generateCodeStream(appId, userMessage);
         return processTokenStream(tokenStream);
     }
 
