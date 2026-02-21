@@ -41,7 +41,8 @@ import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
  *                       ├── create_subgraph (创建模式子图)
  *                       ├── leetcode_create_subgraph (力扣创建模式子图)
  *                       ├── interview_create_subgraph (面试题解创建模式子图)
- *                       └── modify_subgraph (修改模式子图)
+ *                       ├── existing_code_subgraph (已有代码子图：意图识别 → 修改/问答)
+ *                       └── modify_subgraph (修改模式子图，由 existing_code_subgraph 内部调用)
  *                              ↓
  *                       build_check_subgraph (构建检查修复子图)
  *                              ↓
@@ -51,17 +52,22 @@ import static org.bsc.langgraph4j.action.AsyncEdgeAction.edge_async;
  * image_plan → [并发分支] → image_aggregator → prompt_enhancer → code_generator
  *
  * 力扣创建模式子图：
- * leetcode_prompt_enhancer → code_generator
+ * leetcode_prompt_enhancer → animation_advisor → code_generator
  *
  * 面试题解创建模式子图：
  * interview_prompt_enhancer → code_generator
  *
+ * 已有代码子图：
+ * code_reader → intent_classifier → [条件边]
+ *                                   ├── modify_subgraph → build_check_subgraph → END
+ *                                   └── qa_node → END（跳过 build_check）
+ *
  * 修改模式子图（支持数据库操作）：
- * code_reader → modification_planner → [条件边] → database_operator → code_modifier
- *                                       ↓
- *                                 (无需SQL时跳过)
- *                                       ↓
- *                                 code_modifier
+ * modification_planner → [条件边] → database_operator → code_modifier
+ *                         ↓
+ *                   (无需SQL时跳过)
+ *                         ↓
+ *                   code_modifier
  *
  * 构建检查修复子图：
  * build_check ←→ code_fixer (循环修复)
@@ -78,6 +84,7 @@ public class CodeGenWorkflow {
     private static final String SUBGRAPH_LEETCODE_CREATE = "leetcode_create_subgraph";
     private static final String SUBGRAPH_INTERVIEW_CREATE = "interview_create_subgraph";
     private static final String SUBGRAPH_MODIFY = "modify_subgraph";
+    private static final String SUBGRAPH_EXISTING_CODE = "existing_code_subgraph";
     private static final String SUBGRAPH_BUILD_CHECK = "build_check_subgraph";
 
     // 创建模式子图节点
@@ -92,6 +99,7 @@ public class CodeGenWorkflow {
 
     // 力扣创建模式子图节点
     private static final String NODE_LEETCODE_PROMPT_ENHANCER = "leetcode_prompt_enhancer";
+    private static final String NODE_ANIMATION_ADVISOR = "animation_advisor";
 
     // 面试题解创建模式子图节点
     private static final String NODE_INTERVIEW_PROMPT_ENHANCER = "interview_prompt_enhancer";
@@ -101,6 +109,10 @@ public class CodeGenWorkflow {
     private static final String NODE_MODIFICATION_PLANNER = "modification_planner";
     private static final String NODE_DATABASE_OPERATOR = "database_operator";
     private static final String NODE_CODE_MODIFIER = "code_modifier";
+
+    // 已有代码子图节点
+    private static final String NODE_INTENT_CLASSIFIER = "intent_classifier";
+    private static final String NODE_QA = "qa_node";
 
     // 构建检查修复子图节点
     private static final String NODE_BUILD_CHECK = "build_check";
@@ -112,6 +124,10 @@ public class CodeGenWorkflow {
     private static final String ROUTE_LEETCODE_CREATE = "leetcode_create";
     private static final String ROUTE_INTERVIEW_CREATE = "interview_create";
     private static final String ROUTE_MODIFY = "modify";
+    private static final String ROUTE_EXISTING_CODE = "existing_code";
+
+    // 意图识别路由
+    private static final String ROUTE_QA = "qa";
 
     // 数据库操作路由
     private static final String ROUTE_EXECUTE_SQL = "execute_sql";
@@ -143,9 +159,9 @@ public class CodeGenWorkflow {
      *
      * 工作流结构：
      * 1. 模式路由节点判断操作模式
-     * 2. 根据模式路由到创建子图或修改子图
-     * 3. 两个子图都汇聚到构建检查修复子图
-     * 4. 构建检查通过后直接结束
+     * 2. 根据模式路由到对应子图
+     * 3. 创建类子图和已有代码修改分支汇聚到构建检查修复子图
+     * 4. 已有代码问答分支直接结束（不需要构建检查）
      *
      * 注意：使用 addSubgraph 方法添加未编译的子图，确保上下文正确传递
      */
@@ -154,7 +170,7 @@ public class CodeGenWorkflow {
         StateGraph<MessagesState<String>> createSubGraph = buildCreateModeSubGraph();
         StateGraph<MessagesState<String>> leetCodeCreateSubGraph = buildLeetCodeCreateSubGraph();
         StateGraph<MessagesState<String>> interviewCreateSubGraph = buildInterviewCreateSubGraph();
-        StateGraph<MessagesState<String>> modifySubGraph = buildModifyModeSubGraph();
+        StateGraph<MessagesState<String>> existingCodeSubGraph = buildExistingCodeSubGraph();
         StateGraph<MessagesState<String>> buildCheckSubGraph = buildBuildCheckSubGraph();
 
         return new MessagesStateGraph<String>()
@@ -165,7 +181,7 @@ public class CodeGenWorkflow {
                 .addNode(SUBGRAPH_CREATE, createSubGraph)
                 .addNode(SUBGRAPH_LEETCODE_CREATE, leetCodeCreateSubGraph)
                 .addNode(SUBGRAPH_INTERVIEW_CREATE, interviewCreateSubGraph)
-                .addNode(SUBGRAPH_MODIFY, modifySubGraph)
+                .addNode(SUBGRAPH_EXISTING_CODE, existingCodeSubGraph)
                 .addNode(SUBGRAPH_BUILD_CHECK, buildCheckSubGraph)
 
                 // 入口边
@@ -178,14 +194,21 @@ public class CodeGenWorkflow {
                                 ROUTE_CREATE, SUBGRAPH_CREATE,
                                 ROUTE_LEETCODE_CREATE, SUBGRAPH_LEETCODE_CREATE,
                                 ROUTE_INTERVIEW_CREATE, SUBGRAPH_INTERVIEW_CREATE,
-                                ROUTE_MODIFY, SUBGRAPH_MODIFY
+                                ROUTE_EXISTING_CODE, SUBGRAPH_EXISTING_CODE
                         ))
 
-                // 子图出口汇聚到构建检查子图
+                // 创建类子图出口汇聚到构建检查子图
                 .addEdge(SUBGRAPH_CREATE, SUBGRAPH_BUILD_CHECK)
                 .addEdge(SUBGRAPH_LEETCODE_CREATE, SUBGRAPH_BUILD_CHECK)
                 .addEdge(SUBGRAPH_INTERVIEW_CREATE, SUBGRAPH_BUILD_CHECK)
-                .addEdge(SUBGRAPH_MODIFY, SUBGRAPH_BUILD_CHECK)
+
+                // 已有代码子图出口：修改分支需要构建检查，问答分支直接结束
+                .addConditionalEdges(SUBGRAPH_EXISTING_CODE,
+                        edge_async(this::routeAfterExistingCode),
+                        Map.of(
+                                ROUTE_MODIFY, SUBGRAPH_BUILD_CHECK,
+                                ROUTE_QA, END
+                        ))
 
                 // 构建检查子图完成后直接结束
                 .addEdge(SUBGRAPH_BUILD_CHECK, END)
@@ -252,18 +275,21 @@ public class CodeGenWorkflow {
      *
      * 包含节点：
      * - 力扣提示词增强节点：构建力扣题解专用提示词
+     * - 动画设计建议节点：AI 分析算法并输出动画设计建议
      * - 代码生成节点：调用 AI 生成代码
      *
-     * 流程：leetcode_prompt_enhancer → code_generator
+     * 流程：leetcode_prompt_enhancer → animation_advisor → code_generator
      *
      * @return 力扣创建模式子图
      */
     private StateGraph<MessagesState<String>> buildLeetCodeCreateSubGraph() throws GraphStateException {
         return new MessagesStateGraph<String>()
                 .addNode(NODE_LEETCODE_PROMPT_ENHANCER, LeetCodePromptEnhancerNode.create())
+                .addNode(NODE_ANIMATION_ADVISOR, LeetCodeAnimationAdvisorNode.create())
                 .addNode(NODE_CODE_GENERATOR, CodeGeneratorNode.create())
                 .addEdge(START, NODE_LEETCODE_PROMPT_ENHANCER)
-                .addEdge(NODE_LEETCODE_PROMPT_ENHANCER, NODE_CODE_GENERATOR)
+                .addEdge(NODE_LEETCODE_PROMPT_ENHANCER, NODE_ANIMATION_ADVISOR)
+                .addEdge(NODE_ANIMATION_ADVISOR, NODE_CODE_GENERATOR)
                 .addEdge(NODE_CODE_GENERATOR, END);
     }
 
@@ -285,17 +311,18 @@ public class CodeGenWorkflow {
      * 构建修改模式子图
      *
      * 包含节点：
-     * - 代码读取节点：读取现有项目结构
-     * - 数据库分析节点：分析是否需要数据库操作（仅启用数据库时）
+     * - 修改规划节点：分析是否需要数据库操作
      * - 数据库操作节点：执行 SQL 语句（仅有 SQL 时）
      * - 代码修改节点：使用修改专用提示词进行增量修改
      *
+     * 注意：code_reader 已提前到 existing_code_subgraph 中执行
+     *
      * 流程：
-     * CodeReader → ModificationPlanner → [条件边] → DatabaseOperator → CodeModifier
-     *                                     ↓
-     *                               (无需SQL时直接跳过)
-     *                                     ↓
-     *                               CodeModifier
+     * ModificationPlanner → [条件边] → DatabaseOperator → CodeModifier
+     *                         ↓
+     *                   (无需SQL时直接跳过)
+     *                         ↓
+     *                   CodeModifier
      *
      * @return 修改模式子图
      */
@@ -305,9 +332,6 @@ public class CodeGenWorkflow {
                 .getBean(DatabaseOperatorNode.class);
 
         return new MessagesStateGraph<String>()
-                // 代码读取节点
-                .addNode(NODE_CODE_READER, CodeReaderNode.create())
-
                 // 修改规划节点
                 .addNode(NODE_MODIFICATION_PLANNER, ModificationPlannerNode.create())
 
@@ -317,11 +341,8 @@ public class CodeGenWorkflow {
                 // 代码修改节点
                 .addNode(NODE_CODE_MODIFIER, CodeModifierNode.create())
 
-                // 入口边
-                .addEdge(START, NODE_CODE_READER)
-
-                // 读取后进行修改规划
-                .addEdge(NODE_CODE_READER, NODE_MODIFICATION_PLANNER)
+                // 入口边：直接从修改规划开始（code_reader 已在 existing_code_subgraph 中执行）
+                .addEdge(START, NODE_MODIFICATION_PLANNER)
 
                 // 修改规划后的条件边：根据 sqlStatements 决定是否执行 SQL
                 .addConditionalEdges(NODE_MODIFICATION_PLANNER,
@@ -368,6 +389,78 @@ public class CodeGenWorkflow {
         log.info("有 {} 条 SQL 需要执行，路由到数据库操作节点",
             context.getModificationPlan().getSqlStatements().size());
         return ROUTE_EXECUTE_SQL;
+    }
+
+    /**
+     * 构建已有代码子图
+     *
+     * 包含节点：
+     * - 代码读取节点：读取现有项目结构
+     * - 意图识别节点：判断用户意图为修改代码还是问答
+     * - 修改模式子图：修改代码流程
+     * - 问答节点：回答用户问题
+     *
+     * 流程：
+     * code_reader → intent_classifier → [条件边]
+     *                                   ├── modify_subgraph → END
+     *                                   └── qa_node → END
+     *
+     * @return 已有代码子图
+     */
+    private StateGraph<MessagesState<String>> buildExistingCodeSubGraph() throws GraphStateException {
+        StateGraph<MessagesState<String>> modifySubGraph = buildModifyModeSubGraph();
+
+        return new MessagesStateGraph<String>()
+                // 代码读取节点
+                .addNode(NODE_CODE_READER, CodeReaderNode.create())
+
+                // 意图识别节点
+                .addNode(NODE_INTENT_CLASSIFIER, IntentClassifierNode.create())
+
+                // 修改模式子图
+                .addNode(SUBGRAPH_MODIFY, modifySubGraph)
+
+                // 问答节点
+                .addNode(NODE_QA, QANode.create())
+
+                // 入口边
+                .addEdge(START, NODE_CODE_READER)
+
+                // 读取后进行意图识别
+                .addEdge(NODE_CODE_READER, NODE_INTENT_CLASSIFIER)
+
+                // 意图识别条件边
+                .addConditionalEdges(NODE_INTENT_CLASSIFIER,
+                        edge_async(IntentClassifierNode::routeByIntent),
+                        Map.of(
+                                ROUTE_MODIFY, SUBGRAPH_MODIFY,
+                                ROUTE_QA, NODE_QA
+                        ))
+
+                // 两个分支都到出口
+                .addEdge(SUBGRAPH_MODIFY, END)
+                .addEdge(NODE_QA, END);
+    }
+
+    /**
+     * 已有代码子图出口路由逻辑
+     *
+     * 判断逻辑：
+     * - 意图为 QA → 直接结束（不需要构建检查）
+     * - 意图为 MODIFY → 进入构建检查子图
+     *
+     * @param state 消息状态
+     * @return 路由目标（"modify" 或 "qa"）
+     */
+    private String routeAfterExistingCode(MessagesState<String> state) {
+        WorkflowContext context = WorkflowContext.getContext(state);
+        String intent = context.getIntentType();
+        if ("QA".equals(intent)) {
+            log.info("问答模式，跳过构建检查");
+            return ROUTE_QA;
+        }
+        log.info("修改模式，进入构建检查");
+        return ROUTE_MODIFY;
     }
 
     /**
