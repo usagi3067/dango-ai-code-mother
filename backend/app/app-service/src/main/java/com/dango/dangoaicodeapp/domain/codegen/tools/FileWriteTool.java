@@ -23,7 +23,7 @@ import java.nio.file.StandardOpenOption;
 @Component
 public class FileWriteTool extends BaseTool{
 
-    @Tool("写入文件到指定路径")
+    @Tool("写入文件到指定路径。参数顺序：必须先提供 relativeFilePath，再提供 content")
     public String writeFile(
             @P("文件的相对路径")
             String relativeFilePath,
