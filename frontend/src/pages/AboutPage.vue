@@ -90,40 +90,77 @@
       </a-timeline>
 
       <a-divider orientation="left">修改流程（已有代码）</a-divider>
-      <a-timeline>
-        <a-timeline-item color="orange">
-          <template #dot><ReadOutlined /></template>
-          <strong>代码读取 (code_reader)</strong>
-          <br />读取现有项目结构和代码
-        </a-timeline-item>
-        <a-timeline-item color="orange">
-          <template #dot><BulbOutlined /></template>
-          <strong>意图识别 (intent_classifier)</strong>
-          <br />AI 判断用户意图：修改代码 or 纯问答
-        </a-timeline-item>
-        <a-timeline-item color="red">
-          <template #dot><FileSearchOutlined /></template>
-          <strong>修改规划 (modification_planner)</strong>
-          <a-tag color="red" style="margin-left: 8px">MODIFY 分支</a-tag>
-          <br />全局决策：分析需求，制定 SQL + 代码修改计划
-        </a-timeline-item>
-        <a-timeline-item color="red">
-          <template #dot><DatabaseOutlined /></template>
-          <strong>数据库操作 (database_operator)</strong>
-          <br />执行 SQL（有 SQL 时），获取最新 Schema；无 SQL 则跳过
-        </a-timeline-item>
-        <a-timeline-item color="red">
-          <template #dot><EditOutlined /></template>
-          <strong>代码修改 (code_modifier)</strong>
-          <br />按照修改计划执行代码变更
-        </a-timeline-item>
-        <a-timeline-item color="gray">
-          <template #dot><MessageOutlined /></template>
-          <strong>QA 问答 (qa_node)</strong>
-          <a-tag style="margin-left: 8px">QA 分支</a-tag>
-          <br />纯问答分支，直接回答用户问题，跳过构建检查
-        </a-timeline-item>
-      </a-timeline>
+      <div class="flow-tree">
+        <div class="flow-node flow-node--orange">
+          <ReadOutlined class="flow-icon" />
+          <div class="flow-content">
+            <strong>代码读取 (code_reader)</strong>
+            <p>读取现有项目结构和代码</p>
+          </div>
+        </div>
+        <div class="flow-arrow">↓</div>
+        <div class="flow-node flow-node--orange">
+          <BulbOutlined class="flow-icon" />
+          <div class="flow-content">
+            <strong>意图识别 (intent_classifier)</strong>
+            <p>AI 判断用户意图：修改代码 or 纯问答</p>
+          </div>
+        </div>
+        <div class="flow-branch">
+          <div class="flow-branch-line"></div>
+          <div class="flow-branch-sides">
+            <div class="flow-branch-left">
+              <div class="flow-branch-label"><a-tag color="red">MODIFY 分支</a-tag></div>
+              <div class="flow-node flow-node--red">
+                <FileSearchOutlined class="flow-icon" />
+                <div class="flow-content">
+                  <strong>修改规划 (modification_planner)</strong>
+                  <p>全局决策：制定 SQL + 代码修改计划</p>
+                </div>
+              </div>
+              <div class="flow-arrow">↓</div>
+              <div class="flow-node flow-node--red">
+                <DatabaseOutlined class="flow-icon" />
+                <div class="flow-content">
+                  <strong>数据库操作 (database_operator)</strong>
+                  <p>执行 SQL（有则执行，无则跳过）</p>
+                </div>
+              </div>
+              <div class="flow-arrow">↓</div>
+              <div class="flow-node flow-node--red">
+                <EditOutlined class="flow-icon" />
+                <div class="flow-content">
+                  <strong>代码修改 (code_modifier)</strong>
+                  <p>按照修改计划执行代码变更</p>
+                </div>
+              </div>
+              <div class="flow-arrow">↓</div>
+              <div class="flow-node flow-node--green">
+                <CheckCircleOutlined class="flow-icon" />
+                <div class="flow-content">
+                  <strong>→ 构建检查修复子图</strong>
+                </div>
+              </div>
+            </div>
+            <div class="flow-branch-right">
+              <div class="flow-branch-label"><a-tag>QA 分支</a-tag></div>
+              <div class="flow-node flow-node--gray">
+                <MessageOutlined class="flow-icon" />
+                <div class="flow-content">
+                  <strong>QA 问答 (qa_node)</strong>
+                  <p>直接回答用户问题</p>
+                </div>
+              </div>
+              <div class="flow-arrow">↓</div>
+              <div class="flow-node flow-node--gray">
+                <div class="flow-content">
+                  <strong>→ END（跳过构建检查）</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       <a-divider orientation="left">构建检查修复</a-divider>
       <a-timeline>
@@ -424,6 +461,113 @@ const workflowDiagram = `┌─────────────────�
 @media (max-width: 768px) {
   .about-page {
     padding: 0 16px;
+  }
+}
+
+/* 树形流程图 */
+.flow-tree {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16px 0;
+}
+
+.flow-node {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  border: 1px solid #d9d9d9;
+  background: #fff;
+  min-width: 200px;
+  max-width: 320px;
+  width: 100%;
+}
+
+.flow-node p {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.45);
+}
+
+.flow-node--orange { border-color: #fa8c16; background: #fff7e6; }
+.flow-node--red { border-color: #f5222d; background: #fff1f0; }
+.flow-node--green { border-color: #52c41a; background: #f6ffed; }
+.flow-node--gray { border-color: #d9d9d9; background: #fafafa; }
+
+.flow-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.flow-node--orange .flow-icon { color: #fa8c16; }
+.flow-node--red .flow-icon { color: #f5222d; }
+.flow-node--green .flow-icon { color: #52c41a; }
+.flow-node--gray .flow-icon { color: #8c8c8c; }
+
+.flow-content strong {
+  font-size: 13px;
+}
+
+.flow-arrow {
+  font-size: 18px;
+  color: #8c8c8c;
+  line-height: 1;
+  padding: 4px 0;
+}
+
+.flow-branch {
+  width: 100%;
+  max-width: 700px;
+  position: relative;
+  margin-top: 4px;
+}
+
+.flow-branch-line {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50%;
+  height: 20px;
+  border-left: 2px solid #d9d9d9;
+  border-right: 2px solid #d9d9d9;
+  border-top: 2px solid #d9d9d9;
+  border-radius: 8px 8px 0 0;
+}
+
+.flow-branch-sides {
+  display: flex;
+  gap: 24px;
+  padding-top: 24px;
+}
+
+.flow-branch-left,
+.flow-branch-right {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.flow-branch-label {
+  margin-bottom: 8px;
+}
+
+@media (max-width: 768px) {
+  .flow-branch-sides {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .flow-branch-line {
+    display: none;
+  }
+
+  .flow-branch-left,
+  .flow-branch-right {
+    width: 100%;
   }
 }
 </style>
