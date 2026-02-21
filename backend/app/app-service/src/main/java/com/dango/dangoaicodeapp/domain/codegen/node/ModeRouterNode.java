@@ -18,9 +18,8 @@ import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
  * 工作流入口，根据请求内容判断操作模式（创建/修改）
  *
  * 判断逻辑：
- * 1. 如果 context 中有 elementInfo，则为修改模式
+ * 1. 如果 context 中有 elementInfo 或历史代码，则为已有代码模式（后续由意图识别分流）
  * 2. 如果应用没有历史代码，则为创建模式
- * 3. 否则默认为创建模式
  *
  * @author dango
  */
@@ -63,8 +62,8 @@ public class ModeRouterNode {
      * 判断操作模式
      *
      * 判断逻辑：
-     * 1. 如果 context 中有 elementInfo，则为修改模式
-     * 2. 如果应用有历史代码，则为修改模式
+     * 1. 如果 context 中有 elementInfo，则为已有代码模式
+     * 2. 如果应用有历史代码，则为已有代码模式
      * 3. 如果应用没有历史代码，则为创建模式
      *
      * @param context 工作流上下文
@@ -73,14 +72,14 @@ public class ModeRouterNode {
     public static OperationModeEnum determineOperationMode(WorkflowContext context) {
         // 1. 检查是否有元素信息（由 Controller 层设置）
         if (context.getElementInfo() != null) {
-            log.info("检测到 elementInfo，使用修改模式");
-            return OperationModeEnum.MODIFY;
+            log.info("检测到 elementInfo，使用已有代码模式");
+            return OperationModeEnum.EXISTING_CODE;
         }
 
-        // 2. 检查是否有历史代码：有则修改，无则创建
+        // 2. 检查是否有历史代码：有则进入已有代码子图（意图识别后再分流修改/问答）
         if (hasExistingCode(context.getAppId(), context.getGenerationType())) {
-            log.info("检测到历史代码，使用修改模式");
-            return OperationModeEnum.MODIFY;
+            log.info("检测到历史代码，使用已有代码模式");
+            return OperationModeEnum.EXISTING_CODE;
         }
 
         log.info("未检测到历史代码，使用创建模式");
@@ -120,10 +119,11 @@ public class ModeRouterNode {
      *   - LEETCODE_PROJECT → "leetcode_create"
      *   - INTERVIEW_PROJECT → "interview_create"
      *   - 其他 → "create"
+     * - EXISTING_CODE 模式 → "existing_code"
      * - MODIFY 模式 → "modify"
      *
      * @param state 消息状态
-     * @return 下一个节点名称（"create"、"leetcode_create"、"interview_create" 或 "modify"）
+     * @return 下一个节点名称
      */
     public static String routeToNextNode(MessagesState<String> state) {
         WorkflowContext context = WorkflowContext.getContext(state);
@@ -146,8 +146,13 @@ public class ModeRouterNode {
                 }
                 yield "create";
             }
+            case EXISTING_CODE -> {
+                log.info("已有代码，路由到已有代码子图（意图识别）");
+                yield "existing_code";
+            }
             case MODIFY -> "modify";
             case FIX -> "create"; // FIX 模式暂时路由到创建模式
+            case QA -> "existing_code"; // QA 模式也路由到已有代码子图
         };
     }
 }
