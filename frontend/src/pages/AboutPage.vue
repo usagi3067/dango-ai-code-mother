@@ -413,16 +413,19 @@ function n(id: string, label: string, color: string, combo?: string) {
       labelFontSize: 11,
       labelFontWeight: 600,
       labelFontFamily: "'SFMono-Regular', Consolas, monospace",
+      labelPlacement: 'center',
       fill: c.fill,
       stroke: c.stroke,
       lineWidth: 1.5,
     },
   }
   if (isTerminal) {
-    node.style.size = 32
-    node.style.labelFontSize = 9
+    node.style.size = 36
+    node.style.labelFontSize = 10
+    node.style.labelFill = '#ffffff'
+    node.style.fill = '#434343'
+    node.style.stroke = '#434343'
   } else {
-    // 根据文字长度动态计算宽度
     const width = Math.max(label.length * 8 + 24, 80)
     node.style.size = [width, 28]
     node.style.radius = 4
@@ -572,6 +575,7 @@ onMounted(() => {
       type: 'rect',
       style: {
         size: [120, 28],
+        labelPlacement: 'center',
       },
     },
     edge: {
