@@ -2,7 +2,6 @@ package com.dango.dangoaicodeapp.domain.codegen.node;
 
 import cn.hutool.core.util.StrUtil;
 import com.dango.aicodegenerate.model.QualityResult;
-import com.dango.dangoaicodeapp.domain.codegen.ai.factory.AiCodeFixerServiceFactory;
 import com.dango.dangoaicodeapp.domain.codegen.builder.VueProjectBuilder;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.utils.SpringContextUtil;
@@ -33,16 +32,6 @@ public class BuildCheckNode {
             log.info("执行节点: {}", NODE_NAME);
 
             context.emitNodeStart(NODE_NAME);
-
-            // 首次进入构建检查子图时，清空 Fixer 的 Redis 记忆，避免旧修复记录干扰
-            if (context.getFixRetryCount() == 0) {
-                try {
-                    AiCodeFixerServiceFactory fixerFactory = SpringContextUtil.getBean(AiCodeFixerServiceFactory.class);
-                    fixerFactory.clearFixerMemory(context.getAppId());
-                } catch (Exception e) {
-                    log.warn("清空 Fixer 记忆失败: {}", e.getMessage());
-                }
-            }
 
             String generatedCodeDir = context.getGeneratedCodeDir();
 

@@ -102,7 +102,7 @@ public class AiCodeFixerServiceFactory {
         // 根据 appId 构建独立的对话记忆（不加载历史，修复构建错误不需要聊天历史）
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory
                 .builder()
-                .id("fixer_" + appId)
+                .id("chat_" + appId)
                 .chatMemoryStore(redisChatMemoryStore)
                 .maxMessages(50)
                 .build();
@@ -156,18 +156,4 @@ public class AiCodeFixerServiceFactory {
         log.info("已清除 appId: {} 的修复服务缓存", appId);
     }
 
-    /**
-     * 清空指定应用的 Fixer Redis 记忆并使缓存失效
-     * 在每次新工作流开始时调用，避免旧修复记录干扰新工作流
-     *
-     * @param appId 应用 ID
-     */
-    public void clearFixerMemory(long appId) {
-        // 清空 Redis 中的 Fixer 记忆
-        String memoryId = "fixer_" + appId;
-        redisChatMemoryStore.deleteMessages(memoryId);
-        // 使 Caffeine 缓存失效，强制下次创建新实例
-        invalidateCache(appId);
-        log.info("已清空 appId: {} 的 Fixer 记忆", appId);
-    }
 }

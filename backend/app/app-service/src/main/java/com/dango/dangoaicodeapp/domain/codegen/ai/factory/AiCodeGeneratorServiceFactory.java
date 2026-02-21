@@ -72,7 +72,7 @@ public class AiCodeGeneratorServiceFactory {
         // 根据 appId 构建独立的对话记忆
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory
                 .builder()
-                .id("generator_" + appId)
+                .id("chat_" + appId)
                 .chatMemoryStore(redisChatMemoryStore)
                 .maxMessages(50)
                 .build();

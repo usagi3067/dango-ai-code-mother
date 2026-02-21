@@ -55,7 +55,7 @@ public class AiModificationPlannerServiceFactory {
         // 设置足够大的窗口以支持多次工具调用
         MessageWindowChatMemory chatMemory = MessageWindowChatMemory
                 .builder()
-                .id("planner_" + appId)
+                .id("chat_" + appId)
                 .chatMemoryStore(redisChatMemoryStore)
                 .maxMessages(50)  // 支持约 20+ 次工具调用
                 .build();
