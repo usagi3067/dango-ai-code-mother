@@ -149,6 +149,11 @@ public class WorkflowContext implements Serializable {
     private OperationModeEnum operationMode;
 
     /**
+     * 意图类型（MODIFY 或 QA，由 IntentClassifierNode 设置）
+     */
+    private String intentType;
+
+    /**
      * 项目目录结构（用于修改模式）
      */
     private String projectStructure;
