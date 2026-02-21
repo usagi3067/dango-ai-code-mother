@@ -89,6 +89,9 @@ public class ToolArgumentsExtractor {
     // 是否已发送 TOOL_REQUEST
     private boolean toolRequestSent = false;
 
+    // 已处理完成的流式参数
+    private final Set<String> completedStreamingParams = new java.util.HashSet<>();
+
     public ToolArgumentsExtractor(String toolCallId, String toolName) {
         this.toolCallId = toolCallId;
         this.toolName = toolName;
@@ -204,6 +207,10 @@ public class ToolArgumentsExtractor {
         // 如果当前没有正在处理的流式参数，寻找下一个
         if (currentStreamingParam == null) {
             for (String param : toolConfig.streamingParams()) {
+                // 跳过已处理完成的参数
+                if (completedStreamingParams.contains(param)) {
+                    continue;
+                }
                 String searchKey = "\"" + param + "\"";
                 // 从 buffer 开头搜索，支持 content 在 triggerParam 前面的情况（如 Claude 模型）
                 int keyIndex = raw.indexOf(searchKey);
@@ -246,6 +253,8 @@ public class ToolArgumentsExtractor {
                 if (!unescapedDelta.isEmpty()) {
                     messages.add(new ToolStreamingMessage(toolCallId, currentStreamingParam, unescapedDelta.toString()));
                 }
+                // 记录已完成的参数，避免重复匹配
+                completedStreamingParams.add(currentStreamingParam);
                 // 当前参数完成，寻找下一个流式参数
                 currentStreamingParam = null;
                 parsePosition = pos + 1;
