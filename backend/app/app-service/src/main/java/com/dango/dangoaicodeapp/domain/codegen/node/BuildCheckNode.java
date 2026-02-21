@@ -82,12 +82,13 @@ public class BuildCheckNode {
                             "❌ 构建失败: " + errorSummary + "\n");
                 }
             } catch (Exception e) {
-                log.error("构建检查异常: {}", e.getMessage(), e);
+                String errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                log.error("构建检查异常: {}", errorMsg, e);
                 qualityResult = QualityResult.builder()
                         .isValid(false)
-                        .errors(List.of("构建检查异常: " + e.getMessage()))
+                        .errors(List.of("构建检查异常: " + errorMsg))
                         .build();
-                context.emitNodeError(NODE_NAME, e.getMessage());
+                context.emitNodeError(NODE_NAME, errorMsg);
             }
 
             context.setQualityResult(qualityResult);

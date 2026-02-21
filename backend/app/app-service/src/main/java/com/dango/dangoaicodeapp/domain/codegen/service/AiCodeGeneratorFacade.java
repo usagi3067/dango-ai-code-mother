@@ -59,10 +59,10 @@ public class AiCodeGeneratorFacade {
                         AiResponseMessage aiResponseMessage = new AiResponseMessage(partialResponse);
                         sink.next(JSONUtil.toJsonStr(aiResponseMessage));
                     })
-                    .onPartialToolExecutionRequest((index, toolExecutionRequest) -> {
-                        String toolId = toolExecutionRequest.id();
-                        String toolName = toolExecutionRequest.name();
-                        String delta = toolExecutionRequest.arguments();
+                    .onPartialToolCall(partialToolCall -> {
+                        String toolId = partialToolCall.id();
+                        String toolName = partialToolCall.name();
+                        String delta = partialToolCall.partialArguments();
 
                         // 获取或创建 extractor
                         ToolArgumentsExtractor extractor = extractors.computeIfAbsent(

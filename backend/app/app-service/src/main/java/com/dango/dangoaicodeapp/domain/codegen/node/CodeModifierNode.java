@@ -112,10 +112,10 @@ public class CodeModifierNode {
                             AiResponseMessage aiResponseMessage = new AiResponseMessage(partialResponse);
                             context.emit(JSONUtil.toJsonStr(aiResponseMessage));
                         })
-                        .onPartialToolExecutionRequest((index, toolExecutionRequest) -> {
-                            String toolId = toolExecutionRequest.id();
-                            String toolName = toolExecutionRequest.name();
-                            String delta = toolExecutionRequest.arguments();
+                        .onPartialToolCall(partialToolCall -> {
+                            String toolId = partialToolCall.id();
+                            String toolName = partialToolCall.name();
+                            String delta = partialToolCall.partialArguments();
 
                             ToolArgumentsExtractor extractor = extractors.computeIfAbsent(
                                 toolId,

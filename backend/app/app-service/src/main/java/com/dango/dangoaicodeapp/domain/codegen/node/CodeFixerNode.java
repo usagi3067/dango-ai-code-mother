@@ -123,11 +123,11 @@ public class CodeFixerNode {
                             AiResponseMessage aiResponseMessage = new AiResponseMessage(partialResponse);
                             context.emit(JSONUtil.toJsonStr(aiResponseMessage));
                         })
-                        .onPartialToolExecutionRequest((index, toolExecutionRequest) -> {
+                        .onPartialToolCall(partialToolCall -> {
                             // 处理工具调用请求（流式输出工具调用信息）
-                            String toolId = toolExecutionRequest.id();
-                            String toolName = toolExecutionRequest.name();
-                            String delta = toolExecutionRequest.arguments();
+                            String toolId = partialToolCall.id();
+                            String toolName = partialToolCall.name();
+                            String delta = partialToolCall.partialArguments();
 
                             ToolArgumentsExtractor extractor = extractors.computeIfAbsent(
                                 toolId,
