@@ -182,12 +182,6 @@
                 <div class="message-text ai-message">
                   <div class="ai-avatar">AI</div>
                   <div class="ai-content">
-                    <!-- 工作流日志面板：仅在当前正在生成的最后一条 AI 消息上显示 -->
-                    <WorkflowLogPanel
-                      v-if="msg.loading && workflowLogs.length > 0"
-                      :logs="workflowLogs"
-                      :isComplete="!isGenerating"
-                    />
                     <div class="markdown-content" v-html="renderMarkdown(msg.content)"></div>
                     <span v-if="msg.loading" class="typing-cursor">|</span>
                     <span v-if="isThinking" class="thinking-indicator">
@@ -199,6 +193,13 @@
             </div>
           </div>
         </div>
+
+        <!-- 工作流日志面板：固定在输入框上方，不随消息滚动 -->
+        <WorkflowLogPanel
+          v-if="workflowLogs.length > 0"
+          :logs="workflowLogs"
+          :isComplete="!isGenerating"
+        />
 
         <!-- 输入区域 -->
         <div class="input-area">
