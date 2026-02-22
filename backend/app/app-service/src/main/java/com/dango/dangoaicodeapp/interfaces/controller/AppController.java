@@ -7,6 +7,7 @@ import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 
 import com.dango.dangoaicodeapp.application.service.ProjectDownloadService;
+import com.dango.dangoaicodeapp.infrastructure.redis.GenTaskService;
 import com.dango.dangoaicodecommon.ratelimit.annotation.RateLimit;
 import com.dango.dangoaicodecommon.ratelimit.enums.RateLimitType;
 import com.dango.dangoaicodeapp.model.constant.AppConstant;
@@ -42,6 +43,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -69,6 +71,9 @@ public class AppController {
 
     @Resource
     private AppInfoGeneratorFacade appInfoGeneratorFacade;
+
+    @Resource
+    private GenTaskService genTaskService;
 
     /**
      * 创建应用
@@ -248,29 +253,89 @@ public class AppController {
     }
 
     /**
-     * 应用聊天生成代码（流式 SSE）
+     * 对话生成代码（SSE 流式）
+     * 改造：启动后台生成任务，SSE 从 Redis Stream 消费
      */
     @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    @RateLimit(limitType = RateLimitType.USER, rate = 5, rateInterval = 60, message = "AI 对话请求过于频繁，请稍后再试")
-    public Flux<ServerSentEvent<String>> chatToGenCode(@RequestParam Long appId,
-                                                       @RequestParam String message,
-                                                       @RequestParam(required = false) String elementInfo) {
-        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用ID无效");
-        ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
+    @RateLimit(limitType = RateLimitType.USER, rate = 5, rateInterval = 60)
+    public Flux<ServerSentEvent<String>> chatToGenCode(
+            @RequestParam Long appId,
+            @RequestParam String message,
+            @RequestParam(required = false) String elementInfo) {
+
         long loginUserId = StpUtil.getLoginIdAsLong();
 
+        // 解析 elementInfo
         ElementInfo parsedElementInfo = null;
         if (StrUtil.isNotBlank(elementInfo)) {
-            try {
-                ElementInfoDTO dto = JSONUtil.toBean(elementInfo, ElementInfoDTO.class);
-                parsedElementInfo = convertToElementInfo(dto);
-                log.info("解析 elementInfo 成功: selector={}", parsedElementInfo.getSelector());
-            } catch (Exception e) {
-                log.warn("解析 elementInfo 失败: {}", e.getMessage());
-            }
+            parsedElementInfo = JSONUtil.toBean(elementInfo, ElementInfo.class);
         }
 
-        Flux<String> contentFlux = codeGenApplicationService.chatToGenCode(appId, message, parsedElementInfo, loginUserId);
+        // 启动后台生成任务
+        codeGenApplicationService.startBackgroundGeneration(appId, message, parsedElementInfo, loginUserId);
+
+        // 返回 Redis Stream 消费者
+        Flux<String> contentFlux = codeGenApplicationService.consumeGenerationStream(appId, loginUserId, "0");
+
+        return contentFlux
+                .map(chunk -> {
+                    Map<String, String> wrapper = Map.of("d", chunk);
+                    String jsonData = JSONUtil.toJsonStr(wrapper);
+                    return ServerSentEvent.<String>builder()
+                            .data(jsonData)
+                            .build();
+                })
+                .concatWith(Mono.just(
+                        ServerSentEvent.<String>builder()
+                                .event("done")
+                                .data("")
+                                .build()
+                ));
+    }
+
+    /**
+     * 查询当前生成任务状态
+     */
+    @GetMapping("/chat/gen/status")
+    public BaseResponse<Map<String, Object>> getGenStatus(@RequestParam Long appId) {
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR);
+        long loginUserId = StpUtil.getLoginIdAsLong();
+
+        String status = genTaskService.getStatus(appId, loginUserId);
+        Long chatHistoryId = genTaskService.getChatHistoryId(appId, loginUserId);
+
+        Map<String, Object> result = new HashMap<>();
+        result.put("status", status);
+        result.put("chatHistoryId", chatHistoryId);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 恢复 SSE 流（刷新后重连）
+     * 从 Redis Stream 重放已缓存内容 + 继续接收新内容
+     */
+    @GetMapping(value = "/chat/gen/resume", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public Flux<ServerSentEvent<String>> resumeGenStream(
+            @RequestParam Long appId,
+            @RequestParam(required = false, defaultValue = "0") String lastEventId) {
+
+        long loginUserId = StpUtil.getLoginIdAsLong();
+
+        // 检查任务状态
+        String status = genTaskService.getStatus(appId, loginUserId);
+        if ("none".equals(status)) {
+            return Flux.just(ServerSentEvent.<String>builder().event("done").data("").build());
+        }
+        if ("error".equals(status)) {
+            return Flux.just(
+                    ServerSentEvent.<String>builder().data(JSONUtil.toJsonStr(Map.of("d", "生成任务已失败，请重试"))).build(),
+                    ServerSentEvent.<String>builder().event("done").data("").build()
+            );
+        }
+
+        // 从 Redis Stream 消费
+        Flux<String> contentFlux = codeGenApplicationService.consumeGenerationStream(appId, loginUserId, lastEventId);
+
         return contentFlux
                 .map(chunk -> {
                     Map<String, String> wrapper = Map.of("d", chunk);
