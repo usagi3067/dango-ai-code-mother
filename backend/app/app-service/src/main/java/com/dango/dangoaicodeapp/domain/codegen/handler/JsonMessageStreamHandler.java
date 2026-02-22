@@ -64,6 +64,18 @@ public class JsonMessageStreamHandler {
     }
 
     /**
+     * 处理 JSON 消息流但不保存到 chatHistory
+     * 用于后台生成任务（由调用方负责保存）
+     */
+    public Flux<String> handleWithoutSave(Flux<String> originFlux) {
+        StringBuilder dummyBuilder = new StringBuilder();
+        Set<String> seenToolIds = new HashSet<>();
+        return originFlux
+                .map(chunk -> handleJsonMessageChunk(chunk, dummyBuilder, seenToolIds))
+                .filter(StrUtil::isNotEmpty);
+    }
+
+    /**
      * 解析并收集 TokenStream 数据
      */
     private String handleJsonMessageChunk(String chunk, StringBuilder chatHistoryStringBuilder,

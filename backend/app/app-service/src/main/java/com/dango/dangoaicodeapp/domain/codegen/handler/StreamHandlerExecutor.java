@@ -32,4 +32,11 @@ public class StreamHandlerExecutor {
                                   long appId, long userId) {
         return jsonMessageStreamHandler.handle(originFlux, chatHistoryService, appId, userId);
     }
+
+    /**
+     * 处理流式消息但不保存到 chatHistory（由后台任务自行保存）
+     */
+    public Flux<String> doExecuteWithoutSave(Flux<String> originFlux) {
+        return jsonMessageStreamHandler.handleWithoutSave(originFlux);
+    }
 }
