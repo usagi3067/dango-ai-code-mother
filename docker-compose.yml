@@ -1,0 +1,100 @@
+services:
+  user-service:
+    build:
+      context: ./backend
+      args:
+        SERVICE_MODULE: user/user-service
+        SERVICE_NAME: user-service
+    image: dango-ai-code-user:latest
+    environment:
+      JAVA_OPTS: -Xmx256m -Xms128m
+      SPRING_PROFILES_ACTIVE: prod
+      NACOS_ADDR: ${NACOS_ADDR}
+      NACOS_NAMESPACE: prod
+      NACOS_USERNAME: ${NACOS_USERNAME}
+      NACOS_PASSWORD: ${NACOS_PASSWORD}
+    volumes:
+      - ./logs/user-service:/app/logs/user-service
+    ports:
+      - "8123:8123"
+    restart: unless-stopped
+    mem_limit: 384m
+
+  app-service:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.app
+    image: dango-ai-code-app:latest
+    environment:
+      JAVA_OPTS: -Xmx384m -Xms192m
+      SPRING_PROFILES_ACTIVE: prod
+      NACOS_ADDR: ${NACOS_ADDR}
+      NACOS_NAMESPACE: prod
+      NACOS_USERNAME: ${NACOS_USERNAME}
+      NACOS_PASSWORD: ${NACOS_PASSWORD}
+    volumes:
+      - ./logs/app-service:/app/logs/app-service
+    ports:
+      - "8124:8124"
+    restart: unless-stopped
+    mem_limit: 768m
+
+  screenshot-app:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.screenshot
+    image: dango-ai-code-screenshot:latest
+    environment:
+      JAVA_OPTS: -Xmx256m -Xms128m
+      SPRING_PROFILES_ACTIVE: prod
+      NACOS_ADDR: ${NACOS_ADDR}
+      NACOS_NAMESPACE: prod
+      NACOS_USERNAME: ${NACOS_USERNAME}
+      NACOS_PASSWORD: ${NACOS_PASSWORD}
+    volumes:
+      - ./logs/screenshot-app:/app/logs/screenshot-app
+    ports:
+      - "8125:8125"
+    restart: unless-stopped
+    mem_limit: 512m
+
+  supabase-service:
+    build:
+      context: ./backend
+      args:
+        SERVICE_MODULE: supabase/supabase-service
+        SERVICE_NAME: supabase-service
+    image: dango-ai-code-supabase:latest
+    environment:
+      JAVA_OPTS: -Xmx192m -Xms96m
+      SPRING_PROFILES_ACTIVE: prod
+      NACOS_ADDR: ${NACOS_ADDR}
+      NACOS_NAMESPACE: prod
+      NACOS_USERNAME: ${NACOS_USERNAME}
+      NACOS_PASSWORD: ${NACOS_PASSWORD}
+    volumes:
+      - ./logs/supabase-service:/app/logs/supabase-service
+    ports:
+      - "8126:8126"
+    restart: unless-stopped
+    mem_limit: 256m
+
+  frontend:
+    build:
+      context: ./frontend
+    image: dango-ai-code-frontend:latest
+    environment:
+      HIGRESS_ADDR: ${HIGRESS_ADDR}
+    ports:
+      - "80:80"
+    restart: unless-stopped
+    mem_limit: 64m
+
+  supabase-manager:
+    build:
+      context: ./supabase-manager
+    image: dango-ai-code-supabase-manager:latest
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    mem_limit: 192m
