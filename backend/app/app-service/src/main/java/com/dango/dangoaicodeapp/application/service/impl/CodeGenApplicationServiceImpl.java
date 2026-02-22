@@ -1,6 +1,7 @@
 package com.dango.dangoaicodeapp.application.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 
 import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
 import com.dango.dangoaicodeapp.application.service.CodeGenApplicationService;
@@ -175,8 +176,23 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
             .subscribeOn(Schedulers.boundedElastic())
             .timeout(Duration.ofMinutes(5))
             .doOnNext(chunk -> {
-                fullContentBuilder.append(chunk);
-                redisStreamService.addToStream(streamKey, java.util.Map.of("d", chunk));
+                // chunk 现在是 JSON 字符串，解析后写入 Redis Stream
+                cn.hutool.json.JSONObject jsonObj = JSONUtil.parseObj(chunk);
+                String content = jsonObj.getStr("d", "");
+                String msgType = jsonObj.getStr("msgType");
+
+                // 只有非 log 类型的内容才拼接到完整内容中（用于保存对话历史）
+                if (!"log".equals(msgType)) {
+                    fullContentBuilder.append(content);
+                }
+
+                // 写入 Redis Stream，保留 msgType
+                java.util.HashMap<String, String> streamData = new java.util.HashMap<>();
+                streamData.put("d", content);
+                if (msgType != null) {
+                    streamData.put("msgType", msgType);
+                }
+                redisStreamService.addToStream(streamKey, streamData);
             })
             .doOnComplete(() -> {
                 genTaskService.markCompleted(appId, userId);
@@ -212,8 +228,15 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
                         for (var record : records) {
                             if (sink.isCancelled()) return;
                             Object d = record.getValue().get("d");
+                            Object msgType = record.getValue().get("msgType");
                             if (d != null) {
-                                sink.next(d.toString());
+                                // 将 d 和 msgType 组合为 JSON 传递给 SSE 端点
+                                java.util.HashMap<String, String> msg = new java.util.HashMap<>();
+                                msg.put("d", d.toString());
+                                if (msgType != null) {
+                                    msg.put("msgType", msgType.toString());
+                                }
+                                sink.next(JSONUtil.toJsonStr(msg));
                             }
                             lastId = record.getId().getValue();
                         }

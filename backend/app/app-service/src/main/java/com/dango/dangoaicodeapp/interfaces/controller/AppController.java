@@ -289,10 +289,9 @@ public class AppController {
 
         return contentFlux
                 .map(chunk -> {
-                    Map<String, String> wrapper = Map.of("d", chunk);
-                    String jsonData = JSONUtil.toJsonStr(wrapper);
+                    // chunk 已经是完整的 JSON 字符串（含 d 和可选的 msgType），直接透传
                     return ServerSentEvent.<String>builder()
-                            .data(jsonData)
+                            .data(chunk)
                             .build();
                 })
                 .concatWith(Mono.just(
@@ -348,10 +347,8 @@ public class AppController {
 
         return contentFlux
                 .map(chunk -> {
-                    Map<String, String> wrapper = Map.of("d", chunk);
-                    String jsonData = JSONUtil.toJsonStr(wrapper);
                     return ServerSentEvent.<String>builder()
-                            .data(jsonData)
+                            .data(chunk)
                             .build();
                 })
                 .concatWith(Mono.just(
