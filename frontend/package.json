@@ -17,6 +17,7 @@
     "@ant-design/icons-vue": "^7.0.1",
     "@antv/g6": "^5.0.51",
     "ant-design-vue": "^4.2.6",
+    "axios": "^1.13.5",
     "dayjs": "^1.11.19",
     "highlight.js": "^11.11.1",
     "marked": "^17.0.1",
