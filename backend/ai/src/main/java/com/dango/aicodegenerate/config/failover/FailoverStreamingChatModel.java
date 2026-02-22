@@ -42,7 +42,7 @@ public class FailoverStreamingChatModel implements StreamingChatModel {
         }
 
         try {
-            model.doChat(request, new StreamingChatResponseHandler() {
+            model.chat(request, new StreamingChatResponseHandler() {
                 @Override
                 public void onPartialResponse(String partialResponse) {
                     handler.onPartialResponse(partialResponse);

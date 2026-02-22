@@ -75,3 +75,5 @@ create table chat_history
 use dango_ai_code_mother;
 -- 添加数据库启用字段
 ALTER TABLE app ADD COLUMN hasDatabase TINYINT(1) DEFAULT 0 COMMENT '是否启用数据库';
+
+ALTER TABLE chat_history ADD COLUMN status VARCHAR(16) NOT NULL DEFAULT 'completed' COMMENT '消息状态: generating/completed/error';

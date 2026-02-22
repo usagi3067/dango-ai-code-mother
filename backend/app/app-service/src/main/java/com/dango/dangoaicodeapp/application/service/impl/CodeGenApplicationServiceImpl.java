@@ -202,15 +202,12 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
     public Flux<String> consumeGenerationStream(Long appId, long userId, String afterId) {
         String streamKey = genTaskService.getStreamKey(appId, userId);
 
-        return Flux.create(sink -> {
-            Thread.ofVirtual().name("stream-consumer-" + appId).start(() -> {
+        return Flux.<String>create(sink -> {
+            Schedulers.boundedElastic().schedule(() -> {
                 String lastId = afterId != null ? afterId : "0";
                 try {
                     while (!sink.isCancelled()) {
-                        // 检查任务状态
-                        String status = genTaskService.getStatus(appId, userId);
-
-                        // 先尝试非阻塞读取所有已有消息
+                        // 非阻塞读取已有消息
                         var records = redisStreamService.readFromStream(streamKey, lastId, 100);
                         for (var record : records) {
                             if (sink.isCancelled()) return;
@@ -220,6 +217,9 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
                             }
                             lastId = record.getId().getValue();
                         }
+
+                        // 检查任务状态
+                        String status = genTaskService.getStatus(appId, userId);
 
                         // 如果任务已完成且没有更多消息，结束
                         if (("completed".equals(status) || "error".equals(status)) && records.isEmpty()) {
@@ -233,19 +233,15 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
                             return;
                         }
 
-                        // 阻塞等待新消息（最多 2 秒）
+                        // 没有新消息时短暂休眠，避免空转（不使用 XREAD BLOCK，防止阻塞共享连接）
                         if (records.isEmpty()) {
-                            var newRecords = redisStreamService.blockingRead(
-                                    streamKey, lastId, Duration.ofSeconds(2));
-                            for (var record : newRecords) {
-                                if (sink.isCancelled()) return;
-                                Object d = record.getValue().get("d");
-                                if (d != null) {
-                                    sink.next(d.toString());
-                                }
-                                lastId = record.getId().getValue();
-                            }
+                            Thread.sleep(200);
                         }
+                    }
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    if (!sink.isCancelled()) {
+                        sink.complete();
                     }
                 } catch (Exception e) {
                     if (!sink.isCancelled()) {
