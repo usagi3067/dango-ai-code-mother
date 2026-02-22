@@ -97,6 +97,7 @@ public class ChatHistory implements Serializable {
                 .userId(userId)
                 .message(message)
                 .messageType(MessageTypeEnum.USER.getValue())
+                .status("completed")
                 .createTime(now)
                 .updateTime(now)
                 .build();
@@ -113,6 +114,7 @@ public class ChatHistory implements Serializable {
                 .userId(userId)
                 .message(message)
                 .messageType(MessageTypeEnum.AI.getValue())
+                .status("completed")
                 .createTime(now)
                 .updateTime(now)
                 .build();

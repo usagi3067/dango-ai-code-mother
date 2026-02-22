@@ -271,8 +271,18 @@ public class AppController {
             parsedElementInfo = JSONUtil.toBean(elementInfo, ElementInfo.class);
         }
 
-        // 启动后台生成任务
-        codeGenApplicationService.startBackgroundGeneration(appId, message, parsedElementInfo, loginUserId);
+        try {
+            // 启动后台生成任务
+            codeGenApplicationService.startBackgroundGeneration(appId, message, parsedElementInfo, loginUserId);
+        } catch (BusinessException e) {
+            // SSE 端点不能抛异常（会导致 HttpMediaTypeNotAcceptableException）
+            // 返回 SSE 格式的错误信息
+            log.warn("启动生成任务失败: {}", e.getMessage());
+            return Flux.just(
+                    ServerSentEvent.<String>builder().data(JSONUtil.toJsonStr(Map.of("d", "错误: " + e.getMessage()))).build(),
+                    ServerSentEvent.<String>builder().event("done").data("").build()
+            );
+        }
 
         // 返回 Redis Stream 消费者
         Flux<String> contentFlux = codeGenApplicationService.consumeGenerationStream(appId, loginUserId, "0");
