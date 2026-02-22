@@ -50,6 +50,11 @@ public class ChatHistory implements Serializable {
     private String messageType;
 
     /**
+     * 消息状态: generating/completed/error
+     */
+    private String status;
+
+    /**
      * 应用id
      */
     @Column("appId")
@@ -108,6 +113,28 @@ public class ChatHistory implements Serializable {
                 .userId(userId)
                 .message(message)
                 .messageType(MessageTypeEnum.AI.getValue())
+                .createTime(now)
+                .updateTime(now)
+                .build();
+    }
+
+    /**
+     * 创建 AI 消息（带状态）
+     */
+    public static ChatHistory createAiMessage(Long appId, Long userId, String message, String status) {
+        if (appId == null || appId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
+        }
+        if (userId == null || userId <= 0) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户 ID 不能为空");
+        }
+        LocalDateTime now = LocalDateTime.now();
+        return ChatHistory.builder()
+                .appId(appId)
+                .userId(userId)
+                .message(message != null ? message : "")
+                .messageType(MessageTypeEnum.AI.getValue())
+                .status(status)
                 .createTime(now)
                 .updateTime(now)
                 .build();
