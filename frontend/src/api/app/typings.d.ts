@@ -118,6 +118,7 @@ declare namespace API {
     id?: number
     message?: string
     messageType?: string
+    status?: string
     appId?: number
     userId?: number
     createTime?: string
@@ -216,6 +217,17 @@ declare namespace API {
   type BaseResponseAppInfoVO = {
     code?: number
     data?: AppInfoVO
+    message?: string
+  }
+
+  type GenStatusResponse = {
+    status: 'generating' | 'completed' | 'error' | 'none'
+    chatHistoryId?: number
+  }
+
+  type BaseResponseGenStatusResponse = {
+    code?: number
+    data?: GenStatusResponse
     message?: string
   }
 }
