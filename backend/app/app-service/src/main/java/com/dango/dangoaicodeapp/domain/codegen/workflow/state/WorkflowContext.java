@@ -329,8 +329,8 @@ public class WorkflowContext implements Serializable {
     }
 
     /**
-     * 发送文本消息到流，自动包装为 JSON 格式
-     * 用于发送工作流状态消息（如节点开始、完成等）
+     * 发送 AI 回复内容到流，自动包装为 JSON 格式
+     * msgType 默认为 null，即 content 类型，用于发送 AI 实际回复内容
      */
     public void emitText(String text) {
         FluxSink<String> sink = getSink();
@@ -342,10 +342,23 @@ public class WorkflowContext implements Serializable {
     }
 
     /**
-     * 发送带前缀的节点消息（自动包装为 JSON 格式）
+     * 发送日志类型消息到流，自动包装为 JSON 格式
+     * msgType 为 "log"，用于发送工作流节点状态等日志信息
+     */
+    public void emitLog(String text) {
+        FluxSink<String> sink = getSink();
+        if (sink != null) {
+            AiResponseMessage message = new AiResponseMessage(text);
+            message.setMsgType("log");
+            sink.next(JSONUtil.toJsonStr(message));
+        }
+    }
+
+    /**
+     * 发送带前缀的节点消息（自动包装为 JSON 格式，log 类型）
      */
     public void emitNodeMessage(String nodeName, String message) {
-        emitText(String.format("[%s] %s", nodeName, message));
+        emitLog(String.format("[%s] %s", nodeName, message));
     }
 
     /**
