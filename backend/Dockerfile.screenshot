@@ -20,7 +20,7 @@ COPY supabase/supabase-service/pom.xml supabase/supabase-service/pom.xml
 RUN mvn dependency:go-offline -B || true
 
 COPY . .
-RUN mvn clean package -pl screenshot/screenshot-app -am -DskipTests -B
+RUN mvn clean package -pl screenshot/screenshot-app -am -Dmaven.test.skip=true -B
 
 # ---- Runtime Stage ----
 FROM eclipse-temurin:21-jre-alpine

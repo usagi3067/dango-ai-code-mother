@@ -21,7 +21,7 @@ RUN mvn dependency:go-offline -B || true
 
 COPY . .
 ARG SERVICE_MODULE
-RUN mvn clean package -pl ${SERVICE_MODULE} -am -DskipTests -B
+RUN mvn clean package -pl ${SERVICE_MODULE} -am -Dmaven.test.skip=true -B
 
 # ---- Runtime Stage ----
 FROM eclipse-temurin:21-jre-alpine
