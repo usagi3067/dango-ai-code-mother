@@ -91,6 +91,7 @@
         <a-button
           v-else-if="!appInfo?.hasDatabase"
           :loading="databaseInitializing"
+          :disabled="isGenerating"
           @click="handleInitDatabase"
         >
           <template #icon><DatabaseOutlined /></template>
@@ -181,6 +182,12 @@
                 <div class="message-text ai-message">
                   <div class="ai-avatar">AI</div>
                   <div class="ai-content">
+                    <!-- 工作流日志面板：仅在当前正在生成的最后一条 AI 消息上显示 -->
+                    <WorkflowLogPanel
+                      v-if="msg.loading && workflowLogs.length > 0"
+                      :logs="workflowLogs"
+                      :isComplete="!isGenerating"
+                    />
                     <div class="markdown-content" v-html="renderMarkdown(msg.content)"></div>
                     <span v-if="msg.loading" class="typing-cursor">|</span>
                     <span v-if="isThinking" class="thinking-indicator">
@@ -309,15 +316,16 @@
             - 用于在生成完成后刷新预览
             @load: iframe 加载完成时触发，用于初始化可视化编辑器
           -->
-          <iframe 
-            v-if="previewUrl && !isGenerating" 
-            :src="previewUrl" 
+          <iframe
+            v-if="previewUrl"
+            v-show="!isGenerating || hasExistingPreview"
+            :src="previewUrl"
             class="preview-iframe"
             :key="iframeKey"
             @load="onIframeLoad"
           />
-          
-          <!-- 生成中的加载状态 -->
+
+          <!-- 生成中的加载状态（仅在没有已有预览时显示） -->
           <div v-else-if="isGenerating" class="preview-loading">
             <a-spin size="large" />
             <!-- 根据是否为修改模式显示不同的提示信息 -->
@@ -517,6 +525,7 @@ import { getCodeGenTypeLabel } from '@/config/codeGenType'
  */
 import { useLoginUserStore } from '@/stores/loginUser'
 import UserAvatar from '@/components/UserAvatar.vue'
+import WorkflowLogPanel from '@/components/WorkflowLogPanel.vue'
 
 /**
  * 导入 Markdown 渲染工具
@@ -669,10 +678,16 @@ const resetThinkingTimer = () => {
 const isModifyModeGeneration = ref(false)
 
 /**
+ * 工作流日志列表（当前正在生成的消息的日志）
+ */
+const workflowLogs = ref<string[]>([])
+
+/**
  * 预览相关
  */
 const previewUrl = ref('')   // 预览 URL
 const iframeKey = ref(0)     // iframe 的 key，用于强制刷新
+const hasExistingPreview = ref(false) // 是否已有预览（已生成过代码）
 
 /**
  * 部署相关
@@ -813,7 +828,10 @@ const loadChatHistory = async (isLoadMore = false) => {
       if (records.length > 0) {
         // 将 ChatHistoryVO 转换为 Message 格式
         // API 返回的是按时间降序（最新的在前），需要反转为升序
-        const newMessages = records.map(convertToMessage).reverse()
+        const newMessages = records
+          .filter((r: API.ChatHistoryVO) => r.status !== 'generating')
+          .map(convertToMessage)
+          .reverse()
         
         if (isLoadMore) {
           // 加载更多：保存当前滚动位置
@@ -895,16 +913,23 @@ const loadAppInfo = async () => {
        */
       await loadChatHistory()
 
+      // 先检查是否有需要恢复的生成任务
+      const isResuming = await checkAndResumeGeneration()
+
       /**
        * 如果有代码生成类型，显示网站预览
+       * 恢复生成中时不刷新预览，等 done 事件触发后再刷新
        */
       if (appInfo.value.codeGenType) {
         previewUrl.value = getStaticPreviewUrl(appInfo.value.codeGenType, appId.value)
-        iframeKey.value++
+        // 有对话历史说明之前已生成过代码，标记为有已有预览
+        if (messages.value.length > 0) {
+          hasExistingPreview.value = true
+        }
+        if (!isResuming) {
+          iframeKey.value++
+        }
       }
-
-      // 先检查是否有需要恢复的生成任务
-      const isResuming = await checkAndResumeGeneration()
 
       // 自动发送初始消息（仅首页创建新应用跳转时，带 autoSend=1 参数）
       const autoSend = route.query.autoSend === '1'
@@ -947,7 +972,7 @@ const checkAndResumeGeneration = async (): Promise<boolean> => {
   if (!appId.value) return false
 
   try {
-    const res = await getGenStatus({ appId: Number(appId.value) })
+    const res = await getGenStatus({ appId: appId.value as any })
     if (res.data.code !== 0 || !res.data.data) return false
 
     const { status } = res.data.data
@@ -957,6 +982,7 @@ const checkAndResumeGeneration = async (): Promise<boolean> => {
     const aiMessageIndex = messages.value.length
     messages.value.push({ role: 'ai', content: '', loading: true })
     isGenerating.value = true
+    workflowLogs.value = []
     userScrolledAway.value = false
     scrollToBottom(true)
 
@@ -987,7 +1013,11 @@ const checkAndResumeGeneration = async (): Promise<boolean> => {
       try {
         const data = JSON.parse(event.data)
         if (data?.d) {
-          bufferContent(data.d)
+          if (data.msgType === 'log') {
+            workflowLogs.value.push(data.d.trim())
+          } else {
+            bufferContent(data.d)
+          }
         }
       } catch {
         if (event.data) bufferContent(event.data)
@@ -1091,6 +1121,8 @@ const handleSend = async () => {
   
   // 3. 设置生成状态
   isGenerating.value = true
+  // 重置工作流日志
+  workflowLogs.value = []
   // 设置是否为修改模式生成（用于显示不同的进度提示）
   isModifyModeGeneration.value = !!currentElementInfo
   
@@ -1239,12 +1271,6 @@ const handleSend = async () => {
      */
     eventSource.onmessage = (event) => {
       try {
-        /**
-         * 解析服务器返回的 JSON 数据
-         *
-         * 后端返回格式: { "d": "内容片段" }
-         * d 字段包含 AI 生成的内容片段
-         */
         const data = JSON.parse(event.data)
 
         if (data && data.d) {
@@ -1252,8 +1278,14 @@ const handleSend = async () => {
           if (shouldFilterMessage(data.d)) {
             return
           }
-          // 使用缓冲区节流更新，而不是直接追加
-          bufferContent(data.d)
+          // 根据 msgType 路由到不同区域
+          if (data.msgType === 'log') {
+            // 日志消息 → 追加到工作流日志数组
+            workflowLogs.value.push(data.d.trim())
+          } else {
+            // 内容消息（或无 msgType 的兼容消息）→ AI 回复
+            bufferContent(data.d)
+          }
         }
       } catch (e) {
         // 如果解析失败，尝试直接使用原始数据
