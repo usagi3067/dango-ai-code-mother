@@ -25,6 +25,7 @@ import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -166,6 +167,26 @@ public class ChatHistoryServiceImpl implements ChatHistoryService {
             log.error("加载历史对话失败，appId: {}, error: {}", appId, e.getMessage(), e);
             return 0;
         }
+    }
+
+    @Override
+    public Long saveAiMessageWithStatus(Long appId, Long userId, String message, String status) {
+        ChatHistory chatHistory = ChatHistory.createAiMessage(appId, userId, message, status);
+        chatHistoryRepository.save(chatHistory);
+        return chatHistory.getId();
+    }
+
+    @Override
+    public boolean updateAiMessage(Long chatHistoryId, String message, String status) {
+        ChatHistory chatHistory = chatHistoryRepository.findById(chatHistoryId).orElse(null);
+        if (chatHistory == null) {
+            log.error("更新 AI 消息失败，记录不存在: {}", chatHistoryId);
+            return false;
+        }
+        chatHistory.setMessage(message);
+        chatHistory.setStatus(status);
+        chatHistory.setUpdateTime(LocalDateTime.now());
+        return chatHistoryRepository.updateById(chatHistory);
     }
 
     /**

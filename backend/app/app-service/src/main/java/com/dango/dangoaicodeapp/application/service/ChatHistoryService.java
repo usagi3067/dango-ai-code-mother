@@ -68,4 +68,25 @@ public interface ChatHistoryService {
      * @return 加载的消息数量
      */
     int loadChatHistoryToMemory(Long appId, MessageWindowChatMemory chatMemory, int maxCount);
+
+    /**
+     * 保存 AI 消息（带状态），返回记录 ID
+     *
+     * @param appId   应用ID
+     * @param userId  用户ID
+     * @param message 消息内容
+     * @param status  消息状态
+     * @return 记录 ID
+     */
+    Long saveAiMessageWithStatus(Long appId, Long userId, String message, String status);
+
+    /**
+     * 更新 AI 消息内容和状态
+     *
+     * @param chatHistoryId 记录ID
+     * @param message       消息内容
+     * @param status        消息状态
+     * @return 是否更新成功
+     */
+    boolean updateAiMessage(Long chatHistoryId, String message, String status);
 }

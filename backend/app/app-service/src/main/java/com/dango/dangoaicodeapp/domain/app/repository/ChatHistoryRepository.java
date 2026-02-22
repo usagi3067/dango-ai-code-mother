@@ -18,4 +18,5 @@ public interface ChatHistoryRepository {
     Page<ChatHistory> findPage(Page<ChatHistory> page, QueryWrapper queryWrapper);
     boolean removeByQuery(QueryWrapper queryWrapper);
     List<ChatHistory> findAll(QueryWrapper queryWrapper);
+    boolean updateById(ChatHistory chatHistory);
 }

@@ -63,4 +63,9 @@ public class ChatHistoryRepositoryImpl implements ChatHistoryRepository {
     public List<ChatHistory> findAll(QueryWrapper queryWrapper) {
         return chatHistoryMapper.selectListByQuery(queryWrapper);
     }
+
+    @Override
+    public boolean updateById(ChatHistory chatHistory) {
+        return chatHistoryMapper.update(chatHistory) > 0;
+    }
 }
