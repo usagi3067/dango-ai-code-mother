@@ -20,6 +20,7 @@ tmp/
 # Local config
 *.local
 **/application-local.yml
+**/src/test/resources/application-test.yml
 
 # Git worktrees
 .worktrees/
