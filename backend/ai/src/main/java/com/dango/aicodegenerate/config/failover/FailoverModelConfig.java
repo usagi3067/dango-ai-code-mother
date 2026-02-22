@@ -1,5 +1,11 @@
 package com.dango.aicodegenerate.config.failover;
 
+import com.dango.aicodegenerate.config.AnthropicChatModelConfig;
+import com.dango.aicodegenerate.config.AnthropicOrdinaryStreamingChatModelConfig;
+import com.dango.aicodegenerate.config.AnthropicReasoningStreamingChatModelConfig;
+import com.dango.aicodegenerate.config.OpenAiChatModelConfig;
+import com.dango.aicodegenerate.config.OpenAiStreamingChatModelConfig;
+import com.dango.aicodegenerate.config.ReasoningStreamingChatModelConfig;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import lombok.extern.slf4j.Slf4j;
@@ -45,47 +51,71 @@ public class FailoverModelConfig {
     @Qualifier("openAiStreamingChatModel")
     private StreamingChatModel openAiStreamingChatModel;
 
+    // 注入配置类以获取模型名称
+    @Autowired(required = false)
+    private AnthropicChatModelConfig anthropicChatModelConfig;
+    @Autowired(required = false)
+    private OpenAiChatModelConfig openAiChatModelConfig;
+    @Autowired(required = false)
+    private AnthropicReasoningStreamingChatModelConfig anthropicReasoningConfig;
+    @Autowired(required = false)
+    private ReasoningStreamingChatModelConfig openAiReasoningConfig;
+    @Autowired(required = false)
+    private AnthropicOrdinaryStreamingChatModelConfig anthropicOrdinaryConfig;
+    @Autowired(required = false)
+    private OpenAiStreamingChatModelConfig openAiStreamingConfig;
+
     @Bean("chatModel")
     @Primary
     public ChatModel failoverChatModel() {
         List<ChatModel> models = new ArrayList<>();
-        addIfNotNull(models, anthropicChatModel, "Anthropic");
-        addIfNotNull(models, openAiChatModel, "OpenAI");
-        log.info("ChatModel Failover 链: {} 个模型", models.size());
+        List<String> names = new ArrayList<>();
+        addIfNotNull(models, names, anthropicChatModel,
+                anthropicChatModelConfig != null ? anthropicChatModelConfig.getModelName() : null, "Anthropic");
+        addIfNotNull(models, names, openAiChatModel,
+                openAiChatModelConfig != null ? openAiChatModelConfig.getModelName() : null, "OpenAI");
+        log.info("ChatModel Failover 链: {}", names);
         if (models.size() == 1) {
-            return models.getFirst();
+            return new FailoverChatModel(models, names);
         }
-        return new FailoverChatModel(models);
+        return new FailoverChatModel(models, names);
     }
 
     @Bean("reasoningStreamingChatModel")
     public StreamingChatModel failoverReasoningStreamingChatModel() {
         List<StreamingChatModel> models = new ArrayList<>();
-        addIfNotNull(models, anthropicReasoningStreamingChatModel, "Anthropic");
-        addIfNotNull(models, openAiReasoningStreamingChatModel, "OpenAI");
-        log.info("ReasoningStreamingChatModel Failover 链: {} 个模型", models.size());
+        List<String> names = new ArrayList<>();
+        addIfNotNull(models, names, anthropicReasoningStreamingChatModel,
+                anthropicReasoningConfig != null ? anthropicReasoningConfig.getModelName() : null, "Anthropic");
+        addIfNotNull(models, names, openAiReasoningStreamingChatModel,
+                openAiReasoningConfig != null ? openAiReasoningConfig.getModelName() : null, "OpenAI");
+        log.info("ReasoningStreamingChatModel Failover 链: {}", names);
         if (models.size() == 1) {
-            return models.getFirst();
+            return new FailoverStreamingChatModel(models, names);
         }
-        return new FailoverStreamingChatModel(models);
+        return new FailoverStreamingChatModel(models, names);
     }
 
     @Bean("streamingChatModel")
     public StreamingChatModel failoverStreamingChatModel() {
         List<StreamingChatModel> models = new ArrayList<>();
-        addIfNotNull(models, anthropicStreamingChatModel, "Anthropic");
-        addIfNotNull(models, openAiStreamingChatModel, "OpenAI");
-        log.info("StreamingChatModel Failover 链: {} 个模型", models.size());
+        List<String> names = new ArrayList<>();
+        addIfNotNull(models, names, anthropicStreamingChatModel,
+                anthropicOrdinaryConfig != null ? anthropicOrdinaryConfig.getModelName() : null, "Anthropic");
+        addIfNotNull(models, names, openAiStreamingChatModel,
+                openAiStreamingConfig != null ? openAiStreamingConfig.getModelName() : null, "OpenAI");
+        log.info("StreamingChatModel Failover 链: {}", names);
         if (models.size() == 1) {
-            return models.getFirst();
+            return new FailoverStreamingChatModel(models, names);
         }
-        return new FailoverStreamingChatModel(models);
+        return new FailoverStreamingChatModel(models, names);
     }
 
-    private <T> void addIfNotNull(List<T> list, T item, String name) {
+    private <T> void addIfNotNull(List<T> list, List<String> names, T item, String modelName, String provider) {
         if (item != null) {
             list.add(item);
-            log.info("  - {} 模型已加入 Failover 链", name);
+            String displayName = modelName != null ? modelName : provider;
+            names.add(displayName);
         }
     }
 }

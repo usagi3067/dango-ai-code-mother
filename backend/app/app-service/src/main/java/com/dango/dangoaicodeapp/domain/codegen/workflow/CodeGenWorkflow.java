@@ -464,8 +464,10 @@ public class CodeGenWorkflow {
                 .elementInfo(elementInfo)
                 .build();
 
-        GraphRepresentation graph = workflow.getGraph(GraphRepresentation.Type.MERMAID);
-        log.info("工作流图:\n{}", graph.content());
+        if (log.isDebugEnabled()) {
+            GraphRepresentation graph = workflow.getGraph(GraphRepresentation.Type.MERMAID);
+            log.debug("工作流图:\n{}", graph.content());
+        }
         log.info("开始执行代码生成工作流, appId: {}, hasElementInfo: {}", appId, elementInfo != null);
 
         WorkflowContext finalContext = null;
@@ -478,7 +480,7 @@ public class CodeGenWorkflow {
             WorkflowContext currentContext = WorkflowContext.getContext(step.state());
             if (currentContext != null) {
                 finalContext = currentContext;
-                log.info("当前步骤上下文: {}", currentContext);
+                log.debug("当前步骤上下文: {}", currentContext);
             }
             stepCounter++;
         }
@@ -574,8 +576,10 @@ public class CodeGenWorkflow {
                             .generationType(generationType != null ? generationType : CodeGenTypeEnum.VUE_PROJECT)
                             .build();
 
-                    GraphRepresentation graph = workflow.getGraph(GraphRepresentation.Type.MERMAID);
-                    log.info("工作流图:\n{}", graph.content());
+                    if (log.isDebugEnabled()) {
+                        GraphRepresentation graph = workflow.getGraph(GraphRepresentation.Type.MERMAID);
+                        log.debug("工作流图:\n{}", graph.content());
+                    }
                     log.info("开始执行代码生成工作流（流式）, appId: {}, executionId: {}, hasElementInfo: {}, databaseEnabled: {}",
                             appId, executionId, elementInfo != null, databaseEnabled);
 
@@ -590,7 +594,7 @@ public class CodeGenWorkflow {
                         log.info("--- 第 {} 步完成 ---", stepCounter);
                         WorkflowContext currentContext = WorkflowContext.getContext(step.state());
                         if (currentContext != null) {
-                            log.info("当前步骤上下文: {}", currentContext);
+                            log.debug("当前步骤上下文: {}", currentContext);
                         }
                         stepCounter++;
                     }

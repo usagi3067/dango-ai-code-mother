@@ -131,11 +131,16 @@
             <appender-ref ref="FILE_ERROR"/>
             <appender-ref ref="SKYWALKING_LOG"/>
         </root>
-        <logger name="com.dango" level="DEBUG" additivity="false">
+        <logger name="com.dango" level="INFO" additivity="false">
             <appender-ref ref="ASYNC_CONSOLE"/>
             <appender-ref ref="ASYNC_FILE_BIZ"/>
             <appender-ref ref="FILE_ERROR"/>
             <appender-ref ref="SKYWALKING_LOG"/>
+        </logger>
+        <!-- LangChain4j HTTP 日志 - 隐藏完整请求/响应体，仅在 DEBUG 时输出 -->
+        <logger name="dev.langchain4j.http.client.log" level="WARN" additivity="false">
+            <appender-ref ref="ASYNC_CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE_BIZ"/>
         </logger>
         <!-- IO 日志 - HTTP 请求和 Dubbo 调用 -->
         <logger name="IO_LOG" level="INFO" additivity="false">
@@ -158,6 +163,10 @@
             <appender-ref ref="ASYNC_FILE_BIZ"/>
             <appender-ref ref="FILE_ERROR"/>
             <appender-ref ref="SKYWALKING_LOG"/>
+        </logger>
+        <!-- LangChain4j HTTP 日志 - 生产环境关闭 -->
+        <logger name="dev.langchain4j.http.client.log" level="WARN" additivity="false">
+            <appender-ref ref="ASYNC_FILE_BIZ"/>
         </logger>
         <logger name="IO_LOG" level="INFO" additivity="false">
             <appender-ref ref="ASYNC_FILE_IO"/>

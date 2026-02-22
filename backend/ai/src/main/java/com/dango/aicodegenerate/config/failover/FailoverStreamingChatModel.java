@@ -16,12 +16,14 @@ import java.util.List;
 public class FailoverStreamingChatModel implements StreamingChatModel {
 
     private final List<StreamingChatModel> models;
+    private final List<String> modelNames;
 
-    public FailoverStreamingChatModel(List<StreamingChatModel> models) {
+    public FailoverStreamingChatModel(List<StreamingChatModel> models, List<String> modelNames) {
         if (models == null || models.isEmpty()) {
             throw new IllegalArgumentException("至少需要一个 StreamingChatModel");
         }
         this.models = models;
+        this.modelNames = modelNames;
     }
 
     @Override
@@ -36,9 +38,12 @@ public class FailoverStreamingChatModel implements StreamingChatModel {
         }
 
         StreamingChatModel model = models.get(index);
-        if (index > 0) {
-            log.info("Failover: 切换到第 {} 个备选模型 [{}]",
-                    index, model.getClass().getSimpleName());
+        String name = index < modelNames.size() ? modelNames.get(index) : model.getClass().getSimpleName();
+
+        if (index == 0) {
+            log.info("AI 调用 - 模型: {}", name);
+        } else {
+            log.info("Failover: 切换到备选模型: {}", name);
         }
 
         try {
@@ -55,15 +60,13 @@ public class FailoverStreamingChatModel implements StreamingChatModel {
 
                 @Override
                 public void onError(Throwable error) {
-                    log.warn("模型 [{}] 流式调用失败 ({}): {}",
-                            index, model.getClass().getSimpleName(), error.getMessage());
+                    log.warn("模型 [{}] 流式调用失败: {}", name, error.getMessage());
                     // 切换到下一个模型
                     doChat(request, handler, index + 1);
                 }
             });
         } catch (Exception e) {
-            log.warn("模型 [{}] 流式调用异常 ({}): {}",
-                    index, model.getClass().getSimpleName(), e.getMessage());
+            log.warn("模型 [{}] 流式调用异常: {}", name, e.getMessage());
             doChat(request, handler, index + 1);
         }
     }

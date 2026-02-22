@@ -15,12 +15,14 @@ import java.util.List;
 public class FailoverChatModel implements ChatModel {
 
     private final List<ChatModel> models;
+    private final List<String> modelNames;
 
-    public FailoverChatModel(List<ChatModel> models) {
+    public FailoverChatModel(List<ChatModel> models, List<String> modelNames) {
         if (models == null || models.isEmpty()) {
             throw new IllegalArgumentException("至少需要一个 ChatModel");
         }
         this.models = models;
+        this.modelNames = modelNames;
     }
 
     @Override
@@ -28,16 +30,17 @@ public class FailoverChatModel implements ChatModel {
         Exception lastException = null;
         for (int i = 0; i < models.size(); i++) {
             ChatModel model = models.get(i);
+            String name = i < modelNames.size() ? modelNames.get(i) : model.getClass().getSimpleName();
             try {
+                log.info("AI 调用 - 模型: {}", name);
                 ChatResponse response = model.chat(request);
                 if (i > 0) {
-                    log.info("Failover 成功，使用第 {} 个备选模型完成请求", i);
+                    log.info("Failover 成功，使用备选模型: {}", name);
                 }
                 return response;
             } catch (Exception e) {
                 lastException = e;
-                log.warn("模型 [{}] 调用失败 ({}): {}",
-                        i, model.getClass().getSimpleName(), e.getMessage());
+                log.warn("模型 [{}] 调用失败: {}", name, e.getMessage());
             }
         }
         throw new RuntimeException("所有模型均调用失败", lastException);
