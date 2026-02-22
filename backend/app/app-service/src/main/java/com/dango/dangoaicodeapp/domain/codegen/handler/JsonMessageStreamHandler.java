@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -87,9 +88,16 @@ public class JsonMessageStreamHandler {
             case AI_RESPONSE -> {
                 AiResponseMessage aiMessage = JSONUtil.toBean(chunk, AiResponseMessage.class);
                 String data = aiMessage.getData();
-                // 直接拼接响应
-                chatHistoryStringBuilder.append(data);
-                return data;
+                String msgType = aiMessage.getMsgType();
+                // 只有非 log 类型的内容才记录到对话历史
+                if (!"log".equals(msgType)) {
+                    chatHistoryStringBuilder.append(data);
+                }
+                // 返回带 msgType 的 JSON，供下游区分消息类型
+                if (msgType != null) {
+                    return JSONUtil.toJsonStr(Map.of("d", data, "msgType", msgType));
+                }
+                return JSONUtil.toJsonStr(Map.of("d", data));
             }
             case TOOL_REQUEST -> {
                 ToolRequestMessage msg = JSONUtil.toBean(chunk, ToolRequestMessage.class);
@@ -102,16 +110,16 @@ public class JsonMessageStreamHandler {
                         String toolName = msg.getName();
 
                         if ("writeFile".equals(toolName)) {
-                            return String.format("\n📝 正在写入 `%s`...\n", msg.getFilePath());
+                            return JSONUtil.toJsonStr(Map.of("d", String.format("\n📝 正在写入 `%s`...\n", msg.getFilePath())));
                         } else if ("modifyFile".equals(toolName)) {
-                            return String.format("\n📝 正在修改 `%s`...\n", msg.getFilePath());
+                            return JSONUtil.toJsonStr(Map.of("d", String.format("\n📝 正在修改 `%s`...\n", msg.getFilePath())));
                         }
                     }
 
                     // 非流式工具：使用原有逻辑
                     BaseTool tool = toolManager.getTool(msg.getName());
                     if (tool != null) {
-                        return tool.generateToolRequestResponse();
+                        return JSONUtil.toJsonStr(Map.of("d", tool.generateToolRequestResponse()));
                     }
                 }
                 return "";
@@ -125,7 +133,7 @@ public class JsonMessageStreamHandler {
                 JSONObject args = JSONUtil.parseObj(msg.getArguments());
                 String result = tool.generateToolExecutedResult(args);
                 chatHistoryStringBuilder.append(result);
-                return String.format("\n%s\n", result);
+                return JSONUtil.toJsonStr(Map.of("d", String.format("\n%s\n", result)));
             }
             default -> {
                 log.error("不支持的消息类型: {}", typeEnum);
