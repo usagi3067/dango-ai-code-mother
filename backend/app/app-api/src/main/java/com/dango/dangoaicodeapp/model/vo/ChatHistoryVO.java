@@ -43,6 +43,11 @@ public class ChatHistoryVO implements Serializable {
     private Long userId;
 
     /**
+     * 消息状态: generating/completed/error
+     */
+    private String status;
+
+    /**
      * 创建时间
      */
     private LocalDateTime createTime;
