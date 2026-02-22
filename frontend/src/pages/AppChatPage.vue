@@ -497,6 +497,7 @@ import {
 import { getAppVoById, deployApp } from '@/api/app/appController'
 import { listChatHistoryByAppId } from '@/api/app/chatHistoryController'
 import { initializeDatabase } from '@/api/app/databaseController'
+import { getGenStatus } from '@/api/app/index'
 
 /**
  * 导入环境变量配置
@@ -902,11 +903,20 @@ const loadAppInfo = async () => {
         iframeKey.value++
       }
 
+      // 先检查是否有需要恢复的生成任务
+      const isResuming = await checkAndResumeGeneration()
+
       // 自动发送初始消息（仅首页创建新应用跳转时，带 autoSend=1 参数）
       const autoSend = route.query.autoSend === '1'
-      if (appInfo.value.initPrompt && isOwner.value && historyLoaded.value && messages.value.length === 0 && autoSend) {
+      if (!isResuming && autoSend && appInfo.value.initPrompt && isOwner.value
+          && historyLoaded.value && messages.value.length === 0) {
         inputText.value = appInfo.value.initPrompt
         await handleSend()
+      }
+
+      // 清理 URL 中的 autoSend 参数，防止刷新后重复触发
+      if (autoSend) {
+        router.replace({ path: route.path, query: {} })
       }
     } else {
       message.error('获取应用信息失败')
@@ -930,8 +940,105 @@ interface ElementInfoDTO {
 }
 
 /**
+ * 检查是否有正在进行的生成任务，如果有则恢复
+ * @returns true 表示正在恢复，false 表示无需恢复
+ */
+const checkAndResumeGeneration = async (): Promise<boolean> => {
+  if (!appId.value) return false
+
+  try {
+    const res = await getGenStatus({ appId: Number(appId.value) })
+    if (res.data.code !== 0 || !res.data.data) return false
+
+    const { status } = res.data.data
+    if (status !== 'generating') return false
+
+    // 有正在进行的生成任务，开始恢复
+    const aiMessageIndex = messages.value.length
+    messages.value.push({ role: 'ai', content: '', loading: true })
+    isGenerating.value = true
+    userScrolledAway.value = false
+    scrollToBottom(true)
+
+    // 连接恢复端点
+    const url = `${API_BASE_URL}/app/chat/gen/resume?appId=${appId.value}`
+    const eventSource = new EventSource(url, { withCredentials: true })
+
+    let streamCompleted = false
+    let messageBuffer = ''
+    let flushTimer: number | null = null
+
+    const flushMessageBuffer = () => {
+      if (!messageBuffer) return
+      messages.value[aiMessageIndex].content += messageBuffer
+      messageBuffer = ''
+      scrollToBottom()
+      flushTimer = null
+    }
+
+    const bufferContent = (content: string) => {
+      messageBuffer += content
+      if (!flushTimer) {
+        flushTimer = window.setTimeout(flushMessageBuffer, 100)
+      }
+    }
+
+    eventSource.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        if (data?.d) {
+          bufferContent(data.d)
+        }
+      } catch {
+        if (event.data) bufferContent(event.data)
+      }
+    }
+
+    eventSource.onerror = () => {
+      if (streamCompleted || !isGenerating.value) return
+      if (eventSource.readyState === EventSource.CONNECTING) {
+        streamCompleted = true
+        if (flushTimer) { clearTimeout(flushTimer); flushMessageBuffer() }
+        isGenerating.value = false
+        messages.value[aiMessageIndex].loading = false
+        eventSource.close()
+        userScrolledAway.value = false
+        setTimeout(async () => {
+          const appRes = await getAppVoById({ id: appId.value as any })
+          if (appRes.data.code === 0 && appRes.data.data) appInfo.value = appRes.data.data
+          updatePreview()
+        }, 1000)
+      } else {
+        if (flushTimer) { clearTimeout(flushTimer); flushMessageBuffer() }
+        handleStreamError(new Error('SSE 恢复连接错误'), aiMessageIndex)
+        eventSource.close()
+      }
+    }
+
+    eventSource.addEventListener('done', () => {
+      streamCompleted = true
+      if (flushTimer) { clearTimeout(flushTimer); flushMessageBuffer() }
+      eventSource.close()
+      messages.value[aiMessageIndex].loading = false
+      isGenerating.value = false
+      userScrolledAway.value = false
+      setTimeout(async () => {
+        const appRes = await getAppVoById({ id: appId.value as any })
+        if (appRes.data.code === 0 && appRes.data.data) appInfo.value = appRes.data.data
+        updatePreview()
+      }, 1000)
+    })
+
+    return true
+  } catch (error) {
+    console.error('检查恢复状态失败:', error)
+    return false
+  }
+}
+
+/**
  * 发送消息
- * 
+ *
  * 【核心流程】
  * 1. 验证输入
  * 2. 添加用户消息到列表
