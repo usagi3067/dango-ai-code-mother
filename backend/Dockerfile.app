@@ -6,7 +6,7 @@ COPY pom.xml .
 COPY common/pom.xml common/pom.xml
 COPY ai/pom.xml ai/pom.xml
 COPY user/pom.xml user/pom.xml
-COPY user/user-api/pom.xml user/user-api/pom.xml
+COPY user/api/pom.xml user/api/pom.xml
 COPY user/user-service/pom.xml user/user-service/pom.xml
 COPY app/pom.xml app/pom.xml
 COPY app/app-api/pom.xml app/app-api/pom.xml
