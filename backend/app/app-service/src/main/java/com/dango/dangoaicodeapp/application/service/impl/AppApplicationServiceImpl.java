@@ -270,7 +270,7 @@ public class AppApplicationServiceImpl implements AppApplicationService {
         app.markDeployed(deployKey);
         boolean updateResult = appRepository.updateById(app);
         ThrowUtils.throwIf(!updateResult, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
-        String appDeployUrl = String.format("%s/%s/", deployHost, deployKey);
+        String appDeployUrl = String.format("%s/d/%s/", deployHost, deployKey);
         generateAppScreenshotAsync(appId, appDeployUrl);
         return appDeployUrl;
     }
