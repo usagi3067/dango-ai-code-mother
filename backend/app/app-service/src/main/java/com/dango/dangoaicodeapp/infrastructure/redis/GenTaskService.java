@@ -36,17 +36,23 @@ public class GenTaskService {
         // HSETNX：仅当 field 不存在时设置，用于防重复
         Boolean set = stringRedisTemplate.opsForHash().putIfAbsent(taskKey, "status", "generating");
         if (Boolean.FALSE.equals(set)) {
-            // 已有任务，检查是否是僵死任务（超过 10 分钟）
-            String startTime = (String) stringRedisTemplate.opsForHash().get(taskKey, "startTime");
-            if (startTime != null) {
-                long elapsed = System.currentTimeMillis() - Long.parseLong(startTime);
-                if (elapsed > 10 * 60 * 1000) {
-                    // 僵死任务，强制清理后重新启动
-                    log.warn("检测到僵死任务，强制清理: appId={}, userId={}", appId, userId);
-                    cleanupTask(appId, userId);
-                    stringRedisTemplate.opsForHash().putIfAbsent(taskKey, "status", "generating");
-                } else {
-                    return false;
+            // 已有任务，先检查状态
+            String existingStatus = (String) stringRedisTemplate.opsForHash().get(taskKey, "status");
+            if ("completed".equals(existingStatus) || "error".equals(existingStatus)) {
+                // 已完成或已失败的任务，清理后允许新任务启动
+                log.info("清理已结束的任务(status={}): appId={}, userId={}", existingStatus, appId, userId);
+                cleanupTask(appId, userId);
+            } else {
+                // 状态为 generating，检查是否是僵死任务（超过 10 分钟）
+                String startTime = (String) stringRedisTemplate.opsForHash().get(taskKey, "startTime");
+                if (startTime != null) {
+                    long elapsed = System.currentTimeMillis() - Long.parseLong(startTime);
+                    if (elapsed > 10 * 60 * 1000) {
+                        log.warn("检测到僵死任务，强制清理: appId={}, userId={}", appId, userId);
+                        cleanupTask(appId, userId);
+                    } else {
+                        return false;
+                    }
                 }
             }
         }
