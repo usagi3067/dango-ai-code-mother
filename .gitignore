@@ -22,6 +22,10 @@ tmp/
 **/application-local.yml
 **/src/test/resources/application-test.yml
 
+# Sensitive configs
+.env
+nacos-configs/
+
 # Git worktrees
 .worktrees/
 
