@@ -18,7 +18,7 @@ services:
     ports:
       - "8123:8123"
     restart: unless-stopped
-    mem_limit: 384m
+    mem_limit: 512m
 
   app-service:
     build:
@@ -40,6 +40,7 @@ services:
       - "8124:8124"
     restart: unless-stopped
     mem_limit: 1536m
+    cpus: 2
 
   screenshot-app:
     build:

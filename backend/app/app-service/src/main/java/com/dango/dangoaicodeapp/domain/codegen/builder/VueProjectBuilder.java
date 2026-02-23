@@ -150,7 +150,7 @@ public class VueProjectBuilder {
      */
     private BuildResult executeNpmBuild(File projectDir) {
         log.info("执行 npm run build...");
-        return executeCommand(projectDir, "npm run build", 180); // 3分钟超时
+        return executeCommand(projectDir, "nice -n 10 npm run build", 180); // 3分钟超时，nice降低CPU优先级
     }
 
     /**
