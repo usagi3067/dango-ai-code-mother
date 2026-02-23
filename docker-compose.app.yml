@@ -24,3 +24,12 @@ services:
       - "8124:8124"
       - "50053:50053"
     restart: unless-stopped
+
+  deploy-nginx:
+    image: nginx:alpine
+    volumes:
+      - ./app-data/code_deploy:/usr/share/nginx/deploy:ro
+      - ./deploy-nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "80:80"
+    restart: unless-stopped

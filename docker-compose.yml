@@ -122,8 +122,6 @@ services:
     image: dango-ai-code-frontend:latest
     environment:
       HIGRESS_ADDR: ${HIGRESS_ADDR}
-    volumes:
-      - ./app-data/code_deploy:/usr/share/nginx/deploy:ro
     ports:
       - "80:80"
     restart: unless-stopped
