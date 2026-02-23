@@ -15,4 +15,14 @@ spring:
       - nacos:dango-ai-code-supabase.yml?group=DEFAULT_GROUP&refreshEnabled=true
       - nacos:shared-dubbo.yml?group=SHARED_GROUP
       - nacos:shared-common.yml?group=SHARED_GROUP
+# springdoc-openapi
+springdoc:
+  group-configs:
+    - group: 'default'
+      packages-to-scan: com.dango.supabase.controller
+# knife4j
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
       - nacos:shared-supabase.yml?group=SHARED_GROUP

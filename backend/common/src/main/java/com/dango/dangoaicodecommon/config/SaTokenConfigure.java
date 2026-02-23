@@ -45,7 +45,7 @@ public class SaTokenConfigure implements WebMvcConfigurer {
                "/app/good/list/page/vo",
                "/app/list/cursor/vo",
                "/app/get/vo",
-               "/doc.html", "/webjars/**", "/v3/api-docs/**",
+               "/doc.html", "/webjars/**", "/v3/api-docs/**", "/favicon.ico",
                "/actuator/**"
            );
     }

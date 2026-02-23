@@ -21,13 +21,3 @@ server:
     session:
       cookie:
         max-age: 315360000
-# springdoc-openapi
-springdoc:
-  group-configs:
-    - group: 'default'
-      packages-to-scan: com.dango.dangoaicodeuser.controller
-# knife4j
-knife4j:
-  enable: true
-  setting:
-    language: zh_cn

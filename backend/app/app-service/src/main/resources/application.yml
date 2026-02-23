@@ -21,3 +21,13 @@ spring:
       - nacos:shared-dubbo.yml?group=SHARED_GROUP
       - nacos:shared-common.yml?group=SHARED_GROUP
       - nacos:shared-supabase.yml?group=SHARED_GROUP
+# springdoc-openapi
+springdoc:
+  group-configs:
+    - group: 'default'
+      packages-to-scan: com.dango.dangoaicodeapp.interfaces.controller
+# knife4j
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
