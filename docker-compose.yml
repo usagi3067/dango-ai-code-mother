@@ -34,6 +34,7 @@ services:
       NACOS_PASSWORD: ${NACOS_PASSWORD}
     volumes:
       - ./logs/app-service:/app/logs/app-service
+      - ./app-data/code_output:/app/tmp/code_output
     ports:
       - "8124:8124"
     restart: unless-stopped
