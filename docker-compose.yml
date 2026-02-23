@@ -12,6 +12,9 @@ services:
       NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN}
       NACOS_AUTH_IDENTITY_KEY: serverIdentity
       NACOS_AUTH_IDENTITY_VALUE: ${NACOS_AUTH_IDENTITY_VALUE}
+      NACOS_CORE_API_COMPATIBILITY_CONSOLE_ENABLED: true
+      NACOS_CORE_API_COMPATIBILITY_SERVER_ENABLED: true
+      NACOS_CORE_API_COMPATIBILITY_CLIENT_ENABLED: true
       JVM_XMS: 256m
       JVM_XMX: 512m
       JVM_XMN: 128m
@@ -54,6 +57,7 @@ services:
       NACOS_NAMESPACE: prod
       NACOS_USERNAME: ${NACOS_USERNAME}
       NACOS_PASSWORD: ${NACOS_PASSWORD}
+      DUBBO_IP_TO_REGISTRY: ${MACHINE_B_IP}
     volumes:
       - ./logs/user-service:/app/logs/user-service
     ports:
@@ -76,6 +80,7 @@ services:
       NACOS_NAMESPACE: prod
       NACOS_USERNAME: ${NACOS_USERNAME}
       NACOS_PASSWORD: ${NACOS_PASSWORD}
+      DUBBO_IP_TO_REGISTRY: ${MACHINE_B_IP}
     volumes:
       - ./logs/screenshot-app:/app/logs/screenshot-app
     ports:
@@ -100,6 +105,7 @@ services:
       NACOS_NAMESPACE: prod
       NACOS_USERNAME: ${NACOS_USERNAME}
       NACOS_PASSWORD: ${NACOS_PASSWORD}
+      DUBBO_IP_TO_REGISTRY: ${MACHINE_B_IP}
     volumes:
       - ./logs/supabase-service:/app/logs/supabase-service
     ports:

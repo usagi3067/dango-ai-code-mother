@@ -15,6 +15,7 @@ services:
       NACOS_NAMESPACE: prod
       NACOS_USERNAME: ${NACOS_USERNAME}
       NACOS_PASSWORD: ${NACOS_PASSWORD}
+      DUBBO_IP_TO_REGISTRY: ${MACHINE_A_IP}
     volumes:
       - ./logs/app-service:/app/logs/app-service
       - ./app-data/code_output:/app/tmp/code_output
