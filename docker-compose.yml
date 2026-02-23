@@ -1,3 +1,7 @@
+# Machine B（2核4G）- Nacos + Higress + 其他业务服务
+# 部署路径: /opt/dango-ai-code-mother
+# 使用方式: docker compose up -d
+
 services:
   user-service:
     build:
@@ -17,30 +21,9 @@ services:
       - ./logs/user-service:/app/logs/user-service
     ports:
       - "8123:8123"
+      - "50051:50051"
     restart: unless-stopped
     mem_limit: 512m
-
-  app-service:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.app
-    image: dango-ai-code-app:latest
-    environment:
-      JAVA_OPTS: -Xmx384m -Xms192m
-      SPRING_PROFILES_ACTIVE: prod
-      NACOS_ADDR: ${NACOS_ADDR}
-      NACOS_NAMESPACE: prod
-      NACOS_USERNAME: ${NACOS_USERNAME}
-      NACOS_PASSWORD: ${NACOS_PASSWORD}
-    volumes:
-      - ./logs/app-service:/app/logs/app-service
-      - ./app-data/code_output:/app/tmp/code_output
-      - ./app-data/code_deploy:/app/tmp/code_deploy
-    ports:
-      - "8124:8124"
-    restart: unless-stopped
-    mem_limit: 1536m
-    cpus: 2
 
   screenshot-app:
     build:
@@ -58,6 +41,7 @@ services:
       - ./logs/screenshot-app:/app/logs/screenshot-app
     ports:
       - "8125:8125"
+      - "50054:50054"
     restart: unless-stopped
     mem_limit: 512m
 
@@ -79,6 +63,7 @@ services:
       - ./logs/supabase-service:/app/logs/supabase-service
     ports:
       - "8126:8126"
+      - "50055:50055"
     restart: unless-stopped
     mem_limit: 512m
 
