@@ -26,6 +26,9 @@ RUN mvn clean package -pl app/app-service -am -Dmaven.test.skip=true -B
 FROM eclipse-temurin:21-jdk-alpine
 WORKDIR /app
 
+# 换 Alpine 国内镜像源
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
+
 # 安装 Node.js 20.x + npm + Chromium（mermaid-cli 渲染依赖）
 RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont curl \
     && curl -fsSL https://unofficial-builds.nodejs.org/download/release/v20.19.3/node-v20.19.3-linux-x64-musl.tar.xz \
