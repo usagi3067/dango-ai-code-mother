@@ -35,6 +35,7 @@ services:
     volumes:
       - ./logs/app-service:/app/logs/app-service
       - ./app-data/code_output:/app/tmp/code_output
+      - ./app-data/code_deploy:/app/tmp/code_deploy
     ports:
       - "8124:8124"
     restart: unless-stopped
@@ -86,6 +87,8 @@ services:
     image: dango-ai-code-frontend:latest
     environment:
       HIGRESS_ADDR: ${HIGRESS_ADDR}
+    volumes:
+      - ./app-data/code_deploy:/usr/share/nginx/deploy:ro
     ports:
       - "80:80"
     restart: unless-stopped

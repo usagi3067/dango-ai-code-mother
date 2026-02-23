@@ -30,6 +30,7 @@ import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -53,6 +54,9 @@ import java.util.stream.Collectors;
 @Slf4j
 @Service
 public class AppApplicationServiceImpl implements AppApplicationService {
+
+    @Value("${app.deploy-host:http://localhost}")
+    private String deployHost;
 
     @Resource
     private AppRepository appRepository;
@@ -266,7 +270,7 @@ public class AppApplicationServiceImpl implements AppApplicationService {
         app.markDeployed(deployKey);
         boolean updateResult = appRepository.updateById(app);
         ThrowUtils.throwIf(!updateResult, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
-        String appDeployUrl = String.format("%s/%s/", AppConstant.CODE_DEPLOY_HOST, deployKey);
+        String appDeployUrl = String.format("%s/%s/", deployHost, deployKey);
         generateAppScreenshotAsync(appId, appDeployUrl);
         return appDeployUrl;
     }
