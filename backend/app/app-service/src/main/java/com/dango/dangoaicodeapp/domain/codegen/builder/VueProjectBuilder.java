@@ -56,8 +56,9 @@ public class VueProjectBuilder {
     private BuildResult executeCommand(File workingDir, String command, int timeoutSeconds) {
         try {
             log.info("在目录 {} 中执行命令: {}", workingDir.getAbsolutePath(), command);
+            String[] envp = {"NODE_OPTIONS=--max-old-space-size=256", "PATH=" + System.getenv("PATH")};
             Process process = RuntimeUtil.exec(
-                    null,
+                    envp,
                     workingDir,
                     command.split("\\s+")
             );
