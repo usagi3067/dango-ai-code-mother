@@ -37,7 +37,7 @@ services:
     ports:
       - "8124:8124"
     restart: unless-stopped
-    mem_limit: 768m
+    mem_limit: 1536m
 
   screenshot-app:
     build:
