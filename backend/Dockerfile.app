@@ -33,7 +33,7 @@ RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefo
     && node --version && npm --version
 
 # 安装 mermaid-cli（mmdc 依赖 chromium 做 SVG 渲染）
-RUN npm install -g @mermaid-js/mermaid-cli
+RUN npm config set registry https://registry.npmmirror.com && npm install -g @mermaid-js/mermaid-cli
 ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
 
 COPY --from=build /app/app/app-service/target/app-service-1.0-SNAPSHOT.jar app.jar
