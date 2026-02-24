@@ -506,7 +506,7 @@ import {
 import { getAppVoById, deployApp } from '@/api/app/appController'
 import { listChatHistoryByAppId } from '@/api/app/chatHistoryController'
 import { initializeDatabase } from '@/api/app/databaseController'
-import { getGenStatus } from '@/api/app/index'
+import { getGenStatus, startGenCode } from '@/api/app/index'
 
 /**
  * 导入环境变量配置
@@ -1149,15 +1149,10 @@ const handleSend = async () => {
      * 5. 调用 close() 关闭连接
      */
     
-    // 构建请求 URL
-    // encodeURIComponent: URL 编码，处理特殊字符
-    // agent: 是否使用 Agent 模式
-    let url = `${API_BASE_URL}/app/chat/gen/code?appId=${appId.value}&message=${encodeURIComponent(text)}`
-    
-    // 如果有选中的元素，将 elementInfo 作为 JSON 字符串添加到 URL 参数
-    // 这会触发后端的修改模式（Modify Mode）
+    // 构建 elementInfo DTO（如果有选中元素）
+    let elementInfoDTO: ElementInfoDTO | undefined = undefined
     if (currentElementInfo) {
-      const elementInfoDTO: ElementInfoDTO = {
+      elementInfoDTO = {
         tagName: currentElementInfo.tagName,
         id: currentElementInfo.id || undefined,
         className: currentElementInfo.className || undefined,
@@ -1165,17 +1160,33 @@ const handleSend = async () => {
         selector: currentElementInfo.selector,
         pagePath: currentElementInfo.pagePath || undefined
       }
-      url += `&elementInfo=${encodeURIComponent(JSON.stringify(elementInfoDTO))}`
     }
-    
-    /**
-     * 创建 EventSource 实例
-     * 
-     * withCredentials: true
-     * - 允许跨域请求携带 Cookie
-     * - 用于保持登录状态
-     */
-    const eventSource = new EventSource(url, { withCredentials: true })
+
+    // 1) POST 启动生成任务（message 放在 request body 中，不受 URL 长度限制）
+    try {
+      const res = await startGenCode({
+        appId: Number(appId.value),
+        message: text,
+        elementInfo: elementInfoDTO
+      })
+      if (res.data.code !== 0) {
+        messages.value[aiMessageIndex].content = `错误: ${res.data.message || '启动生成任务失败'}`
+        messages.value[aiMessageIndex].loading = false
+        isGenerating.value = false
+        return
+      }
+    } catch (e: any) {
+      messages.value[aiMessageIndex].content = `错误: ${e.message || '网络请求失败'}`
+      messages.value[aiMessageIndex].loading = false
+      isGenerating.value = false
+      return
+    }
+
+    // 2) GET 订阅 SSE 流（复用 resumeGenStream 端点，URL 只有 appId，非常短）
+    const eventSource = new EventSource(
+      `${API_BASE_URL}/app/chat/gen/resume?appId=${appId.value}`,
+      { withCredentials: true }
+    )
 
     // 启动思考计时器
     startThinkingTimer()
