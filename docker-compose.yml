@@ -36,6 +36,8 @@ services:
       NACOS_SERVER_URL: nacos:8848
       NACOS_USERNAME: ${NACOS_USERNAME}
       NACOS_PASSWORD: ${NACOS_PASSWORD}
+    volumes:
+      - ./higress/data:/data
     ports:
       - "8001:8001"
       - "8080:8080"
