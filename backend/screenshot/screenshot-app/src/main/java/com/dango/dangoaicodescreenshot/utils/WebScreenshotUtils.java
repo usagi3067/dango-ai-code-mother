@@ -149,7 +149,6 @@ public class WebScreenshotUtils {
      * 压缩图片
      */
     private static void compressImage(String originalImagePath, String compressedImagePath) {
-        // 压缩图片质量（0.1 = 10% 质量）
         final float COMPRESSION_QUALITY = 0.75f;
         try {
             ImgUtil.compress(
