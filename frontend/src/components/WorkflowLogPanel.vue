@@ -11,7 +11,7 @@
         </template>
       </span>
     </div>
-    <div v-show="expanded" class="log-list">
+    <div v-show="expanded" ref="logListRef" class="log-list">
       <div v-for="(log, index) in logs" :key="index" class="log-item">
         <span class="log-icon" :class="getLogStatus(index)">
           {{ getLogIcon(index) }}
@@ -23,7 +23,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 
 const props = defineProps<{
   logs: string[]
@@ -31,6 +31,29 @@ const props = defineProps<{
 }>()
 
 const expanded = ref(false)
+const logListRef = ref<HTMLElement | null>(null)
+
+watch(
+  () => props.logs.length,
+  () => {
+    if (!expanded.value) return
+    nextTick(() => {
+      if (logListRef.value) {
+        logListRef.value.scrollTop = logListRef.value.scrollHeight
+      }
+    })
+  }
+)
+
+watch(expanded, (val) => {
+  if (val) {
+    nextTick(() => {
+      if (logListRef.value) {
+        logListRef.value.scrollTop = logListRef.value.scrollHeight
+      }
+    })
+  }
+})
 
 const currentStepText = computed(() => {
   if (props.logs.length === 0) return '准备中...'
@@ -88,6 +111,8 @@ const getLogIcon = (index: number) => {
 .log-list {
   padding: 4px 12px 8px 12px;
   border-top: 1px solid #f0f0f0;
+  max-height: 160px;
+  overflow-y: auto;
 }
 
 .log-item {

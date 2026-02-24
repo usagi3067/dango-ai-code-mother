@@ -1,4 +1,4 @@
-use dango_ai_code_mother;
+use dango_ai_code_mother_prod;
 
 -- =============================================
 -- RBAC 权限模型建表脚本
