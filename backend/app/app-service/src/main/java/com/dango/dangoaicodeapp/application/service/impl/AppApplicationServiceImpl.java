@@ -209,6 +209,10 @@ public class AppApplicationServiceImpl implements AppApplicationService {
         app.setAppName(appInfo.getAppName());
         app.setTag(appInfo.getTag());
         app.setCodeGenType(CodeGenTypeEnum.VUE_PROJECT.getValue());
+        LocalDateTime now = LocalDateTime.now();
+        app.setEditTime(now);
+        app.setCreateTime(now);
+        app.setUpdateTime(now);
 
         App savedApp = appRepository.save(app);
         Long appId = savedApp.getId();

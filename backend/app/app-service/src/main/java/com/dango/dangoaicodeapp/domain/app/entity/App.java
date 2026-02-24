@@ -136,6 +136,7 @@ public class App implements Serializable {
     public void markDeployed(String deployKey) {
         this.deployKey = deployKey;
         this.deployedTime = LocalDateTime.now();
+        this.editTime = LocalDateTime.now();
     }
 
     /**
@@ -169,6 +170,7 @@ public class App implements Serializable {
      */
     public void updateCover(String cover) {
         this.cover = cover;
+        this.editTime = LocalDateTime.now();
     }
 
     /**

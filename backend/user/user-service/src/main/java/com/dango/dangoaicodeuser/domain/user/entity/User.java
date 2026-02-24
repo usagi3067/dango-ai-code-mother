@@ -111,6 +111,10 @@ public class User implements Serializable {
         user.encryptPassword(rawPassword);
         user.setUserName("无名");
         user.setUserRole(UserRoleEnum.USER.getValue());
+        LocalDateTime now = LocalDateTime.now();
+        user.setEditTime(now);
+        user.setCreateTime(now);
+        user.setUpdateTime(now);
         return user;
     }
 
