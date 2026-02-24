@@ -17,14 +17,18 @@ public interface AppMapper extends BaseMapper<App> {
     /**
      * 游标分页查询应用列表
      *
-     * @param tag        标签筛选
-     * @param searchText 搜索关键词
-     * @param lastId     游标（上一批最后一条的 id）
-     * @param pageSize   每页数量
+     * @param tag         标签筛选
+     * @param searchText  搜索关键词
+     * @param codeGenType 代码生成类型筛选
+     * @param userId      用户 ID 筛选
+     * @param lastId      游标（上一批最后一条的 id）
+     * @param pageSize    每页数量
      * @return 应用列表
      */
     List<App> listAppByCursor(@Param("tag") String tag,
                               @Param("searchText") String searchText,
+                              @Param("codeGenType") String codeGenType,
+                              @Param("userId") Long userId,
                               @Param("lastId") Long lastId,
                               @Param("pageSize") Integer pageSize);
 

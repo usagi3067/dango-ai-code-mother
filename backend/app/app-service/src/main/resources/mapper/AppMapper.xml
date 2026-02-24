@@ -11,6 +11,12 @@
         <if test="tag != null and tag != ''">
             AND tag = #{tag}
         </if>
+        <if test="codeGenType != null and codeGenType != ''">
+            AND codeGenType = #{codeGenType}
+        </if>
+        <if test="userId != null">
+            AND userId = #{userId}
+        </if>
         <if test="searchText != null and searchText != ''">
             AND (appName LIKE CONCAT('%', #{searchText}, '%')
                  OR initPrompt LIKE CONCAT('%', #{searchText}, '%'))
