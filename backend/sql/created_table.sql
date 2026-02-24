@@ -60,7 +60,7 @@ CREATE INDEX idx_tag ON app(tag);
 create table chat_history
 (
     id          bigint auto_increment comment 'id' primary key,
-    message     text                               not null comment '消息',
+    message     longtext                           not null comment '消息',
     messageType varchar(32)                        not null comment 'user/ai',
     status      varchar(16) default 'completed'    not null comment '消息状态: generating/completed/error',
     appId       bigint                             not null comment '应用id',
