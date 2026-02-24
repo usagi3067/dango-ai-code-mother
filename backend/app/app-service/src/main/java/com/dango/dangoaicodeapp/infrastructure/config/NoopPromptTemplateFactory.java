@@ -14,6 +14,6 @@ public class NoopPromptTemplateFactory implements PromptTemplateFactory {
 
     @Override
     public Template create(Input input) {
-        return variables -> input.text();
+        return variables -> input.getTemplate();
     }
 }
