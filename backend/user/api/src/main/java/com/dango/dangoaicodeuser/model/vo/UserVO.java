@@ -1,5 +1,6 @@
 package com.dango.dangoaicodeuser.model.vo;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -11,6 +12,7 @@ public class UserVO implements Serializable {
     /**
      * id
      */
+    @Schema(type = "string")
     private Long id;
     
     /**

@@ -2,6 +2,7 @@ package com.dango.dangoaicodeapp.model.dto.chathistory;
 
 
 import com.dango.dangoaicodecommon.common.PageRequest;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -23,16 +24,19 @@ public class ChatHistoryQueryRequest extends PageRequest implements Serializable
     /**
      * 应用 ID（用于按应用过滤）
      */
+    @Schema(type = "string")
     private Long appId;
 
     /**
      * 游标 ID（用于游标分页，向前加载更早的消息）
      */
+    @Schema(type = "string")
     private Long lastId;
 
     /**
      * 用户 ID（管理员过滤用）
      */
+    @Schema(type = "string")
     private Long userId;
 
     /**

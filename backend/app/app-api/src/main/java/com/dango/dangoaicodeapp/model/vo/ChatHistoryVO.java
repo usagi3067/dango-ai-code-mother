@@ -1,5 +1,6 @@
 package com.dango.dangoaicodeapp.model.vo;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.io.Serial;
@@ -20,6 +21,7 @@ public class ChatHistoryVO implements Serializable {
     /**
      * id
      */
+    @Schema(type = "string")
     private Long id;
 
     /**
@@ -35,11 +37,13 @@ public class ChatHistoryVO implements Serializable {
     /**
      * 应用id
      */
+    @Schema(type = "string")
     private Long appId;
 
     /**
      * 用户id
      */
+    @Schema(type = "string")
     private Long userId;
 
     /**

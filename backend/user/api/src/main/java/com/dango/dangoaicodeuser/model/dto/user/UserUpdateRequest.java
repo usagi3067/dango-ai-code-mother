@@ -1,5 +1,6 @@
 package com.dango.dangoaicodeuser.model.dto.user;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -10,6 +11,7 @@ public class UserUpdateRequest implements Serializable {
     /**
      * id
      */
+    @Schema(type = "string")
     private Long id;
 
     /**

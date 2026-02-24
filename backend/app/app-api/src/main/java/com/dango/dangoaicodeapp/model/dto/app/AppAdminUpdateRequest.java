@@ -1,5 +1,6 @@
 package com.dango.dangoaicodeapp.model.dto.app;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 import java.io.Serializable;
@@ -10,6 +11,7 @@ public class AppAdminUpdateRequest implements Serializable {
     /**
      * id
      */
+    @Schema(type = "string")
     private Long id;
 
     /**

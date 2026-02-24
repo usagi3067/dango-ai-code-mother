@@ -1,6 +1,7 @@
 package com.dango.dangoaicodeuser.model.dto.user;
 
 import com.dango.dangoaicodecommon.common.PageRequest;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -13,6 +14,7 @@ public class UserQueryRequest extends PageRequest implements Serializable {
     /**
      * id
      */
+    @Schema(type = "string")
     private Long id;
 
     /**

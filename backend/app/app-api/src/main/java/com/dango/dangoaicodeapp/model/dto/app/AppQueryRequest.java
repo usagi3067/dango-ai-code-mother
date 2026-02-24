@@ -1,6 +1,7 @@
 package com.dango.dangoaicodeapp.model.dto.app;
 
 import com.dango.dangoaicodecommon.common.PageRequest;
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -13,6 +14,7 @@ public class AppQueryRequest extends PageRequest implements Serializable {
     /**
      * id
      */
+    @Schema(type = "string")
     private Long id;
 
     /**
@@ -53,11 +55,13 @@ public class AppQueryRequest extends PageRequest implements Serializable {
     /**
      * 创建用户id
      */
+    @Schema(type = "string")
     private Long userId;
 
     /**
      * 游标（上一批最后一条记录的 id，用于游标分页）
      */
+    @Schema(type = "string")
     private Long lastId;
 
     /**
