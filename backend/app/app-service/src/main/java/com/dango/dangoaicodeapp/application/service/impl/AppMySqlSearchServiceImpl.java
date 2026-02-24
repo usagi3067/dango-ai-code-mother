@@ -25,11 +25,13 @@ public class AppMySqlSearchServiceImpl implements AppSearchService {
     public Page<App> searchApps(AppQueryRequest request) {
         String tag = request.getTag();
         String searchText = request.getSearchText();
+        String codeGenType = request.getCodeGenType();
+        Long userId = request.getUserId();
         Long lastId = request.getLastId();
         int pageSize = request.getPageSize() > 0 ? request.getPageSize() : 12;
 
         // 调用 Mapper 游标分页查询
-        List<App> apps = appMapper.listAppByCursor(tag, searchText, lastId, pageSize);
+        List<App> apps = appMapper.listAppByCursor(tag, searchText, codeGenType, userId, lastId, pageSize);
 
         // 封装为 Page 返回
         Page<App> page = new Page<>();

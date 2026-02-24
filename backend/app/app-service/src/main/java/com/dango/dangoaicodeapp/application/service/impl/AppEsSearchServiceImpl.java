@@ -52,6 +52,16 @@ public class AppEsSearchServiceImpl implements AppSearchService {
             boolQuery.filter(TermQuery.of(t -> t.field("tag").value(tag))._toQuery());
         }
 
+        // codeGenType 筛选
+        if (StringUtils.isNotBlank(request.getCodeGenType())) {
+            boolQuery.filter(TermQuery.of(t -> t.field("codeGenType").value(request.getCodeGenType()))._toQuery());
+        }
+
+        // userId 筛选
+        if (request.getUserId() != null) {
+            boolQuery.filter(TermQuery.of(t -> t.field("userId").value(request.getUserId()))._toQuery());
+        }
+
         // 游标分页：id < lastId
         if (lastId != null) {
             boolQuery.filter(RangeQuery.of(r -> r.number(n -> n.field("id").lt((double) lastId)))._toQuery());
