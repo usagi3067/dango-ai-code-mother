@@ -757,7 +757,7 @@ const visualEditor = new VisualEditor({
  * 游标 ID，用于分页加载历史消息
  * undefined 表示加载最新的消息
  */
-const lastId = ref<number | undefined>(undefined)
+const lastId = ref<string | undefined>(undefined)
 
 /**
  * 是否还有更多历史消息可加载
@@ -810,9 +810,9 @@ const loadChatHistory = async (isLoadMore = false) => {
   loadingHistory.value = true
   
   try {
-    // 使用 as any 绕过类型检查，保持 appId 为字符串格式避免精度丢失
+    // appId 已经是字符串类型，直接传递
     const res = await listChatHistoryByAppId({
-      appId: appId.value as any,
+      appId: appId.value,
       lastId: isLoadMore ? lastId.value : undefined,
       size: 10
     })
@@ -890,13 +890,8 @@ const loadAppInfo = async () => {
   try {
     /**
      * 调用后端接口获取应用信息
-     * 
-     * { id: appId.value as any }:
-     * - as any: TypeScript 类型断言
-     * - 因为后端期望 number 类型，但我们传的是 string
-     * - 实际上后端会自动转换，这里用 as any 绕过类型检查
      */
-    const res = await getAppVoById({ id: appId.value as any })
+    const res = await getAppVoById({ id: appId.value })
     
     if (res.data.code === 0 && res.data.data) {
       appInfo.value = res.data.data
@@ -973,7 +968,7 @@ const checkAndResumeGeneration = async (): Promise<boolean> => {
   if (!appId.value) return false
 
   try {
-    const res = await getGenStatus({ appId: appId.value as any })
+    const res = await getGenStatus({ appId: appId.value })
     if (res.data.code !== 0 || !res.data.data) return false
 
     const { status } = res.data.data
@@ -1035,7 +1030,7 @@ const checkAndResumeGeneration = async (): Promise<boolean> => {
         eventSource.close()
         userScrolledAway.value = false
         setTimeout(async () => {
-          const appRes = await getAppVoById({ id: appId.value as any })
+          const appRes = await getAppVoById({ id: appId.value })
           if (appRes.data.code === 0 && appRes.data.data) appInfo.value = appRes.data.data
           updatePreview()
         }, 1000)
@@ -1054,7 +1049,7 @@ const checkAndResumeGeneration = async (): Promise<boolean> => {
       isGenerating.value = false
       userScrolledAway.value = false
       setTimeout(async () => {
-        const appRes = await getAppVoById({ id: appId.value as any })
+        const appRes = await getAppVoById({ id: appId.value })
         if (appRes.data.code === 0 && appRes.data.data) appInfo.value = appRes.data.data
         updatePreview()
       }, 1000)
@@ -1369,7 +1364,7 @@ const handleSend = async () => {
         // 延迟更新预览，确保后端文件已写入完成
         setTimeout(async () => {
           // 重新获取应用信息（可能有新的 codeGenType），但不重新加载对话历史
-          const res = await getAppVoById({ id: appId.value as any })
+          const res = await getAppVoById({ id: appId.value })
           if (res.data.code === 0 && res.data.data) {
             appInfo.value = res.data.data
           }
@@ -1418,7 +1413,7 @@ const handleSend = async () => {
       // 延迟更新预览，但不重新加载对话历史
       setTimeout(async () => {
         // 重新获取应用信息（可能有新的 codeGenType），但不重新加载对话历史
-        const res = await getAppVoById({ id: appId.value as any })
+        const res = await getAppVoById({ id: appId.value })
         if (res.data.code === 0 && res.data.data) {
           appInfo.value = res.data.data
         }
@@ -1480,7 +1475,7 @@ const updatePreview = () => {
     iframeKey.value++
   } else if (appId.value) {
     // 如果没有 codeGenType，尝试重新获取应用信息
-    getAppVoById({ id: appId.value as any }).then(res => {
+    getAppVoById({ id: appId.value }).then(res => {
       if (res.data.code === 0 && res.data.data) {
         appInfo.value = res.data.data
         if (appInfo.value?.codeGenType) {
@@ -1656,7 +1651,7 @@ const handleDeploy = async () => {
   deploying.value = true
   
   try {
-    const res = await deployApp({ appId: appId.value as any })
+    const res = await deployApp({ appId: appId.value })
     
     if (res.data.code === 0 && res.data.data) {
       // 保存部署 URL

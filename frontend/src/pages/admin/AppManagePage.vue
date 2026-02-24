@@ -303,7 +303,7 @@ const loadData = async () => {
       // || undefined: 如果为空字符串，传 undefined（不传这个参数）
       appName: searchParams.appName || undefined,
       // 用户 ID 需要转换类型
-      userId: searchParams.userId ? (searchParams.userId as any) : undefined,
+      userId: searchParams.userId || undefined,
       codeGenType: searchParams.codeGenType || undefined,
       tag: searchParams.tag || undefined
     })

@@ -7,7 +7,7 @@ declare namespace API {
   }
 
   type AppAdminUpdateRequest = {
-    id?: number
+    id?: string
     appName?: string
     cover?: string
     priority?: number
@@ -15,7 +15,7 @@ declare namespace API {
   }
 
   type AppDeployRequest = {
-    appId?: number
+    appId?: string
   }
 
   type AppQueryRequest = {
@@ -23,7 +23,7 @@ declare namespace API {
     pageSize?: number
     sortField?: string
     sortOrder?: string
-    id?: number
+    id?: string
     appName?: string
     cover?: string
     initPrompt?: string
@@ -31,21 +31,21 @@ declare namespace API {
     tag?: string
     deployKey?: string
     priority?: number
-    userId?: number
+    userId?: string
     /** 游标（上一批最后一条记录的 id，用于游标分页） */
-    lastId?: number
+    lastId?: string
     /** 搜索关键词（搜索 appName 和 initPrompt） */
     searchText?: string
   }
 
   type AppUpdateRequest = {
-    id?: number
+    id?: string
     appName?: string
     tag?: string
   }
 
   type AppVO = {
-    id?: number
+    id?: string
     appName?: string
     cover?: string
     initPrompt?: string
@@ -54,7 +54,7 @@ declare namespace API {
     deployKey?: string
     deployedTime?: string
     priority?: number
-    userId?: number
+    userId?: string
     createTime?: string
     updateTime?: string
     hasDatabase?: boolean
@@ -108,47 +108,47 @@ declare namespace API {
     pageSize?: number
     sortField?: string
     sortOrder?: string
-    appId?: number
-    lastId?: number
-    userId?: number
+    appId?: string
+    lastId?: string
+    userId?: string
     messageType?: string
   }
 
   type ChatHistoryVO = {
-    id?: number
+    id?: string
     message?: string
     messageType?: string
     status?: string
-    appId?: number
-    userId?: number
+    appId?: string
+    userId?: string
     createTime?: string
   }
 
   type chatToGenCodeParams = {
-    appId: number
+    appId: string
     message: string
     agent?: boolean
   }
 
   type DeleteRequest = {
-    id?: number
+    id?: string
   }
 
   type downloadAppCodeParams = {
-    appId: number
+    appId: string
   }
 
   type getAppVOByIdByAdminParams = {
-    id: number
+    id: string
   }
 
   type getAppVOByIdParams = {
-    id: number
+    id: string
   }
 
   type listChatHistoryByAppIdParams = {
-    appId: number
-    lastId?: number
+    appId: string
+    lastId?: string
     size?: number
   }
 
@@ -177,7 +177,7 @@ declare namespace API {
   }
 
   type UserVO = {
-    id?: number
+    id?: string
     userAccount?: string
     userName?: string
     userAvatar?: string
@@ -222,7 +222,7 @@ declare namespace API {
 
   type GenStatusResponse = {
     status: 'generating' | 'completed' | 'error' | 'none'
-    chatHistoryId?: number
+    chatHistoryId?: string
   }
 
   type BaseResponseGenStatusResponse = {

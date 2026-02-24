@@ -14,7 +14,7 @@ export default {
 
 /** 查询生成任务状态 GET /app/chat/gen/status */
 export async function getGenStatus(
-  params: { appId: number },
+  params: { appId: string },
   options?: { [key: string]: any }
 ) {
   return request<API.BaseResponseGenStatusResponse>('/app/chat/gen/status', {
@@ -26,7 +26,7 @@ export async function getGenStatus(
 
 /** 启动代码生成任务 POST /app/chat/gen/code */
 export async function startGenCode(
-  data: { appId: number | string; message: string; elementInfo?: API.ElementInfoDTO },
+  data: { appId: string; message: string; elementInfo?: API.ElementInfoDTO },
   options?: { [key: string]: any }
 ) {
   return request<API.BaseResponseBoolean>('/app/chat/gen/code', {

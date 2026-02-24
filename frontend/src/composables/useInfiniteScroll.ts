@@ -6,14 +6,14 @@ interface UseInfiniteScrollOptions {
   /** 距底部多少 px 触发加载，默认 200 */
   threshold?: number
   /** 数据加载函数，传入 lastId，返回记录数组 */
-  fetchFn: (lastId: number | undefined) => Promise<API.AppVO[]>
+  fetchFn: (lastId: string | undefined) => Promise<API.AppVO[]>
 }
 
 export function useInfiniteScroll(options: UseInfiniteScrollOptions) {
   const { pageSize = 12, threshold = 200, fetchFn } = options
 
   const items = ref<API.AppVO[]>([])
-  const lastId = ref<number | undefined>(undefined)
+  const lastId = ref<string | undefined>(undefined)
   const hasMore = ref(true)
   const loading = ref(false)
 
@@ -24,7 +24,7 @@ export function useInfiniteScroll(options: UseInfiniteScrollOptions) {
       const newRecords = await fetchFn(lastId.value)
       items.value.push(...newRecords)
       if (newRecords.length > 0) {
-        lastId.value = newRecords[newRecords.length - 1].id as number
+        lastId.value = newRecords[newRecords.length - 1].id
       }
       hasMore.value = newRecords.length === pageSize
     } catch (error) {

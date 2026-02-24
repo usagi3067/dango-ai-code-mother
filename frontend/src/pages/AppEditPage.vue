@@ -250,8 +250,8 @@ const loadAppInfo = async () => {
      * 普通用户接口只能查看自己的应用
      */
     const res = isAdmin.value 
-      ? await getAppVoByIdByAdmin({ id: appId.value as any })
-      : await getAppVoById({ id: appId.value as any })
+      ? await getAppVoByIdByAdmin({ id: appId.value })
+      : await getAppVoById({ id: appId.value })
     
     if (res.data.code === 0 && res.data.data) {
       appInfo.value = res.data.data
@@ -286,7 +286,7 @@ const handleSubmit = async () => {
     if (isAdmin.value) {
       // 管理员可以更新更多字段
       res = await updateAppByAdmin({
-        id: appId.value as any,
+        id: appId.value,
         appName: formData.appName,
         cover: formData.cover,
         priority: formData.priority,
@@ -295,7 +295,7 @@ const handleSubmit = async () => {
     } else {
       // 普通用户可以更新应用名称和标签
       res = await updateApp({
-        id: appId.value as any,
+        id: appId.value,
         appName: formData.appName,
         tag: formData.tag
       })
@@ -328,7 +328,7 @@ const handleDelete = () => {
     cancelText: '取消',
     onOk: async () => {
       try {
-        const res = await deleteApp({ id: appId.value as any })
+        const res = await deleteApp({ id: appId.value })
         if (res.data.code === 0) {
           message.success('删除成功')
           router.push('/')  // 跳转到首页

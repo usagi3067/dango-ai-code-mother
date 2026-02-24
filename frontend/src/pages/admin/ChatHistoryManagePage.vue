@@ -166,8 +166,8 @@ const loadData = async () => {
       pageSize: pagination.pageSize,
       sortField: 'createTime',
       sortOrder: 'desc',
-      appId: searchParams.appId ? Number(searchParams.appId) : undefined,
-      userId: searchParams.userId ? Number(searchParams.userId) : undefined,
+      appId: searchParams.appId || undefined,
+      userId: searchParams.userId || undefined,
       messageType: searchParams.messageType || undefined
     })
     
