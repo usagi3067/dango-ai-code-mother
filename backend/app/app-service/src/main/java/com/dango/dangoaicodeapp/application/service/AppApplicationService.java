@@ -37,6 +37,11 @@ public interface AppApplicationService {
     Page<AppVO> listAppsByCursor(AppQueryRequest request);
 
     /**
+     * 游标分页获取当前用户的应用列表
+     */
+    Page<AppVO> listMyAppsByCursor(AppQueryRequest request, Long userId);
+
+    /**
      * 管理员分页获取应用列表
      */
     Page<AppVO> adminListApps(AppQueryRequest request);

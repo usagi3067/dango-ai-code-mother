@@ -207,6 +207,15 @@ public class AppController {
     }
 
     /**
+     * 游标分页获取当前用户的应用列表
+     */
+    @PostMapping("/my/list/cursor/vo")
+    public BaseResponse<Page<AppVO>> listMyAppByCursor(@RequestBody AppQueryRequest appQueryRequest) {
+        ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
+        return ResultUtils.success(appService.listMyAppsByCursor(appQueryRequest, StpUtil.getLoginIdAsLong()));
+    }
+
+    /**
      * 管理员删除应用
      */
     @PostMapping("/admin/delete")

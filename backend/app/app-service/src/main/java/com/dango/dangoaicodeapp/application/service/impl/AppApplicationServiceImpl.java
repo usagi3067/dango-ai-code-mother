@@ -126,6 +126,23 @@ public class AppApplicationServiceImpl implements AppApplicationService {
     }
 
     @Override
+    public Page<AppVO> listMyAppsByCursor(AppQueryRequest request, Long userId) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        int pageSize = request.getPageSize();
+        if (pageSize <= 0) {
+            pageSize = 12;
+            request.setPageSize(pageSize);
+        }
+        ThrowUtils.throwIf(pageSize > 20, ErrorCode.PARAMS_ERROR, "每页最多查询 20 个应用");
+        request.setUserId(userId);
+        Page<App> appPage = appSearchService.searchApps(request);
+        Page<AppVO> voPage = new Page<>();
+        voPage.setPageSize(appPage.getPageSize());
+        voPage.setRecords(getAppVOList(appPage.getRecords()));
+        return voPage;
+    }
+
+    @Override
     public Page<AppVO> adminListApps(AppQueryRequest request) {
         ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
         QueryWrapper queryWrapper = getQueryWrapper(request);
