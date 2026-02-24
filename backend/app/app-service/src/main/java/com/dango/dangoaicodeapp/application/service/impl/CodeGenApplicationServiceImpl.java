@@ -55,8 +55,8 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
     private GenTaskService genTaskService;
     @Resource
     private AppApplicationService appApplicationService;
-    @Value("${app.deploy-host:http://localhost}")
-    private String deployHost;
+    @Value("${app.preview-host:http://localhost:8124}")
+    private String previewHost;
     @DubboReference
     private SupabaseService supabaseService;
 
@@ -210,7 +210,7 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
                     App completedApp = appRepository.findById(appId).orElse(null);
                     if (completedApp != null && completedApp.getCodeGenType() != null) {
                         String previewUrl = String.format("%s/api/static/%s_%s/dist/index.html",
-                                deployHost, completedApp.getCodeGenType(), appId);
+                                previewHost, completedApp.getCodeGenType(), appId);
                         appApplicationService.generateAppScreenshotAsync(appId, previewUrl);
                         log.info("已触发生成完成截图: appId={}", appId);
                     }
