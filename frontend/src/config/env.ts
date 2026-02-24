@@ -5,8 +5,6 @@
  * 通过环境变量实现不同环境的配置切换
  */
 
-import { CodeGenTypeEnum } from "./codeGenType"
-
 // 应用部署域名（nginx 服务，80 端口）
 // import.meta.env 是 Vite 提供的环境变量访问接口
 // VITE_DEPLOY_DOMAIN 指向 .env 文件中定义的环境变量（如 .env.development、.env.production 等）
@@ -39,9 +37,6 @@ export const getDeployUrl = (deployKey: string) => {
 // 获取静态资源预览URL
 export const getStaticPreviewUrl = (codeGenType: string, appId: string) => {
   const baseUrl = `${STATIC_BASE_URL}/${codeGenType}_${appId}/`
-  // 如果是 Vue 项目，浏览地址需要添加 dist 后缀
-  if (codeGenType === CodeGenTypeEnum.VUE_PROJECT) {
-    return `${baseUrl}dist/index.html`
-  }
-  return baseUrl
+  // 所有项目类型都通过 Vite 构建，预览地址需要指向 dist 目录
+  return `${baseUrl}dist/index.html`
 }
