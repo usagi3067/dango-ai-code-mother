@@ -23,3 +23,16 @@ export async function getGenStatus(
     ...(options || {}),
   })
 }
+
+/** 启动代码生成任务 POST /app/chat/gen/code */
+export async function startGenCode(
+  data: { appId: number; message: string; elementInfo?: API.ElementInfoDTO },
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseBoolean>('/app/chat/gen/code', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    data,
+    ...(options || {}),
+  })
+}

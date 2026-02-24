@@ -230,4 +230,13 @@ declare namespace API {
     data?: GenStatusResponse
     message?: string
   }
+
+  type ElementInfoDTO = {
+    tagName?: string
+    id?: string
+    className?: string
+    textContent?: string
+    selector?: string
+    pagePath?: string
+  }
 }
