@@ -30,62 +30,55 @@
 
       <div class="list-section">
         <h2 class="section-title">已生成的题解</h2>
-        <a-spin :spinning="loading">
-          <div v-if="appList.length > 0" class="app-grid">
-            <a-card
-              v-for="app in appList"
-              :key="String(app.id)"
-              hoverable
-              class="app-card"
-              @click="handleClickApp(app)"
-            >
-              <template #title>
-                <span class="card-title">{{ app.appName }}</span>
-              </template>
-              <div class="card-time">{{ formatTime(app.createTime) }}</div>
-            </a-card>
-          </div>
-          <a-empty v-else description="暂无题解，输入题目开始生成吧" />
-        </a-spin>
+        <div v-if="appList.length > 0" class="app-grid">
+          <AppCard
+            v-for="app in appList"
+            :key="String(app.id)"
+            :app="app"
+            @view-chat="goToAppChat"
+            @view-work="openDeployedApp"
+          />
+        </div>
+
+        <div class="load-status">
+          <a-spin v-if="loading" />
+          <span v-else-if="!hasMore && appList.length > 0" class="no-more">没有更多了</span>
+          <a-empty v-else-if="!loading && appList.length === 0" description="暂无题解，输入题目开始生成吧" />
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { addApp, listMyAppVoByPage } from '@/api/app/appController'
+import { addApp, listMyAppByCursor } from '@/api/app/appController'
+import AppCard from '@/components/AppCard.vue'
+import { getDeployUrl } from '@/config/env'
+import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 
 const router = useRouter()
 const questionTitle = ref('')
 const referenceAnswer = ref('')
 const creating = ref(false)
 
-const appList = ref<API.AppVO[]>([])
-const loading = ref(false)
-
-const loadApps = async () => {
-  loading.value = true
-  try {
-    const res = await listMyAppVoByPage({
-      pageNum: 1,
-      pageSize: 50,
+const { items: appList, loading, hasMore } = useInfiniteScroll({
+  pageSize: 12,
+  fetchFn: async (lastId) => {
+    const res = await listMyAppByCursor({
+      lastId: lastId,
+      pageSize: 12,
       tag: 'interview',
-      codeGenType: 'interview_project',
-      sortField: 'createTime',
-      sortOrder: 'desc'
+      codeGenType: 'interview_project'
     })
     if (res.data.code === 0 && res.data.data) {
-      appList.value = res.data.data.records || []
+      return res.data.data.records || []
     }
-  } catch (e) {
-    // ignore
-  } finally {
-    loading.value = false
+    return []
   }
-}
+})
 
 const handleGenerate = async () => {
   if (!questionTitle.value.trim()) {
@@ -126,18 +119,15 @@ ${referenceAnswer.value.trim()}`
   }
 }
 
-const handleClickApp = (app: API.AppVO) => {
+const goToAppChat = (app: API.AppVO) => {
   router.push(`/app/chat/${String(app.id)}`)
 }
 
-const formatTime = (dateStr: string | undefined) => {
-  if (!dateStr) return ''
-  return new Date(dateStr).toLocaleDateString('zh-CN')
+const openDeployedApp = (app: API.AppVO) => {
+  if (app.deployKey) {
+    window.open(getDeployUrl(app.deployKey), '_blank')
+  }
 }
-
-onMounted(() => {
-  loadApps()
-})
 </script>
 
 <style scoped>
@@ -218,25 +208,15 @@ onMounted(() => {
   gap: 16px;
 }
 
-.app-card {
-  cursor: pointer;
-  transition: all 0.2s;
+.load-status {
+  display: flex;
+  justify-content: center;
+  padding: 32px 0;
 }
 
-.app-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
-.card-title {
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.card-time {
+.no-more {
   color: #999;
-  font-size: 13px;
+  font-size: 14px;
 }
 
 @media (max-width: 992px) {
