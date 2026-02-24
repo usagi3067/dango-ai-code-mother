@@ -26,7 +26,7 @@ export async function getGenStatus(
 
 /** 启动代码生成任务 POST /app/chat/gen/code */
 export async function startGenCode(
-  data: { appId: number; message: string; elementInfo?: API.ElementInfoDTO },
+  data: { appId: number | string; message: string; elementInfo?: API.ElementInfoDTO },
   options?: { [key: string]: any }
 ) {
   return request<API.BaseResponseBoolean>('/app/chat/gen/code', {

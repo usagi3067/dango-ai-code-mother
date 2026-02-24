@@ -1165,7 +1165,7 @@ const handleSend = async () => {
     // 1) POST 启动生成任务（message 放在 request body 中，不受 URL 长度限制）
     try {
       const res = await startGenCode({
-        appId: Number(appId.value),
+        appId: appId.value,
         message: text,
         elementInfo: elementInfoDTO
       })
