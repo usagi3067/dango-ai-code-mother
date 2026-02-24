@@ -143,6 +143,7 @@ services:
     image: dango-ai-code-supabase-manager:latest
     environment:
       TZ: Asia/Shanghai
+      SUPABASE_MANAGEMENT_API_TOKEN: ${SUPABASE_MANAGEMENT_API_TOKEN}
     ports:
       - "3000:3000"
     restart: "no"
