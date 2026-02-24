@@ -5,6 +5,7 @@ import cn.hutool.json.JSONUtil;
 
 import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
 import com.dango.dangoaicodeapp.application.service.CodeGenApplicationService;
+import com.dango.dangoaicodeapp.application.service.AppApplicationService;
 import com.dango.dangoaicodeapp.domain.app.entity.App;
 import com.dango.dangoaicodeapp.domain.app.repository.AppRepository;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
@@ -23,6 +24,7 @@ import com.dango.supabase.service.SupabaseService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
@@ -51,6 +53,10 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
     private RedisStreamService redisStreamService;
     @Resource
     private GenTaskService genTaskService;
+    @Resource
+    private AppApplicationService appApplicationService;
+    @Value("${app.deploy-host:http://localhost}")
+    private String deployHost;
     @DubboReference
     private SupabaseService supabaseService;
 
@@ -199,6 +205,18 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
                 chatHistoryService.updateAiMessage(chatHistoryId, fullContentBuilder.toString(), "completed");
                 MonitorContextHolder.clearContext();
                 log.info("后台生成任务完成: appId={}, userId={}", appId, userId);
+                // 生成完成后异步截图（用预览 URL，不依赖部署）
+                try {
+                    App completedApp = appRepository.findById(appId).orElse(null);
+                    if (completedApp != null && completedApp.getCodeGenType() != null) {
+                        String previewUrl = String.format("%s/api/static/%s_%s/dist/index.html",
+                                deployHost, completedApp.getCodeGenType(), appId);
+                        appApplicationService.generateAppScreenshotAsync(appId, previewUrl);
+                        log.info("已触发生成完成截图: appId={}", appId);
+                    }
+                } catch (Exception e) {
+                    log.warn("触发截图失败（不影响主流程）: appId={}, error={}", appId, e.getMessage());
+                }
             })
             .doOnError(error -> {
                 log.error("后台生成任务失败: appId={}, userId={}, error={}", appId, userId, error.getMessage());
