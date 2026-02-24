@@ -8,6 +8,7 @@ services:
     container_name: nacos
     environment:
       MODE: standalone
+      TZ: Asia/Shanghai
       NACOS_AUTH_ENABLE: true
       NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN}
       NACOS_AUTH_IDENTITY_KEY: serverIdentity
@@ -33,6 +34,7 @@ services:
     container_name: higress
     environment:
       HIGRESS_CONSOLE_PASSWORD: ${HIGRESS_CONSOLE_PASSWORD}
+      TZ: Asia/Shanghai
       NACOS_SERVER_URL: nacos:8848
       NACOS_USERNAME: ${NACOS_USERNAME}
       NACOS_PASSWORD: ${NACOS_PASSWORD}
@@ -56,6 +58,7 @@ services:
     image: dango-ai-code-user:latest
     environment:
       JAVA_OPTS: -Xmx256m -Xms128m
+      TZ: Asia/Shanghai
       SPRING_PROFILES_ACTIVE: prod
       NACOS_ADDR: ${NACOS_ADDR}
       NACOS_NAMESPACE: prod
@@ -79,6 +82,7 @@ services:
     image: dango-ai-code-screenshot:latest
     environment:
       JAVA_OPTS: -Xmx256m -Xms128m
+      TZ: Asia/Shanghai
       SPRING_PROFILES_ACTIVE: prod
       NACOS_ADDR: ${NACOS_ADDR}
       NACOS_NAMESPACE: prod
@@ -104,6 +108,7 @@ services:
     image: dango-ai-code-supabase:latest
     environment:
       JAVA_OPTS: -Xmx256m -Xms128m
+      TZ: Asia/Shanghai
       SPRING_PROFILES_ACTIVE: prod
       NACOS_ADDR: ${NACOS_ADDR}
       NACOS_NAMESPACE: prod
@@ -125,6 +130,7 @@ services:
       context: ./frontend
     image: dango-ai-code-frontend:latest
     environment:
+      TZ: Asia/Shanghai
       HIGRESS_ADDR: ${HIGRESS_ADDR}
     ports:
       - "80:80"
@@ -135,6 +141,8 @@ services:
     build:
       context: ./supabase-manager
     image: dango-ai-code-supabase-manager:latest
+    environment:
+      TZ: Asia/Shanghai
     ports:
       - "3000:3000"
     restart: "no"

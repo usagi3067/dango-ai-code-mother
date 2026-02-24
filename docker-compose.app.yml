@@ -10,6 +10,7 @@ services:
     image: dango-ai-code-app:latest
     environment:
       JAVA_OPTS: -Xmx2g -Xms1g
+      TZ: Asia/Shanghai
       SPRING_PROFILES_ACTIVE: prod
       NACOS_ADDR: ${NACOS_ADDR}
       NACOS_NAMESPACE: prod
