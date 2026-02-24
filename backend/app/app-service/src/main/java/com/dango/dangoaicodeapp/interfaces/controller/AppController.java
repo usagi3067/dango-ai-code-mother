@@ -262,53 +262,24 @@ public class AppController {
     }
 
     /**
-     * 对话生成代码（SSE 流式）
-     * 改造：启动后台生成任务，SSE 从 Redis Stream 消费
+     * 对话生成代码（启动后台任务）
+     * 前端随后通过 GET /chat/gen/resume 订阅 SSE 流
      */
-    @GetMapping(value = "/chat/gen/code", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    @PostMapping("/chat/gen/code")
     @RateLimit(limitType = RateLimitType.USER, rate = 5, rateInterval = 60)
-    public Flux<ServerSentEvent<String>> chatToGenCode(
-            @RequestParam Long appId,
-            @RequestParam String message,
-            @RequestParam(required = false) String elementInfo) {
+    public BaseResponse<Void> chatToGenCode(@RequestBody ChatGenCodeRequest request) {
 
         long loginUserId = StpUtil.getLoginIdAsLong();
 
-        // 解析 elementInfo
-        ElementInfo parsedElementInfo = null;
-        if (StrUtil.isNotBlank(elementInfo)) {
-            parsedElementInfo = JSONUtil.toBean(elementInfo, ElementInfo.class);
-        }
+        // DTO → domain 值对象
+        ElementInfo parsedElementInfo = request.getElementInfo() != null
+                ? convertToElementInfo(request.getElementInfo())
+                : null;
 
-        try {
-            // 启动后台生成任务
-            codeGenApplicationService.startBackgroundGeneration(appId, message, parsedElementInfo, loginUserId);
-        } catch (BusinessException e) {
-            // SSE 端点不能抛异常（会导致 HttpMediaTypeNotAcceptableException）
-            // 返回 SSE 格式的错误信息
-            log.warn("启动生成任务失败: {}", e.getMessage());
-            return Flux.just(
-                    ServerSentEvent.<String>builder().data(JSONUtil.toJsonStr(Map.of("d", "错误: " + e.getMessage()))).build(),
-                    ServerSentEvent.<String>builder().event("done").data("").build()
-            );
-        }
+        codeGenApplicationService.startBackgroundGeneration(
+                request.getAppId(), request.getMessage(), parsedElementInfo, loginUserId);
 
-        // 返回 Redis Stream 消费者
-        Flux<String> contentFlux = codeGenApplicationService.consumeGenerationStream(appId, loginUserId, "0");
-
-        return contentFlux
-                .map(chunk -> {
-                    // chunk 已经是完整的 JSON 字符串（含 d 和可选的 msgType），直接透传
-                    return ServerSentEvent.<String>builder()
-                            .data(chunk)
-                            .build();
-                })
-                .concatWith(Mono.just(
-                        ServerSentEvent.<String>builder()
-                                .event("done")
-                                .data("")
-                                .build()
-                ));
+        return ResultUtils.success(null);
     }
 
     /**
