@@ -20,6 +20,9 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 
 import java.io.File;
 import java.time.Duration;
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.util.UUID;
 
 @Slf4j
@@ -28,8 +31,8 @@ public class WebScreenshotUtils {
     private static final WebDriver webDriver;
 
     static {
-        final int DEFAULT_WIDTH = 1600;
-        final int DEFAULT_HEIGHT = 900;
+        final int DEFAULT_WIDTH = 1280;
+        final int DEFAULT_HEIGHT = 720;
         webDriver = initChromeDriver(DEFAULT_WIDTH, DEFAULT_HEIGHT);
     }
 
@@ -64,8 +67,10 @@ public class WebScreenshotUtils {
             waitForPageLoad(webDriver);
             // 截图
             byte[] screenshotBytes = ((TakesScreenshot) webDriver).getScreenshotAs(OutputType.BYTES);
-            // 保存原始图片
-            saveImage(screenshotBytes, imageSavePath);
+            // 裁剪顶部 50%（聚焦 hero 区域）
+            byte[] croppedBytes = cropTopHalf(screenshotBytes);
+            // 保存裁剪后的图片
+            saveImage(croppedBytes, imageSavePath);
             log.info("原始截图保存成功: {}", imageSavePath);
             // 压缩图片
             final String COMPRESSION_SUFFIX = "_compressed.jpg";
@@ -145,7 +150,7 @@ public class WebScreenshotUtils {
      */
     private static void compressImage(String originalImagePath, String compressedImagePath) {
         // 压缩图片质量（0.1 = 10% 质量）
-        final float COMPRESSION_QUALITY = 0.3f;
+        final float COMPRESSION_QUALITY = 0.75f;
         try {
             ImgUtil.compress(
                     FileUtil.file(originalImagePath),
@@ -157,6 +162,25 @@ public class WebScreenshotUtils {
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "压缩图片失败");
         }
     }
+
+    /**
+     * 裁剪图片顶部 50%
+     * 聚焦 hero 区域，提升卡片封面的信息密度
+     */
+    private static byte[] cropTopHalf(byte[] imageBytes) {
+        try {
+            BufferedImage original = ImageIO.read(new ByteArrayInputStream(imageBytes));
+            int cropHeight = original.getHeight() / 2;
+            BufferedImage cropped = original.getSubimage(0, 0, original.getWidth(), cropHeight);
+            java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
+            ImageIO.write(cropped, "png", baos);
+            return baos.toByteArray();
+        } catch (Exception e) {
+            log.error("裁剪图片失败", e);
+            return imageBytes;
+        }
+    }
+
 
     /**
      * 等待页面加载完成
