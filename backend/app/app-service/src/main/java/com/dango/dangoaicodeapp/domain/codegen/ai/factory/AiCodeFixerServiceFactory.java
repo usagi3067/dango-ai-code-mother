@@ -11,7 +11,6 @@ import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
 
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
-import com.dango.dangoaicodeapp.infrastructure.config.NoopPromptTemplateFactory;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -130,7 +129,6 @@ public class AiCodeFixerServiceFactory {
                 .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                         toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                 ))
-                .promptTemplateFactory(new NoopPromptTemplateFactory())
                 .build();
     }
 

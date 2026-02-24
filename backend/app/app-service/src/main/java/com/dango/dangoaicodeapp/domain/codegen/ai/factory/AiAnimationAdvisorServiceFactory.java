@@ -2,7 +2,6 @@ package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
 
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.InterviewAnimationAdvisorService;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.LeetCodeAnimationAdvisorService;
-import com.dango.dangoaicodeapp.infrastructure.config.NoopPromptTemplateFactory;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
@@ -20,14 +19,12 @@ public class AiAnimationAdvisorServiceFactory {
     public LeetCodeAnimationAdvisorService createService() {
         return AiServices.builder(LeetCodeAnimationAdvisorService.class)
                 .streamingChatModel(streamingChatModel)
-                .promptTemplateFactory(new NoopPromptTemplateFactory())
                 .build();
     }
 
     public InterviewAnimationAdvisorService createInterviewService() {
         return AiServices.builder(InterviewAnimationAdvisorService.class)
                 .streamingChatModel(streamingChatModel)
-                .promptTemplateFactory(new NoopPromptTemplateFactory())
                 .build();
     }
 }

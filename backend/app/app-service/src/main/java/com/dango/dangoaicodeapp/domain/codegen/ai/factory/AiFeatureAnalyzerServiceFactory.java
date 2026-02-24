@@ -1,7 +1,6 @@
 package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
 
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.AiFeatureAnalyzerService;
-import com.dango.dangoaicodeapp.infrastructure.config.NoopPromptTemplateFactory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
@@ -26,7 +25,6 @@ public class AiFeatureAnalyzerServiceFactory {
     public AiFeatureAnalyzerService aiFeatureAnalyzerService(ChatModel chatModel) {
         return AiServices.builder(AiFeatureAnalyzerService.class)
                 .chatModel(chatModel)
-                .promptTemplateFactory(new NoopPromptTemplateFactory())
                 .build();
     }
 }

@@ -5,7 +5,6 @@ import com.dango.dangoaicodeapp.domain.codegen.ai.service.AiModificationPlannerS
 import com.dango.dangoaicodeapp.domain.codegen.tools.FileDirReadTool;
 import com.dango.dangoaicodeapp.domain.codegen.tools.FileReadTool;
 import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
-import com.dango.dangoaicodeapp.infrastructure.config.NoopPromptTemplateFactory;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
@@ -77,7 +76,6 @@ public class AiModificationPlannerServiceFactory {
                 .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
                         toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
                 ))
-                .promptTemplateFactory(new NoopPromptTemplateFactory())
                 .build();
     }
 }

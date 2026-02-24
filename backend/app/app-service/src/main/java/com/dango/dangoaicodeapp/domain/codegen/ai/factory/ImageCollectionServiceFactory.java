@@ -6,7 +6,6 @@ import com.dango.dangoaicodeapp.domain.codegen.tools.MermaidDiagramTool;
 import com.dango.dangoaicodeapp.domain.codegen.tools.UndrawIllustrationTool;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.ImageCollectionPlanService;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.ImageCollectionService;
-import com.dango.dangoaicodeapp.infrastructure.config.NoopPromptTemplateFactory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
@@ -46,7 +45,6 @@ public class ImageCollectionServiceFactory {
                         mermaidDiagramTool,
                         logoGeneratorTool
                 )
-                .promptTemplateFactory(new NoopPromptTemplateFactory())
                 .build();
     }
 
@@ -58,7 +56,6 @@ public class ImageCollectionServiceFactory {
     public ImageCollectionPlanService createImageCollectionPlanService() {
         return AiServices.builder(ImageCollectionPlanService.class)
                 .chatModel(chatModel)
-                .promptTemplateFactory(new NoopPromptTemplateFactory())
                 .build();
     }
 }

@@ -2,7 +2,6 @@ package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
 
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.QAService;
 import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
-import com.dango.dangoaicodeapp.infrastructure.config.NoopPromptTemplateFactory;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
@@ -43,7 +42,6 @@ public class AiQAServiceFactory {
                 .streamingChatModel(streamingChatModel)
                 .chatMemory(chatMemory)
                 .chatMemoryProvider(memoryId -> chatMemory)
-                .promptTemplateFactory(new NoopPromptTemplateFactory())
                 .build();
     }
 }

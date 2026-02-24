@@ -1,7 +1,6 @@
 package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
 
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.IntentClassifierService;
-import com.dango.dangoaicodeapp.infrastructure.config.NoopPromptTemplateFactory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
@@ -19,7 +18,6 @@ public class AiIntentClassifierServiceFactory {
     public IntentClassifierService createService() {
         return AiServices.builder(IntentClassifierService.class)
                 .chatModel(chatModel)
-                .promptTemplateFactory(new NoopPromptTemplateFactory())
                 .build();
     }
 }

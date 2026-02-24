@@ -1,7 +1,6 @@
 package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
 
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.CodeQualityCheckService;
-import com.dango.dangoaicodeapp.infrastructure.config.NoopPromptTemplateFactory;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
@@ -27,7 +26,6 @@ public class CodeQualityCheckServiceFactory {
         log.info("创建代码质量检查 AI 服务");
         return AiServices.builder(CodeQualityCheckService.class)
                 .chatModel(chatModel)
-                .promptTemplateFactory(new NoopPromptTemplateFactory())
                 .build();
     }
 }
