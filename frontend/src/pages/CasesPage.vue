@@ -60,125 +60,44 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AppCard from '@/components/AppCard.vue'
 import UserDropdown from '@/components/UserDropdown.vue'
 import { APP_TAG_OPTIONS } from '@/config/appTag'
 import { getDeployUrl } from '@/config/env'
 import { listAppByCursor } from '@/api/app/appController'
+import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 
 const router = useRouter()
-
-// 状态
-const apps = ref<API.AppVO[]>([])
-const lastId = ref<number | null>(null)
-const hasMore = ref(true)
-const loading = ref(false)
 const tag = ref<string | null>(null)
 const searchText = ref('')
 
-/**
- * 加载更多数据
- */
-const loadMore = async () => {
-  if (loading.value || !hasMore.value) return
-  loading.value = true
-
-  try {
+const { items: apps, loading, hasMore, reset: resetAndLoad } = useInfiniteScroll({
+  pageSize: 12,
+  fetchFn: async (lastId) => {
     const res = await listAppByCursor({
-      lastId: lastId.value,
+      lastId: lastId,
       pageSize: 12,
       tag: tag.value || undefined,
       searchText: searchText.value || undefined
     })
-
     if (res.data.code === 0 && res.data.data) {
-      const newRecords = res.data.data.records || []
-      apps.value.push(...newRecords)
-
-      // 更新游标
-      if (newRecords.length > 0) {
-        lastId.value = newRecords[newRecords.length - 1].id as number
-      }
-
-      // 判断是否还有更多
-      hasMore.value = newRecords.length === 12
+      return res.data.data.records || []
     }
-  } catch (error) {
-    console.error('加载应用列表失败:', error)
-  } finally {
-    loading.value = false
+    return []
   }
-}
+})
 
-/**
- * 切换筛选条件时重置并重新加载
- */
-const resetAndLoad = () => {
-  apps.value = []
-  lastId.value = null
-  hasMore.value = true
-  loadMore()
-}
-
-/**
- * 滚动监听
- */
-const handleScroll = () => {
-  const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
-  const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight
-  const clientHeight = document.documentElement.clientHeight || window.innerHeight
-
-  // 距离底部 200px 时触发加载
-  if (scrollHeight - scrollTop - clientHeight < 200 && !loading.value && hasMore.value) {
-    loadMore()
-  }
-}
-
-/**
- * 鼠标滚轮事件监听（处理无滚动条时的向下滚动意图）
- */
-const handleWheel = (e: WheelEvent) => {
-  // 只处理向下滚动
-  if (e.deltaY <= 0) return
-
-  const scrollTop = document.documentElement.scrollTop || document.body.scrollTop
-  const scrollHeight = document.documentElement.scrollHeight || document.body.scrollHeight
-  const clientHeight = window.innerHeight
-
-  // 已经滚动到底部或内容不足以滚动时，触发加载
-  if (scrollHeight - scrollTop - clientHeight < 10 && !loading.value && hasMore.value) {
-    loadMore()
-  }
-}
-
-/**
- * 跳转到应用对话页
- */
 const goToAppChat = (app: API.AppVO) => {
   router.push(`/app/chat/${String(app.id)}`)
 }
 
-/**
- * 打开部署的应用
- */
 const openDeployedApp = (app: API.AppVO) => {
   if (app.deployKey) {
     window.open(getDeployUrl(app.deployKey), '_blank')
   }
 }
-
-onMounted(() => {
-  window.addEventListener('scroll', handleScroll)
-  window.addEventListener('wheel', handleWheel)
-  loadMore()
-})
-
-onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll)
-  window.removeEventListener('wheel', handleWheel)
-})
 </script>
 
 <style scoped>
