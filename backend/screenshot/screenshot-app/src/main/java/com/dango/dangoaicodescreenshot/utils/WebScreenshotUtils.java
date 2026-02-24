@@ -163,13 +163,13 @@ public class WebScreenshotUtils {
     }
 
     /**
-     * 裁剪图片顶部 50%
-     * 聚焦 hero 区域，提升卡片封面的信息密度
+     * 裁剪图片顶部 30%
+     * 只保留标题和导航区域，卡片封面更干净清晰
      */
     private static byte[] cropTopHalf(byte[] imageBytes) {
         try {
             BufferedImage original = ImageIO.read(new ByteArrayInputStream(imageBytes));
-            int cropHeight = original.getHeight() / 2;
+            int cropHeight = (int) (original.getHeight() * 0.3);
             BufferedImage cropped = original.getSubimage(0, 0, original.getWidth(), cropHeight);
             java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
             ImageIO.write(cropped, "png", baos);
