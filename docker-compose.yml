@@ -67,7 +67,7 @@ services:
     ports:
       - "8123:8123"
       - "50051:50051"
-    restart: unless-stopped
+    restart: "no"
     mem_limit: 512m
     depends_on:
       - nacos
@@ -90,7 +90,7 @@ services:
     ports:
       - "8125:8125"
       - "50054:50054"
-    restart: unless-stopped
+    restart: "no"
     mem_limit: 512m
     depends_on:
       - nacos
@@ -115,7 +115,7 @@ services:
     ports:
       - "8126:8126"
       - "50055:50055"
-    restart: unless-stopped
+    restart: "no"
     mem_limit: 512m
     depends_on:
       - nacos
@@ -128,7 +128,7 @@ services:
       HIGRESS_ADDR: ${HIGRESS_ADDR}
     ports:
       - "80:80"
-    restart: unless-stopped
+    restart: "no"
     mem_limit: 64m
 
   supabase-manager:
@@ -137,5 +137,5 @@ services:
     image: dango-ai-code-supabase-manager:latest
     ports:
       - "3000:3000"
-    restart: unless-stopped
+    restart: "no"
     mem_limit: 192m
