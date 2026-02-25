@@ -7,7 +7,6 @@ import cn.hutool.core.util.StrUtil;
 
 import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
-import io.github.bonigarcia.wdm.WebDriverManager;
 import jakarta.annotation.PreDestroy;
 import lombok.extern.slf4j.Slf4j;
 import org.openqa.selenium.JavascriptExecutor;
@@ -15,6 +14,7 @@ import org.openqa.selenium.OutputType;
 import org.openqa.selenium.TakesScreenshot;
 import org.openqa.selenium.WebDriver;
 import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.chrome.ChromeDriverService;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.WebDriverWait;
 
@@ -67,10 +67,8 @@ public class WebScreenshotUtils {
             waitForPageLoad(webDriver);
             // 截图
             byte[] screenshotBytes = ((TakesScreenshot) webDriver).getScreenshotAs(OutputType.BYTES);
-            // 裁剪顶部 50%（聚焦 hero 区域）
-            byte[] croppedBytes = cropTopHalf(screenshotBytes);
-            // 保存裁剪后的图片
-            saveImage(croppedBytes, imageSavePath);
+            // 直接保存完整截图（1280x720 与卡片容器比例接近，无需裁剪）
+            saveImage(screenshotBytes, imageSavePath);
             log.info("原始截图保存成功: {}", imageSavePath);
             // 压缩图片
             final String COMPRESSION_SUFFIX = "_compressed.jpg";
@@ -90,44 +88,46 @@ public class WebScreenshotUtils {
     /**
      * 初始化 Chrome 浏览器驱动
      */
-    /**
-     * 初始化 Chrome 浏览器驱动
-     */
     private static WebDriver initChromeDriver(int width, int height) {
         try {
-            // 自动管理 ChromeDriver
-            System.setProperty("wdm.chromeDriverMirrorUrl", "https://registry.npmmirror.com/binary.html?path=chromedriver");
-            WebDriverManager.chromedriver().useMirror().setup();
-            // 配置 Chrome 选项
             ChromeOptions options = new ChromeOptions();
-            // macOS 上显式指定 Chrome 路径（如果自动检测失败）
-            String chromePath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
-            if (new File(chromePath).exists()) {
-                options.setBinary(chromePath);
+            // 通过环境变量 CHROME_BIN 指定浏览器路径（Docker 容器中为 /usr/bin/chromium-browser）
+            String chromeBin = System.getenv("CHROME_BIN");
+            if (StrUtil.isNotBlank(chromeBin) && new File(chromeBin).exists()) {
+                options.setBinary(chromeBin);
+            } else {
+                // macOS 本地开发回退
+                String macChromePath = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+                if (new File(macChromePath).exists()) {
+                    options.setBinary(macChromePath);
+                }
             }
-            // 无头模式
             options.addArguments("--headless");
-            // 禁用GPU（在某些环境下避免问题）
             options.addArguments("--disable-gpu");
-            // 禁用沙盒模式（Docker环境需要）
             options.addArguments("--no-sandbox");
-            // 禁用开发者shm使用
             options.addArguments("--disable-dev-shm-usage");
-            // 设置窗口大小
             options.addArguments(String.format("--window-size=%d,%d", width, height));
-            // 禁用扩展
             options.addArguments("--disable-extensions");
-            // 设置用户代理
             options.addArguments("--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
-            // 创建驱动
-            WebDriver driver = new ChromeDriver(options);
-            // 设置页面加载超时
+
+            // 通过环境变量 CHROMEDRIVER_PATH 显式指定 ChromeDriver 路径，避免 Selenium Manager 自动下载
+            String chromeDriverPath = System.getenv("CHROMEDRIVER_PATH");
+            WebDriver driver;
+            if (StrUtil.isNotBlank(chromeDriverPath) && new File(chromeDriverPath).exists()) {
+                log.info("使用指定的 ChromeDriver: {}", chromeDriverPath);
+                ChromeDriverService service = new ChromeDriverService.Builder()
+                        .usingDriverExecutable(new File(chromeDriverPath))
+                        .build();
+                driver = new ChromeDriver(service, options);
+            } else {
+                log.info("未找到 CHROMEDRIVER_PATH 环境变量，使用 Selenium 自动管理");
+                driver = new ChromeDriver(options);
+            }
             driver.manage().timeouts().pageLoadTimeout(Duration.ofSeconds(30));
-            // 设置隐式等待
             driver.manage().timeouts().implicitlyWait(Duration.ofSeconds(10));
             return driver;
         } catch (Exception e) {
-            log.error("初始化 Chrome 浏览器失败，请确保本地已安装 Chrome 浏览器", e);
+            log.error("初始化 Chrome 浏览器失败，请确保已安装 Chrome/Chromium 浏览器", e);
             throw new BusinessException(ErrorCode.SYSTEM_ERROR, "初始化 Chrome 浏览器失败：" + e.getMessage());
         }
     }
@@ -163,13 +163,13 @@ public class WebScreenshotUtils {
     }
 
     /**
-     * 裁剪图片顶部 30%
-     * 只保留标题和导航区域，卡片封面更干净清晰
+     * 裁剪图片顶部 50%
+     * 聚焦 hero 区域，提升卡片封面的信息密度
      */
     private static byte[] cropTopHalf(byte[] imageBytes) {
         try {
             BufferedImage original = ImageIO.read(new ByteArrayInputStream(imageBytes));
-            int cropHeight = (int) (original.getHeight() * 0.3);
+            int cropHeight = original.getHeight() / 2;
             BufferedImage cropped = original.getSubimage(0, 0, original.getWidth(), cropHeight);
             java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream();
             ImageIO.write(cropped, "png", baos);
