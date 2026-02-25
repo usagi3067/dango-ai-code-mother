@@ -54,6 +54,7 @@ declare namespace API {
     userAvatar?: string
     userProfile?: string
     userRole?: string
+    tokenValue?: string
     createTime?: string
     updateTime?: string
   }

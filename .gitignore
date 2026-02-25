@@ -17,10 +17,18 @@ target/
 logs/
 tmp/
 
+# Runtime data
+app-data/
+
 # Local config
 *.local
 **/application-local.yml
 **/src/test/resources/application-test.yml
+docker-compose.local.yml
+deploy-*.sh
+
+# IntelliJ run configurations
+backend/.run/
 
 # Sensitive configs
 .env
@@ -31,8 +39,3 @@ nacos-configs/
 
 # Docs (design docs, plans, etc.)
 docs/
-
-# Planning plugin temp files
-findings.md
-progress.md
-task_plan.md
