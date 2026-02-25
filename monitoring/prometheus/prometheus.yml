@@ -1,0 +1,53 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "alert-rules.yml"
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - alertmanager:9093
+
+scrape_configs:
+  # app-service (Machine A - 腾讯云)
+  - job_name: "app-service"
+    metrics_path: "/actuator/prometheus"
+    scheme: http
+    static_configs:
+      - targets: ["42.194.244.5:8124"]
+        labels:
+          service: "app-service"
+          machine: "machine-a"
+
+  # user-service (Machine B - 百度云)
+  - job_name: "user-service"
+    metrics_path: "/actuator/prometheus"
+    scheme: http
+    static_configs:
+      - targets: ["106.13.14.164:8123"]
+        labels:
+          service: "user-service"
+          machine: "machine-b"
+
+  # screenshot-app (Machine B - 百度云)
+  - job_name: "screenshot-app"
+    metrics_path: "/actuator/prometheus"
+    scheme: http
+    static_configs:
+      - targets: ["106.13.14.164:8125"]
+        labels:
+          service: "screenshot-app"
+          machine: "machine-b"
+
+  # supabase-service (Machine B - 百度云)
+  - job_name: "supabase-service"
+    metrics_path: "/actuator/prometheus"
+    scheme: http
+    static_configs:
+      - targets: ["106.13.14.164:8126"]
+        labels:
+          service: "supabase-service"
+          machine: "machine-b"
