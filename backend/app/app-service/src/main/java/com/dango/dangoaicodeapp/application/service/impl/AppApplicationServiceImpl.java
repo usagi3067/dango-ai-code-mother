@@ -14,6 +14,7 @@ import com.dango.dangoaicodeapp.domain.app.service.AppDomainService;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.codegen.builder.VueProjectBuilder;
 import com.dango.dangoaicodeapp.domain.codegen.service.AppInfoGeneratorFacade;
+import com.dango.dangoaicodeapp.infrastructure.config.AppProperties;
 import com.dango.dangoaicodeapp.model.constant.AppConstant;
 import com.dango.dangoaicodeapp.model.dto.app.AppAddRequest;
 import com.dango.dangoaicodeapp.model.dto.app.AppAdminUpdateRequest;
@@ -30,7 +31,6 @@ import com.mybatisflex.core.query.QueryWrapper;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -55,8 +55,8 @@ import java.util.stream.Collectors;
 @Service
 public class AppApplicationServiceImpl implements AppApplicationService {
 
-    @Value("${app.deploy-host:http://localhost}")
-    private String deployHost;
+    @Resource
+    private AppProperties appProperties;
 
     @Resource
     private AppRepository appRepository;
@@ -291,7 +291,7 @@ public class AppApplicationServiceImpl implements AppApplicationService {
         app.markDeployed(deployKey);
         boolean updateResult = appRepository.updateById(app);
         ThrowUtils.throwIf(!updateResult, ErrorCode.OPERATION_ERROR, "更新应用部署信息失败");
-        String appDeployUrl = String.format("%s/d/%s/", deployHost, deployKey);
+        String appDeployUrl = String.format("%s/d/%s/", appProperties.getDeployHost(), deployKey);
         generateAppScreenshotAsync(appId, appDeployUrl);
         return appDeployUrl;
     }

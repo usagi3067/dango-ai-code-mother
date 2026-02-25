@@ -12,6 +12,7 @@ import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
 import com.dango.dangoaicodeapp.domain.codegen.handler.StreamHandlerExecutor;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.CodeGenWorkflow;
+import com.dango.dangoaicodeapp.infrastructure.config.AppProperties;
 import com.dango.dangoaicodeapp.infrastructure.monitor.MonitorContext;
 import com.dango.dangoaicodeapp.infrastructure.monitor.MonitorContextHolder;
 import com.dango.dangoaicodeapp.infrastructure.redis.GenTaskService;
@@ -24,7 +25,6 @@ import com.dango.supabase.service.SupabaseService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.scheduler.Schedulers;
@@ -55,8 +55,8 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
     private GenTaskService genTaskService;
     @Resource
     private AppApplicationService appApplicationService;
-    @Value("${app.preview-host:http://localhost:8124}")
-    private String previewHost;
+    @Resource
+    private AppProperties appProperties;
     @DubboReference
     private SupabaseService supabaseService;
 
@@ -210,7 +210,7 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
                     App completedApp = appRepository.findById(appId).orElse(null);
                     if (completedApp != null && completedApp.getCodeGenType() != null) {
                         String previewUrl = String.format("%s/api/static/%s_%s/dist/index.html",
-                                previewHost, completedApp.getCodeGenType(), appId);
+                                appProperties.getPreviewHost(), completedApp.getCodeGenType(), appId);
                         appApplicationService.generateAppScreenshotAsync(appId, previewUrl);
                         log.info("已触发生成完成截图: appId={}", appId);
                     }
