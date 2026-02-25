@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="true" scanPeriod="5 seconds">
+
+    <!-- CLS 配置 - 从 Spring Environment (Nacos) 读取 -->
+    <springProperty scope="context" name="CLS_ENDPOINT" source="cls.endpoint" defaultValue="ap-guangzhou.cls.tencentcs.com"/>
+    <springProperty scope="context" name="CLS_SECRET_ID" source="cls.secret-id" defaultValue=""/>
+    <springProperty scope="context" name="CLS_SECRET_KEY" source="cls.secret-key" defaultValue=""/>
+    <springProperty scope="context" name="CLS_TOPIC_ID" source="cls.topic-id" defaultValue=""/>
+
+    <!-- 模块名称 -->
+    <property name="APP_NAME" value="supabase-service"/>
+    <property name="LOG_PATH" value="logs/${APP_NAME}"/>
+
+    <!-- 彩色日志格式 - 控制台使用（使用 %tid 直接获取 SkyWalking traceId） -->
+    <property name="CONSOLE_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %highlight(%-5level) %boldMagenta([%tid]) %boldCyan([${APP_NAME}]) %boldYellow([%thread]) %boldGreen(%logger{36}) - %msg%n"/>
+    <!-- 文件日志格式 - 不带颜色 -->
+    <property name="FILE_PATTERN" value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%tid] [${APP_NAME}] [%thread] %logger{36} - %msg%n"/>
+
+    <!-- 控制台输出 - 带颜色（使用 %tid 直接方式） -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <Pattern>${CONSOLE_PATTERN}</Pattern>
+            </layout>
+        </encoder>
+    </appender>
+
+    <!-- 全部日志文件 -->
+    <appender name="FILE_ALL" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/${APP_NAME}_all.log</file>
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <Pattern>${FILE_PATTERN}</Pattern>
+            </layout>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/archive/${APP_NAME}_all.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 业务日志文件 -->
+    <appender name="FILE_BIZ" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/${APP_NAME}_biz.log</file>
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <Pattern>${FILE_PATTERN}</Pattern>
+            </layout>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/archive/${APP_NAME}_biz.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 错误日志文件 -->
+    <appender name="FILE_ERROR" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/${APP_NAME}_err.log</file>
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <Pattern>${FILE_PATTERN}</Pattern>
+            </layout>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/archive/${APP_NAME}_err.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>60</maxHistory>
+            <totalSizeCap>2GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- IO 日志文件 - Controller 请求和 Dubbo 调用 -->
+    <appender name="FILE_IO" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/${APP_NAME}_io.log</file>
+        <encoder class="ch.qos.logback.core.encoder.LayoutWrappingEncoder">
+            <layout class="org.apache.skywalking.apm.toolkit.log.logback.v1.x.TraceIdPatternLogbackLayout">
+                <Pattern>${FILE_PATTERN}</Pattern>
+            </layout>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/archive/${APP_NAME}_io.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>100MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>3GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- 腾讯云 CLS 日志上报 - 业务日志 -->
+    <appender name="CLS_LOG" class="com.tencentcloudapi.cls.LoghubAppender">
+        <endpoint>${CLS_ENDPOINT}</endpoint>
+        <accessKeyId>${CLS_SECRET_ID}</accessKeyId>
+        <accessKeySecret>${CLS_SECRET_KEY}</accessKeySecret>
+        <topicId>${CLS_TOPIC_ID}</topicId>
+        <maxBlockMs>0</maxBlockMs>
+        <sendThreadCount>4</sendThreadCount>
+        <timeFormat>yyyy-MM-dd'T'HH:mm:ss.SSSZ</timeFormat>
+        <timeZone>Asia/Shanghai</timeZone>
+        <customFields>{"service":"${APP_NAME}","log_type":"biz"}</customFields>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 腾讯云 CLS 日志上报 - IO 日志（HTTP 请求和 Dubbo 调用） -->
+    <appender name="CLS_IO_LOG" class="com.tencentcloudapi.cls.LoghubAppender">
+        <endpoint>${CLS_ENDPOINT}</endpoint>
+        <accessKeyId>${CLS_SECRET_ID}</accessKeyId>
+        <accessKeySecret>${CLS_SECRET_KEY}</accessKeySecret>
+        <topicId>${CLS_TOPIC_ID}</topicId>
+        <maxBlockMs>0</maxBlockMs>
+        <sendThreadCount>4</sendThreadCount>
+        <timeFormat>yyyy-MM-dd'T'HH:mm:ss.SSSZ</timeFormat>
+        <timeZone>Asia/Shanghai</timeZone>
+        <customFields>{"service":"${APP_NAME}","log_type":"io"}</customFields>
+        <encoder>
+            <pattern>${FILE_PATTERN}</pattern>
+        </encoder>
+    </appender>
+
+    <!-- 异步 Appender -->
+    <appender name="ASYNC_CONSOLE" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>1024</queueSize>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="CONSOLE"/>
+    </appender>
+
+    <appender name="ASYNC_FILE_ALL" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>1024</queueSize>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="FILE_ALL"/>
+    </appender>
+
+    <appender name="ASYNC_FILE_BIZ" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>1024</queueSize>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="FILE_BIZ"/>
+    </appender>
+
+    <appender name="ASYNC_FILE_IO" class="ch.qos.logback.classic.AsyncAppender">
+        <discardingThreshold>0</discardingThreshold>
+        <queueSize>1024</queueSize>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="FILE_IO"/>
+    </appender>
+
+    <!-- 开发环境 -->
+    <springProfile name="local,dev">
+        <root level="INFO">
+            <appender-ref ref="ASYNC_CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE_ALL"/>
+            <appender-ref ref="FILE_ERROR"/>
+        </root>
+        <logger name="com.dango" level="DEBUG" additivity="false">
+            <appender-ref ref="ASYNC_CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE_BIZ"/>
+            <appender-ref ref="FILE_ERROR"/>
+            <appender-ref ref="CLS_LOG"/>
+        </logger>
+        <!-- IO 日志 - HTTP 请求和 Dubbo 调用 -->
+        <logger name="IO_LOG" level="INFO" additivity="false">
+            <appender-ref ref="ASYNC_CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE_IO"/>
+            <appender-ref ref="FILE_ERROR"/>
+            <appender-ref ref="CLS_IO_LOG"/>
+        </logger>
+    </springProfile>
+
+    <!-- 生产环境 -->
+    <springProfile name="prod">
+        <!-- root 暂不上报 CLS，仅输出到控制台和本地文件。后期如需框架日志也上报，在此添加 CLS_LOG -->
+        <root level="INFO">
+            <appender-ref ref="ASYNC_CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE_ALL"/>
+            <appender-ref ref="FILE_ERROR"/>
+        </root>
+        <logger name="com.dango" level="INFO" additivity="false">
+            <appender-ref ref="ASYNC_CONSOLE"/>
+            <appender-ref ref="ASYNC_FILE_BIZ"/>
+            <appender-ref ref="FILE_ERROR"/>
+            <appender-ref ref="CLS_LOG"/>
+        </logger>
+        <logger name="IO_LOG" level="INFO" additivity="false">
+            <appender-ref ref="ASYNC_FILE_IO"/>
+            <appender-ref ref="FILE_ERROR"/>
+            <appender-ref ref="CLS_IO_LOG"/>
+        </logger>
+    </springProfile>
+
+</configuration>

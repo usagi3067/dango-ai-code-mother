@@ -57,7 +57,7 @@ services:
         SERVICE_NAME: user-service
     image: dango-ai-code-user:latest
     environment:
-      JAVA_OPTS: -Xmx256m -Xms128m
+      JAVA_OPTS: -Xmx256m -Xms128m -javaagent:/app/skywalking-agent/skywalking-agent.jar -Dskywalking.agent.service_name=user-service -Dskywalking.agent.keep_tracing=true -Dskywalking.collector.backend_service=localhost:11800
       TZ: Asia/Shanghai
       SPRING_PROFILES_ACTIVE: prod
       NACOS_ADDR: ${NACOS_ADDR}
@@ -67,6 +67,7 @@ services:
       DUBBO_IP_TO_REGISTRY: ${MACHINE_B_IP}
     volumes:
       - ./logs/user-service:/app/logs/user-service
+      - ./skywalking-agent:/app/skywalking-agent:ro
     ports:
       - "8123:8123"
       - "50051:50051"
@@ -81,7 +82,7 @@ services:
       dockerfile: Dockerfile.screenshot
     image: dango-ai-code-screenshot:latest
     environment:
-      JAVA_OPTS: -Xmx256m -Xms128m
+      JAVA_OPTS: -Xmx256m -Xms128m -javaagent:/app/skywalking-agent/skywalking-agent.jar -Dskywalking.agent.service_name=screenshot-app -Dskywalking.agent.keep_tracing=true -Dskywalking.collector.backend_service=localhost:11800
       TZ: Asia/Shanghai
       SPRING_PROFILES_ACTIVE: prod
       NACOS_ADDR: ${NACOS_ADDR}
@@ -91,6 +92,7 @@ services:
       DUBBO_IP_TO_REGISTRY: ${MACHINE_B_IP}
     volumes:
       - ./logs/screenshot-app:/app/logs/screenshot-app
+      - ./skywalking-agent:/app/skywalking-agent:ro
     ports:
       - "8125:8125"
       - "50054:50054"
@@ -107,7 +109,7 @@ services:
         SERVICE_NAME: supabase-service
     image: dango-ai-code-supabase:latest
     environment:
-      JAVA_OPTS: -Xmx256m -Xms128m
+      JAVA_OPTS: -Xmx256m -Xms128m -javaagent:/app/skywalking-agent/skywalking-agent.jar -Dskywalking.agent.service_name=supabase-service -Dskywalking.agent.keep_tracing=true -Dskywalking.collector.backend_service=localhost:11800
       TZ: Asia/Shanghai
       SPRING_PROFILES_ACTIVE: prod
       NACOS_ADDR: ${NACOS_ADDR}
@@ -117,6 +119,7 @@ services:
       DUBBO_IP_TO_REGISTRY: ${MACHINE_B_IP}
     volumes:
       - ./logs/supabase-service:/app/logs/supabase-service
+      - ./skywalking-agent:/app/skywalking-agent:ro
     ports:
       - "8126:8126"
       - "50055:50055"

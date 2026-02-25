@@ -9,7 +9,7 @@ services:
       dockerfile: Dockerfile.app
     image: dango-ai-code-app:latest
     environment:
-      JAVA_OPTS: -Xmx2g -Xms1g
+      JAVA_OPTS: -Xmx2g -Xms1g -javaagent:/app/skywalking-agent/skywalking-agent.jar -Dskywalking.agent.service_name=app-service -Dskywalking.agent.keep_tracing=true -Dskywalking.collector.backend_service=localhost:11800
       TZ: Asia/Shanghai
       SPRING_PROFILES_ACTIVE: prod
       NACOS_ADDR: ${NACOS_ADDR}
@@ -21,6 +21,7 @@ services:
       - ./logs/app-service:/app/logs/app-service
       - ./app-data/code_output:/app/tmp/code_output
       - ./app-data/code_deploy:/app/tmp/code_deploy
+      - ./skywalking-agent:/app/skywalking-agent:ro
     ports:
       - "8124:8124"
       - "50053:50053"
