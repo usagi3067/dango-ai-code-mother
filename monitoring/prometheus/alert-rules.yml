@@ -1,0 +1,70 @@
+groups:
+  - name: service-health
+    rules:
+      - alert: ServiceDown
+        expr: up == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "服务宕机: {{ $labels.job }}"
+          description: "{{ $labels.job }} 已停止响应超过 1 分钟"
+
+      - alert: JvmMemoryHigh
+        expr: jvm_memory_used_bytes{area="heap"} / jvm_memory_max_bytes{area="heap"} > 0.85
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "JVM 堆内存过高: {{ $labels.job }}"
+          description: "{{ $labels.job }} 堆内存使用率 {{ $value | humanizePercentage }}"
+
+  - name: http-performance
+    rules:
+      - alert: Http5xxRateHigh
+        expr: |
+          sum(rate(http_server_requests_seconds_count{status=~"5.."}[5m])) by (job)
+          /
+          sum(rate(http_server_requests_seconds_count[5m])) by (job)
+          > 0.05
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "HTTP 5xx 错误率过高: {{ $labels.job }}"
+          description: "{{ $labels.job }} 5xx 错误率 {{ $value | humanizePercentage }}"
+
+      - alert: HttpResponseTimeSlow
+        expr: histogram_quantile(0.95, sum(rate(http_server_requests_seconds_bucket[5m])) by (le, job)) > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "HTTP P95 响应时间过长: {{ $labels.job }}"
+          description: "{{ $labels.job }} P95 响应时间 {{ $value }}s"
+
+  - name: ai-monitoring
+    rules:
+      - alert: AiErrorRateHigh
+        expr: |
+          sum(rate(ai_model_errors_total[5m])) by (model_name)
+          /
+          sum(rate(ai_model_requests_total{status="success"}[5m])) by (model_name)
+          > 0.1
+        for: 3m
+        labels:
+          severity: critical
+        annotations:
+          summary: "AI 调用错误率过高: {{ $labels.model_name }}"
+          description: "模型 {{ $labels.model_name }} 错误率 {{ $value | humanizePercentage }}"
+
+      - alert: AiTokenUsageSpike
+        expr: |
+          sum(rate(ai_model_tokens_total{token_type="total"}[5m]))
+          > 3 * sum(rate(ai_model_tokens_total{token_type="total"}[1h] offset 1h))
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "AI Token 消耗异常飙升"
+          description: "Token 消耗速率是过去 1 小时均值的 3 倍以上"
