@@ -2,6 +2,9 @@
 FROM maven:3.9-eclipse-temurin-21-alpine AS build
 WORKDIR /app
 
+# 配置阿里云 Maven 镜像加速依赖下载
+RUN mkdir -p /root/.m2 && echo '<?xml version="1.0" encoding="UTF-8"?><settings><mirrors><mirror><id>aliyun</id><mirrorOf>central</mirrorOf><url>https://maven.aliyun.com/repository/central</url></mirror></mirrors></settings>' > /root/.m2/settings.xml
+
 COPY pom.xml .
 COPY common/pom.xml common/pom.xml
 COPY ai/pom.xml ai/pom.xml
