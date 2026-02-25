@@ -19,6 +19,7 @@ spring:
       - nacos:shared-cos.yml?group=SHARED_GROUP
       - nacos:shared-dubbo.yml?group=SHARED_GROUP
       - nacos:shared-common.yml?group=SHARED_GROUP
+      - nacos:shared-cls.yml?group=SHARED_GROUP
 # springdoc-openapi
 springdoc:
   group-configs:

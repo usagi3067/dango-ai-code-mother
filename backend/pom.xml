@@ -67,6 +67,19 @@
             <artifactId>apm-toolkit-logback-1.x</artifactId>
             <version>${skywalking.version}</version>
         </dependency>
+
+        <!-- 腾讯云 CLS Logback Appender - 日志上报 -->
+        <dependency>
+            <groupId>com.tencentcloudapi.cls</groupId>
+            <artifactId>tencentcloud-cls-logback-appender</artifactId>
+            <version>1.0.8</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-simple</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>
