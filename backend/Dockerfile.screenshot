@@ -36,8 +36,8 @@ WORKDIR /app
 # 换 Alpine 国内镜像源
 RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
 
-# 安装 Chromium + ChromeDriver + 依赖
-RUN apk add --no-cache chromium chromium-chromedriver nss freetype harfbuzz ca-certificates ttf-freefont
+# 安装 Chromium + ChromeDriver + 依赖 + 中文字体
+RUN apk add --no-cache chromium chromium-chromedriver nss freetype harfbuzz ca-certificates ttf-freefont font-noto-cjk
 
 ENV CHROME_BIN=/usr/bin/chromium-browser
 ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
