@@ -60,3 +60,15 @@ scrape_configs:
         labels:
           machine: "machine-b"
           cloud: "baidu"
+
+  # 阿里云 RDS MySQL 指标
+  - job_name: "mysqld"
+    scheme: http
+    static_configs:
+      - targets: ["mysqld-exporter:9104"]
+
+  # 阿里云 Redis 指标
+  - job_name: "redis"
+    scheme: http
+    static_configs:
+      - targets: ["redis-exporter:9121"]

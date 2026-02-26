@@ -43,6 +43,30 @@ services:
     depends_on:
       - prometheus
 
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.16.0
+    container_name: mysqld-exporter
+    volumes:
+      - ./mysqld-exporter/.my.cnf:/cfg/.my.cnf:ro
+    command:
+      - "--config.my-cnf=/cfg/.my.cnf"
+    ports:
+      - "9104:9104"
+    restart: unless-stopped
+    mem_limit: 64m
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.67.0
+    container_name: redis-exporter
+    env_file: .env
+    environment:
+      REDIS_ADDR: "${REDIS_HOST}:${REDIS_PORT}"
+      REDIS_PASSWORD: "${REDIS_PASSWORD}"
+    ports:
+      - "9121:9121"
+    restart: unless-stopped
+    mem_limit: 64m
+
 
 volumes:
   prometheus-data:

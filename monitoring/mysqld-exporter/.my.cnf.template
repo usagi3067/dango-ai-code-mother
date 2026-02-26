@@ -1,0 +1,5 @@
+[client]
+host=${MYSQL_GRAFANA_HOST}
+port=${MYSQL_GRAFANA_PORT}
+user=${MYSQL_GRAFANA_USER}
+password=${MYSQL_GRAFANA_PASSWORD}
