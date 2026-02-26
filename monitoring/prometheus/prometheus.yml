@@ -14,7 +14,7 @@ alerting:
 scrape_configs:
   # app-service (Machine A - 腾讯云)
   - job_name: "app-service"
-    metrics_path: "/actuator/prometheus"
+    metrics_path: "/api/actuator/prometheus"
     scheme: http
     static_configs:
       - targets: ["42.194.244.5:8124"]
@@ -24,7 +24,7 @@ scrape_configs:
 
   # user-service (Machine B - 百度云)
   - job_name: "user-service"
-    metrics_path: "/actuator/prometheus"
+    metrics_path: "/api/actuator/prometheus"
     scheme: http
     static_configs:
       - targets: ["106.13.14.164:8123"]
@@ -34,7 +34,7 @@ scrape_configs:
 
   # screenshot-app (Machine B - 百度云)
   - job_name: "screenshot-app"
-    metrics_path: "/actuator/prometheus"
+    metrics_path: "/api/actuator/prometheus"
     scheme: http
     static_configs:
       - targets: ["106.13.14.164:8125"]
@@ -44,7 +44,7 @@ scrape_configs:
 
   # supabase-service (Machine B - 百度云)
   - job_name: "supabase-service"
-    metrics_path: "/actuator/prometheus"
+    metrics_path: "/api/actuator/prometheus"
     scheme: http
     static_configs:
       - targets: ["106.13.14.164:8126"]
