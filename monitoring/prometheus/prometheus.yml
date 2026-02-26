@@ -42,3 +42,21 @@ scrape_configs:
         labels:
           service: "supabase-service"
           machine: "machine-b"
+
+  # cAdvisor - 腾讯云 CVM 容器指标
+  - job_name: "cadvisor-tencent"
+    scheme: http
+    static_configs:
+      - targets: ["42.194.244.5:8080"]
+        labels:
+          machine: "machine-a"
+          cloud: "tencent"
+
+  # cAdvisor - 百度云 BCC 容器指标
+  - job_name: "cadvisor-baidu"
+    scheme: http
+    static_configs:
+      - targets: ["106.13.14.164:9099"]
+        labels:
+          machine: "machine-b"
+          cloud: "baidu"

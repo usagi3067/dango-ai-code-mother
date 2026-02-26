@@ -1,0 +1,22 @@
+# cAdvisor 容器指标采集
+# 在每台云主机上部署，采集 Docker 容器的 CPU/内存/网络/磁盘指标
+#
+# 部署方式:
+#   scp docker-compose.yml root@<云主机IP>:/opt/cadvisor/docker-compose.yml
+#   ssh root@<云主机IP> "cd /opt/cadvisor && docker compose up -d"
+
+services:
+  cadvisor:
+    image: gcr.nju.edu.cn/cadvisor/cadvisor:v0.49.1
+    container_name: cadvisor
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+    mem_limit: 128m
