@@ -61,6 +61,16 @@ scrape_configs:
           machine: "machine-b"
           cloud: "baidu"
 
+  # Nacos (Machine B - 百度云)
+  - job_name: "nacos"
+    metrics_path: "/nacos/actuator/prometheus"
+    scheme: http
+    static_configs:
+      - targets: ["106.13.14.164:8848"]
+        labels:
+          service: "nacos"
+          machine: "machine-b"
+
   # 阿里云 RDS MySQL 指标
   - job_name: "mysqld"
     scheme: http
