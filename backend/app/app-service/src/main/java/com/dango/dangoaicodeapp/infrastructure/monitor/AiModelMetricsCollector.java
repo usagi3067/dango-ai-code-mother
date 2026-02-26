@@ -93,6 +93,7 @@ public class AiModelMetricsCollector {
                         .tag("user_id", userId)
                         .tag("app_id", appId)
                         .tag("model_name", modelName)
+                        .publishPercentileHistogram()
                         .register(meterRegistry)
         );
         timer.record(duration);
