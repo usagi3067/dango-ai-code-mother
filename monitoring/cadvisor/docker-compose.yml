@@ -4,6 +4,11 @@
 # 部署方式:
 #   scp docker-compose.yml root@<云主机IP>:/opt/cadvisor/docker-compose.yml
 #   ssh root@<云主机IP> "cd /opt/cadvisor && docker compose up -d"
+#
+# 注意:
+#   - 腾讯云 CVM: 使用 v0.49.1，端口 8080
+#   - 百度云 BCC: 使用 v0.52.1（Docker 29.x 需要更新版本），端口 9099（8080 被 Higress 占用）
+#     百度云 BCC 上的配置见服务器 /opt/cadvisor/docker-compose.yml
 
 services:
   cadvisor:
