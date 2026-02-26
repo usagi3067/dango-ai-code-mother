@@ -229,7 +229,7 @@
         {
           "datasource": { "type": "mysql", "uid": "mysql-business" },
           "format": "table",
-          "rawSql": "SELECT COUNT(*) as total FROM app WHERE isDelete = 0",
+          "rawSql": "SELECT COUNT(*) as total FROM `app` WHERE isDelete = 0",
           "refId": "A"
         }
       ]
@@ -266,7 +266,7 @@
         {
           "datasource": { "type": "mysql", "uid": "mysql-business" },
           "format": "table",
-          "rawSql": "SELECT COUNT(*) as \"本周新增\" FROM app WHERE isDelete = 0 AND createTime >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)",
+          "rawSql": "SELECT COUNT(*) as \"本周新增\" FROM `app` WHERE isDelete = 0 AND createTime >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)",
           "refId": "A"
         }
       ]
@@ -316,7 +316,7 @@
         {
           "datasource": { "type": "mysql", "uid": "mysql-business" },
           "format": "time_series",
-          "rawSql": "SELECT DATE(createTime) as time, COUNT(*) as \"新增应用\" FROM app WHERE isDelete = 0 AND createTime >= $__timeFrom() AND createTime <= $__timeTo() GROUP BY DATE(createTime) ORDER BY time",
+          "rawSql": "SELECT DATE(createTime) as time, COUNT(*) as \"新增应用\" FROM `app` WHERE isDelete = 0 AND createTime >= $__timeFrom() AND createTime <= $__timeTo() GROUP BY DATE(createTime) ORDER BY time",
           "refId": "A"
         }
       ]
@@ -352,7 +352,7 @@
         {
           "datasource": { "type": "mysql", "uid": "mysql-business" },
           "format": "table",
-          "rawSql": "SELECT tag as metric, COUNT(*) as value FROM app WHERE isDelete = 0 GROUP BY tag",
+          "rawSql": "SELECT tag as metric, COUNT(*) as value FROM `app` WHERE isDelete = 0 GROUP BY tag",
           "refId": "A"
         }
       ]
@@ -388,7 +388,7 @@
         {
           "datasource": { "type": "mysql", "uid": "mysql-business" },
           "format": "table",
-          "rawSql": "SELECT CASE WHEN deployKey IS NOT NULL AND deployKey != '' THEN '已部署' ELSE '未部署' END as metric, COUNT(*) as value FROM app WHERE isDelete = 0 GROUP BY metric",
+          "rawSql": "SELECT CASE WHEN deployKey IS NOT NULL AND deployKey != '' THEN '已部署' ELSE '未部署' END as metric, COUNT(*) as value FROM `app` WHERE isDelete = 0 GROUP BY CASE WHEN deployKey IS NOT NULL AND deployKey != '' THEN '已部署' ELSE '未部署' END",
           "refId": "A"
         }
       ]
