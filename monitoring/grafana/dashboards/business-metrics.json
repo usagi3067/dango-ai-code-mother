@@ -61,7 +61,7 @@
         {
           "datasource": { "type": "mysql", "uid": "mysql-business" },
           "format": "table",
-          "rawSql": "SELECT COUNT(*) as total FROM user WHERE isDelete = 0",
+          "rawSql": "SELECT COUNT(*) as total FROM `user` WHERE isDelete = 0",
           "refId": "A"
         }
       ]
@@ -98,7 +98,7 @@
         {
           "datasource": { "type": "mysql", "uid": "mysql-business" },
           "format": "table",
-          "rawSql": "SELECT COUNT(*) as \"本周新增\" FROM user WHERE isDelete = 0 AND createTime >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)",
+          "rawSql": "SELECT COUNT(*) as \"本周新增\" FROM `user` WHERE isDelete = 0 AND createTime >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)",
           "refId": "A"
         }
       ]
@@ -148,7 +148,7 @@
         {
           "datasource": { "type": "mysql", "uid": "mysql-business" },
           "format": "time_series",
-          "rawSql": "SELECT DATE(createTime) as time, COUNT(*) as \"新增用户\" FROM user WHERE isDelete = 0 AND createTime >= $__timeFrom() AND createTime <= $__timeTo() GROUP BY DATE(createTime) ORDER BY time",
+          "rawSql": "SELECT DATE(createTime) as time, COUNT(*) as \"新增用户\" FROM `user` WHERE isDelete = 0 AND createTime >= $__timeFrom() AND createTime <= $__timeTo() GROUP BY DATE(createTime) ORDER BY time",
           "refId": "A"
         }
       ]
@@ -184,7 +184,7 @@
         {
           "datasource": { "type": "mysql", "uid": "mysql-business" },
           "format": "table",
-          "rawSql": "SELECT userRole as metric, COUNT(*) as value FROM user WHERE isDelete = 0 GROUP BY userRole",
+          "rawSql": "SELECT userRole as metric, COUNT(*) as value FROM `user` WHERE isDelete = 0 GROUP BY userRole",
           "refId": "A"
         }
       ]

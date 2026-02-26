@@ -210,7 +210,7 @@ groups:
             model:
               rawSql: |
                 SELECT COUNT(*) as value
-                FROM user
+                FROM `user`
                 WHERE isDelete = 0
                   AND createTime >= NOW() - INTERVAL 24 HOUR
               format: table
@@ -242,7 +242,7 @@ groups:
             model:
               rawSql: |
                 SELECT COUNT(*) as today_count
-                FROM user
+                FROM `user`
                 WHERE isDelete = 0
                   AND createTime >= NOW() - INTERVAL 1 DAY
               format: table
@@ -255,7 +255,7 @@ groups:
             model:
               rawSql: |
                 SELECT COUNT(*) / 7 as avg_daily
-                FROM user
+                FROM `user`
                 WHERE isDelete = 0
                   AND createTime >= NOW() - INTERVAL 7 DAY
               format: table
