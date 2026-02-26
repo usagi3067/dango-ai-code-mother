@@ -30,7 +30,6 @@ public class InterviewAnimationAdvisorNode {
             log.info("执行节点: {}", NODE_NAME);
 
             context.emitNodeStart(NODE_NAME);
-            context.restoreMonitorContext();
             context.emitNodeMessage(NODE_NAME, "正在分析面试题目并生成图解设计建议...\n");
 
             String userPrompt = context.getOriginalPrompt();

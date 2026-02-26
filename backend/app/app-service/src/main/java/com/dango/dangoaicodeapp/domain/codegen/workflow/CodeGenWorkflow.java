@@ -7,7 +7,8 @@ import com.dango.aicodegenerate.model.QualityResult;
 import com.dango.aicodegenerate.model.message.AiResponseMessage;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
-import com.dango.dangoaicodeapp.infrastructure.monitor.MonitorContext;
+import com.dango.dangoaicodecommon.monitor.MonitorContext;
+import com.dango.dangoaicodecommon.monitor.MonitorContextHolder;
 import com.dango.dangoaicodeapp.domain.codegen.node.*;
 import com.dango.dangoaicodeapp.domain.codegen.node.concurrent.*;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
@@ -560,6 +561,11 @@ public class CodeGenWorkflow {
             // 使用 TracedVirtualThread 自动传递 traceId
             TracedVirtualThread.start(() -> {
                 try {
+                    // 恢复监控上下文到虚拟线程（串行节点共享此线程，无需各节点手动 restore）
+                    if (monitorContext != null) {
+                        MonitorContextHolder.setContext(monitorContext);
+                    }
+
                     CompiledGraph<MessagesState<String>> workflow = createWorkflow();
                     RunnableConfig runnableConfig = createRunnableConfig();
 
@@ -608,7 +614,8 @@ public class CodeGenWorkflow {
                     log.error("工作流执行失败: {}", e.getMessage(), e);
                     sink.error(e);
                 } finally {
-                    // 清理注册表
+                    // 清理监控上下文和注册表
+                    MonitorContextHolder.clearContext();
                     WorkflowContext.unregisterSink(executionId);
                 }
             });

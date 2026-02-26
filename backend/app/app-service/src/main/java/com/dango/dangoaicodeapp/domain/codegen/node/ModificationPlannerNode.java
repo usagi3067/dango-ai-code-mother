@@ -48,9 +48,6 @@ public class ModificationPlannerNode {
             context.emitNodeMessage(NODE_NAME, "正在分析需求并制定修改计划...\n");
 
             try {
-                // 恢复监控上下文
-                context.restoreMonitorContext();
-
                 // 构建规划请求
                 String planningRequest = buildPlanningRequest(context);
                 log.info("修改规划请求:\n{}", planningRequest);
@@ -75,8 +72,6 @@ public class ModificationPlannerNode {
             } catch (Exception e) {
                 log.error("修改规划失败: {}", e.getMessage(), e);
                 context.emitNodeError(NODE_NAME, e.getMessage());
-            } finally {
-                context.clearMonitorContext();
             }
 
             // 发送节点完成消息

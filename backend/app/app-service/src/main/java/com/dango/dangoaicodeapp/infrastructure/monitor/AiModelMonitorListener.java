@@ -1,5 +1,8 @@
 package com.dango.dangoaicodeapp.infrastructure.monitor;
 
+import cn.dev33.satoken.stp.StpUtil;
+import com.dango.dangoaicodecommon.monitor.MonitorContext;
+import com.dango.dangoaicodecommon.monitor.MonitorContextHolder;
 import dev.langchain4j.model.chat.listener.ChatModelErrorContext;
 import dev.langchain4j.model.chat.listener.ChatModelListener;
 import dev.langchain4j.model.chat.listener.ChatModelRequestContext;
@@ -35,11 +38,19 @@ public class AiModelMonitorListener implements ChatModelListener {
     public void onRequest(ChatModelRequestContext requestContext) {
         // 记录请求开始时间
         requestContext.attributes().put(REQUEST_START_TIME_KEY, Instant.now());
-        // 从监控上下文中获取信息
+        // 从 ThreadLocal 获取监控上下文
         MonitorContext context = MonitorContextHolder.getContext();
         if (context == null) {
-            log.warn("监控上下文为空，跳过请求指标记录");
-            return;
+            // 兜底：从 Sa-Token 获取 userId，appId 为 none
+            try {
+                long loginId = StpUtil.getLoginIdAsLong();
+                context = MonitorContext.builder()
+                        .userId(String.valueOf(loginId))
+                        .build();
+            } catch (Exception e) {
+                log.warn("监控上下文为空且无法获取登录用户，跳过请求指标记录");
+                return;
+            }
         }
         String userId = context.getUserId();
         String appId = context.getAppId();

@@ -1,4 +1,4 @@
-package com.dango.dangoaicodeapp.infrastructure.monitor;
+package com.dango.dangoaicodecommon.monitor;
 
 import lombok.extern.slf4j.Slf4j;
 

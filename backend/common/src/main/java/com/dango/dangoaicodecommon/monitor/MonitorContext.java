@@ -1,4 +1,4 @@
-package com.dango.dangoaicodeapp.infrastructure.monitor;
+package com.dango.dangoaicodecommon.monitor;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,7 +22,8 @@ public class MonitorContext implements Serializable {
 
     private String userId;
 
-    private String appId;
+    @Builder.Default
+    private String appId = "none";
 
     @Serial
     private static final long serialVersionUID = 1L;

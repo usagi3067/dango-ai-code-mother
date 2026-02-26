@@ -1,14 +1,17 @@
 package com.dango.aicodegenerate.config;
 
+import dev.langchain4j.http.client.spring.restclient.SpringRestClient;
 import dev.langchain4j.model.anthropic.AnthropicStreamingChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
 import dev.langchain4j.model.chat.listener.ChatModelListener;
 import lombok.Data;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.AsyncTaskExecutor;
 
 import java.time.Duration;
 import java.util.List;
@@ -30,6 +33,10 @@ public class AnthropicOrdinaryStreamingChatModelConfig {
     @Autowired(required = false)
     private List<ChatModelListener> chatModelListeners;
 
+    @Autowired(required = false)
+    @Qualifier("streamingContextPropagatingExecutor")
+    private AsyncTaskExecutor streamingExecutor;
+
     @Bean("anthropicStreamingChatModel")
     public StreamingChatModel anthropicStreamingChatModel() {
         var builder = AnthropicStreamingChatModel.builder()
@@ -40,6 +47,9 @@ public class AnthropicOrdinaryStreamingChatModelConfig {
                 .timeout(timeout != null ? timeout : Duration.ofSeconds(300))
                 .logRequests(logRequests != null ? logRequests : true)
                 .logResponses(logResponses != null ? logResponses : true);
+        if (streamingExecutor != null) {
+            builder.httpClientBuilder(SpringRestClient.builder().streamingRequestExecutor(streamingExecutor));
+        }
         if (chatModelListeners != null && !chatModelListeners.isEmpty()) {
             builder.listeners(chatModelListeners);
         }

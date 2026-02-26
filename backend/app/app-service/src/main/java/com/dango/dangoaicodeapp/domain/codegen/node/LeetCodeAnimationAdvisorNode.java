@@ -34,7 +34,6 @@ public class LeetCodeAnimationAdvisorNode {
             log.info("执行节点: {}", NODE_NAME);
 
             context.emitNodeStart(NODE_NAME);
-            context.restoreMonitorContext();
             context.emitNodeMessage(NODE_NAME, "正在分析题目并生成动画设计建议...\n");
 
             String userPrompt = context.getOriginalPrompt();

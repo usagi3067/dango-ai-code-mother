@@ -72,9 +72,6 @@ public class CodeModifierNode {
                     return WorkflowContext.saveContext(context);
                 }
 
-                // 恢复监控上下文到当前线程（用于跨线程传递监控信息）
-                context.restoreMonitorContext();
-
                 // 构建修改请求（包含项目结构、元素信息和用户修改要求）
                 String modifyRequest = buildModifyRequest(context);
 
@@ -161,9 +158,6 @@ public class CodeModifierNode {
                 log.error("代码修改失败: {}", e.getMessage(), e);
                 context.setErrorMessage("代码修改失败: " + e.getMessage());
                 context.emitNodeError(NODE_NAME, e.getMessage());
-            } finally {
-                // 清除当前线程的监控上下文
-                context.clearMonitorContext();
             }
 
             // 发送节点完成消息

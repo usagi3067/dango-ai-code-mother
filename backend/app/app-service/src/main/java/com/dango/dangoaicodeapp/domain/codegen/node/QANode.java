@@ -34,7 +34,6 @@ public class QANode {
             log.info("执行节点: {}", NODE_NAME);
 
             context.emitNodeStart(NODE_NAME);
-            context.restoreMonitorContext();
 
             String userInput = context.getOriginalPrompt();
             String projectStructure = context.getProjectStructure();
