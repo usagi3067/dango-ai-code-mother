@@ -16,10 +16,13 @@ import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 
-import dev.langchain4j.model.chat.StreamingChatModel;
+import com.dango.aicodegenerate.model.AiModelProvider;
+import com.dango.aicodegenerate.model.AiServiceType;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cloud.context.environment.EnvironmentChangeEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -29,7 +32,7 @@ import java.time.Duration;
 public class AiCodeGeneratorServiceFactory {
 
     @Resource
-    private StreamingChatModel reasoningStreamingChatModel;
+    private AiModelProvider aiModelProvider;
 
     @Resource
     private ChatMemoryStore redisChatMemoryStore;
@@ -86,7 +89,7 @@ public class AiCodeGeneratorServiceFactory {
         };
 
         return AiServices.builder(serviceClass)
-                .streamingChatModel(reasoningStreamingChatModel)
+                .streamingChatModel(aiModelProvider.getStreamingChatModel(AiServiceType.CODE_GENERATOR))
                 .chatMemory(chatMemory)
                 .chatMemoryProvider(memoryId -> chatMemory)
                 .tools(toolManager.getAllTools())
@@ -102,6 +105,14 @@ public class AiCodeGeneratorServiceFactory {
      */
     private String buildCacheKey(long appId, CodeGenTypeEnum codeGenType) {
         return appId + "_" + codeGenType.getValue();
+    }
+
+    @EventListener(EnvironmentChangeEvent.class)
+    public void onConfigChange(EnvironmentChangeEvent event) {
+        if (event.getKeys().stream().anyMatch(k -> k.startsWith("ai."))) {
+            log.info("AI 配置变更，清空代码生成服务缓存");
+            serviceCache.invalidateAll();
+        }
     }
 
 }

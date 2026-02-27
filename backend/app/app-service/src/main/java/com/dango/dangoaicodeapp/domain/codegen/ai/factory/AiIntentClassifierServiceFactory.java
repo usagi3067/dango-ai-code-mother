@@ -1,7 +1,8 @@
 package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
 
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.IntentClassifierService;
-import dev.langchain4j.model.chat.ChatModel;
+import com.dango.aicodegenerate.model.AiModelProvider;
+import com.dango.aicodegenerate.model.AiServiceType;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
@@ -13,11 +14,11 @@ import org.springframework.stereotype.Component;
 public class AiIntentClassifierServiceFactory {
 
     @Resource
-    private ChatModel chatModel;
+    private AiModelProvider aiModelProvider;
 
     public IntentClassifierService createService() {
         return AiServices.builder(IntentClassifierService.class)
-                .chatModel(chatModel)
+                .chatModel(aiModelProvider.getChatModel(AiServiceType.INTENT_CLASSIFIER))
                 .build();
     }
 }

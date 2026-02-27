@@ -1,7 +1,8 @@
 package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
 
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.CodeQualityCheckService;
-import dev.langchain4j.model.chat.ChatModel;
+import com.dango.aicodegenerate.model.AiModelProvider;
+import com.dango.aicodegenerate.model.AiServiceType;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +17,7 @@ import org.springframework.context.annotation.Configuration;
 public class CodeQualityCheckServiceFactory {
 
     @Resource
-    private ChatModel chatModel;
+    private AiModelProvider aiModelProvider;
 
     /**
      * 创建代码质量检查 AI 服务
@@ -25,7 +26,7 @@ public class CodeQualityCheckServiceFactory {
     public CodeQualityCheckService codeQualityCheckService() {
         log.info("创建代码质量检查 AI 服务");
         return AiServices.builder(CodeQualityCheckService.class)
-                .chatModel(chatModel)
+                .chatModel(aiModelProvider.getChatModel(AiServiceType.CODE_QUALITY_CHECK))
                 .build();
     }
 }

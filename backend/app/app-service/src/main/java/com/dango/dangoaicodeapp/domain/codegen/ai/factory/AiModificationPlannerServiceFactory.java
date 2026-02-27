@@ -8,7 +8,8 @@ import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-import dev.langchain4j.model.chat.ChatModel;
+import com.dango.aicodegenerate.model.AiModelProvider;
+import com.dango.aicodegenerate.model.AiServiceType;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +27,7 @@ import org.springframework.stereotype.Component;
 public class AiModificationPlannerServiceFactory {
 
     @Resource
-    private ChatModel ordinaryChatModel;
+    private AiModelProvider aiModelProvider;
 
     @Resource
     private ChatMemoryStore redisChatMemoryStore;
@@ -64,7 +65,7 @@ public class AiModificationPlannerServiceFactory {
         chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 10);
 
         return AiServices.builder(AiModificationPlannerService.class)
-                .chatModel(ordinaryChatModel)
+                .chatModel(aiModelProvider.getChatModel(AiServiceType.MODIFICATION_PLANNER))
                 .chatMemory(chatMemory)
                 .chatMemoryProvider(memoryId -> chatMemory)
                 .tools(

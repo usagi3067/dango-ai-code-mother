@@ -1,7 +1,8 @@
 package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
 
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.AiAppInfoGeneratorService;
-import dev.langchain4j.model.chat.ChatModel;
+import com.dango.aicodegenerate.model.AiModelProvider;
+import com.dango.aicodegenerate.model.AiServiceType;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Bean;
@@ -15,16 +16,16 @@ import org.springframework.context.annotation.Configuration;
 public class AiAppInfoGeneratorServiceFactory {
 
     @Resource
-    private ChatModel chatModel;
+    private AiModelProvider aiModelProvider;
 
     /**
      * 创建 AiAppInfoGeneratorService 实例
      * 使用默认的 ChatModel（已配置 JSON 格式）
      */
     @Bean
-    public AiAppInfoGeneratorService aiAppInfoGeneratorService(ChatModel chatModel) {
+    public AiAppInfoGeneratorService aiAppInfoGeneratorService() {
         return AiServices.builder(AiAppInfoGeneratorService.class)
-                .chatModel(chatModel)
+                .chatModel(aiModelProvider.getChatModel(AiServiceType.APP_INFO_GENERATOR))
                 .build();
     }
 }

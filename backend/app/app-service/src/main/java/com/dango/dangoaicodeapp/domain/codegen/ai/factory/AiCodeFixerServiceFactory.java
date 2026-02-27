@@ -14,10 +14,13 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-import dev.langchain4j.model.chat.StreamingChatModel;
+import com.dango.aicodegenerate.model.AiModelProvider;
+import com.dango.aicodegenerate.model.AiServiceType;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cloud.context.environment.EnvironmentChangeEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -37,7 +40,7 @@ public class AiCodeFixerServiceFactory {
      * 而 LangChain4j 序列化/反序列化时会丢失该字段，导致后续 API 调用失败
      */
     @Resource
-    private StreamingChatModel streamingChatModel;
+    private AiModelProvider aiModelProvider;
 
     @Resource
     private ChatMemoryStore redisChatMemoryStore;
@@ -114,7 +117,7 @@ public class AiCodeFixerServiceFactory {
         };
 
         return AiServices.builder(serviceClass)
-                .streamingChatModel(streamingChatModel)
+                .streamingChatModel(aiModelProvider.getStreamingChatModel(AiServiceType.CODE_FIXER))
                 .chatMemory(chatMemory)
                 .chatMemoryProvider(memoryId -> chatMemory)
                 .tools(
@@ -154,6 +157,14 @@ public class AiCodeFixerServiceFactory {
             serviceCache.invalidate(cacheKey);
         }
         log.info("已清除 appId: {} 的修复服务缓存", appId);
+    }
+
+    @EventListener(EnvironmentChangeEvent.class)
+    public void onConfigChange(EnvironmentChangeEvent event) {
+        if (event.getKeys().stream().anyMatch(k -> k.startsWith("ai."))) {
+            log.info("AI 配置变更，清空代码修复服务缓存");
+            serviceCache.invalidateAll();
+        }
     }
 
 }

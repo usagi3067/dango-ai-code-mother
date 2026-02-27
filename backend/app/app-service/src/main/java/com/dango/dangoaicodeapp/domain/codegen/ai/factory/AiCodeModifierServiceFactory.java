@@ -11,10 +11,13 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
-import dev.langchain4j.model.chat.StreamingChatModel;
+import com.dango.aicodegenerate.model.AiModelProvider;
+import com.dango.aicodegenerate.model.AiServiceType;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cloud.context.environment.EnvironmentChangeEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
@@ -29,7 +32,7 @@ import java.time.Duration;
 public class AiCodeModifierServiceFactory {
 
     @Resource
-    private StreamingChatModel reasoningStreamingChatModel;
+    private AiModelProvider aiModelProvider;
 
     @Resource
     private ChatMemoryStore redisChatMemoryStore;
@@ -117,7 +120,7 @@ public class AiCodeModifierServiceFactory {
 
         // 根据代码生成类型选择不同的模型和工具配置
         return AiServices.builder(AiCodeModifierService.class)
-                .streamingChatModel(reasoningStreamingChatModel)
+                .streamingChatModel(aiModelProvider.getStreamingChatModel(AiServiceType.CODE_MODIFIER))
                 .chatMemory(chatMemory)
                 .chatMemoryProvider(memoryId -> chatMemory)
                 .tools(
@@ -162,5 +165,13 @@ public class AiCodeModifierServiceFactory {
             serviceCache.invalidate(cacheKey);
         }
         log.info("已清除 appId: {} 的修改服务缓存", appId);
+    }
+
+    @EventListener(EnvironmentChangeEvent.class)
+    public void onConfigChange(EnvironmentChangeEvent event) {
+        if (event.getKeys().stream().anyMatch(k -> k.startsWith("ai."))) {
+            log.info("AI 配置变更，清空代码修改服务缓存");
+            serviceCache.invalidateAll();
+        }
     }
 }

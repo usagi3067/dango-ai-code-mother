@@ -6,7 +6,8 @@ import com.dango.dangoaicodeapp.domain.codegen.tools.MermaidDiagramTool;
 import com.dango.dangoaicodeapp.domain.codegen.tools.UndrawIllustrationTool;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.ImageCollectionPlanService;
 import com.dango.dangoaicodeapp.domain.codegen.ai.service.ImageCollectionService;
-import dev.langchain4j.model.chat.ChatModel;
+import com.dango.aicodegenerate.model.AiModelProvider;
+import com.dango.aicodegenerate.model.AiServiceType;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +19,7 @@ import org.springframework.context.annotation.Configuration;
 public class ImageCollectionServiceFactory {
 
     @Resource
-    private ChatModel chatModel;
+    private AiModelProvider aiModelProvider;
 
     @Resource
     private ImageSearchTool imageSearchTool;
@@ -38,7 +39,7 @@ public class ImageCollectionServiceFactory {
     @Bean
     public ImageCollectionService createImageCollectionService() {
         return AiServices.builder(ImageCollectionService.class)
-                .chatModel(chatModel)
+                .chatModel(aiModelProvider.getChatModel(AiServiceType.IMAGE_COLLECTION))
                 .tools(
                         imageSearchTool,
                         undrawIllustrationTool,
@@ -55,7 +56,7 @@ public class ImageCollectionServiceFactory {
     @Bean
     public ImageCollectionPlanService createImageCollectionPlanService() {
         return AiServices.builder(ImageCollectionPlanService.class)
-                .chatModel(chatModel)
+                .chatModel(aiModelProvider.getChatModel(AiServiceType.IMAGE_COLLECTION))
                 .build();
     }
 }
