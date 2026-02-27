@@ -30,18 +30,11 @@ COPY . .
 RUN mvn clean package -pl screenshot/screenshot-app -am -Dmaven.test.skip=true -B
 
 # ---- Runtime Stage ----
-FROM eclipse-temurin:21-jre-alpine
-WORKDIR /app
-
-# 换 Alpine 国内镜像源
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
-
-# 安装 Chromium + ChromeDriver + 依赖 + 中文字体
-RUN apk add --no-cache chromium chromium-chromedriver nss freetype harfbuzz ca-certificates ttf-freefont font-noto-cjk fontconfig \
-    && fc-cache -f
-
-ENV CHROME_BIN=/usr/bin/chromium-browser
-ENV CHROMEDRIVER_PATH=/usr/bin/chromedriver
+# 使用预构建的基础镜像（含 JRE + Chromium + ChromeDriver + 中文字体）
+# 首次部署需先构建并传输基础镜像：
+#   docker build -t dango-screenshot-base:1.0 -f Dockerfile.screenshot-base .
+#   docker save dango-screenshot-base:1.0 | ssh B 'docker load'
+FROM dango-screenshot-base:1.0
 
 COPY --from=build /app/screenshot/screenshot-app/target/screenshot-app-1.0-SNAPSHOT.jar app.jar
 EXPOSE 8125

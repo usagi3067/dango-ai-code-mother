@@ -26,21 +26,11 @@ COPY . .
 RUN mvn clean package -pl app/app-service -am -Dmaven.test.skip=true -B
 
 # ---- Runtime Stage ----
-FROM eclipse-temurin:21-jdk-alpine
-WORKDIR /app
-
-# 换 Alpine 国内镜像源
-RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.aliyun.com/g' /etc/apk/repositories
-
-# 安装 Node.js 20.x + npm + Chromium（mermaid-cli 渲染依赖）
-RUN apk add --no-cache chromium nss freetype harfbuzz ca-certificates ttf-freefont curl \
-    && curl -fsSL https://unofficial-builds.nodejs.org/download/release/v20.19.3/node-v20.19.3-linux-x64-musl.tar.xz \
-       | tar -xJ -C /usr/local --strip-components=1 \
-    && node --version && npm --version
-
-# 安装 mermaid-cli（mmdc 依赖 chromium 做 SVG 渲染）
-RUN npm config set registry https://registry.npmmirror.com && npm install -g @mermaid-js/mermaid-cli
-ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium-browser
+# 使用预构建的基础镜像（含 JDK + Chromium + Node.js + mermaid-cli）
+# 首次部署需先构建并传输基础镜像：
+#   docker build -t dango-app-base:1.0 -f Dockerfile.app-base .
+#   docker save dango-app-base:1.0 | ssh B 'docker load'
+FROM dango-app-base:1.0
 
 COPY --from=build /app/app/app-service/target/app-service-1.0-SNAPSHOT.jar app.jar
 EXPOSE 8124
