@@ -7,7 +7,6 @@ import cn.hutool.json.JSONUtil;
 import com.dango.aicodegenerate.model.message.*;
 import com.dango.dangoaicodeapp.domain.codegen.tools.BaseTool;
 import com.dango.dangoaicodeapp.domain.codegen.tools.ToolManager;
-import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -28,41 +27,6 @@ public class JsonMessageStreamHandler {
 
     @Resource
     private ToolManager toolManager;
-
-    /**
-     * 处理 JSON 格式的流式消息
-     * 注意：AppController 会将输出包装为 {d: "..."} 格式，这里不需要再包装
-     *
-     * @param originFlux         原始流
-     * @param chatHistoryService 聊天历史服务
-     * @param appId              应用ID
-     * @param userId             用户ID
-     * @return 处理后的流
-     */
-    public Flux<String> handle(Flux<String> originFlux,
-                               ChatHistoryService chatHistoryService,
-                               long appId, long userId) {
-        // 收集数据用于生成后端记忆格式
-        StringBuilder chatHistoryStringBuilder = new StringBuilder();
-        // 用于跟踪已经见过的工具ID，判断是否是第一次调用
-        Set<String> seenToolIds = new HashSet<>();
-        return originFlux
-                .map(chunk -> {
-                    // 解析每个 JSON 消息块
-                    return handleJsonMessageChunk(chunk, chatHistoryStringBuilder, seenToolIds);
-                })
-                .filter(StrUtil::isNotEmpty) // 过滤空字串
-                .doOnComplete(() -> {
-                    // 流式响应完成后，保存 AI 消息到对话历史
-                    String aiResponse = chatHistoryStringBuilder.toString();
-                    chatHistoryService.saveAiMessage(appId, userId, aiResponse);
-                })
-                .doOnError(error -> {
-                    // 如果AI回复失败，也要记录错误消息
-                    String errorMessage = "AI回复失败: " + error.getMessage();
-                    chatHistoryService.saveAiMessage(appId, userId, errorMessage);
-                });
-    }
 
     /**
      * 处理 JSON 消息流但不保存到 chatHistory
