@@ -4,9 +4,6 @@
 
 services:
   app-service:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile.app
     image: dango-ai-code-app:latest
     environment:
       JAVA_OPTS: -Xmx2g -Xms1g -javaagent:/app/skywalking-agent/skywalking-agent.jar -Dskywalking.agent.service_name=app-service -Dskywalking.agent.keep_tracing=true -Dskywalking.collector.backend_service=localhost:11800
@@ -26,6 +23,7 @@ services:
       - "8124:8124"
       - "50053:50053"
     restart: "no"
+    mem_limit: 2560m
 
   deploy-nginx:
     image: nginx:alpine
@@ -35,3 +33,4 @@ services:
     ports:
       - "80:80"
     restart: "no"
+    mem_limit: 128m
