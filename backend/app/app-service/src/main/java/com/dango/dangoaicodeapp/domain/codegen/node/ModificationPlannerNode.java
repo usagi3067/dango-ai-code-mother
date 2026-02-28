@@ -5,8 +5,7 @@ import cn.hutool.json.JSONUtil;
 import com.dango.aicodegenerate.model.FileModificationGuide;
 import com.dango.aicodegenerate.model.ModificationPlanResult;
 import com.dango.aicodegenerate.model.SqlStatementItem;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.AiModificationPlannerService;
-import com.dango.dangoaicodeapp.domain.codegen.ai.factory.AiModificationPlannerServiceFactory;
+import com.dango.dangoaicodeapp.domain.codegen.port.ModificationPlanningGateway;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.utils.SpringContextUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -52,14 +51,12 @@ public class ModificationPlannerNode {
                 String planningRequest = buildPlanningRequest(context);
                 log.info("修改规划请求:\n{}", planningRequest);
 
-                // 获取 AI 规划服务
-                AiModificationPlannerServiceFactory plannerFactory =
-                    SpringContextUtil.getBean(AiModificationPlannerServiceFactory.class);
-                AiModificationPlannerService plannerService =
-                    plannerFactory.createPlannerService(context.getAppId());
+                // 获取修改规划能力网关
+                ModificationPlanningGateway modificationPlanningGateway =
+                    SpringContextUtil.getBean(ModificationPlanningGateway.class);
 
                 // 调用 AI 规划（结构化输出）
-                ModificationPlanResult planResult = plannerService.plan(
+                ModificationPlanResult planResult = modificationPlanningGateway.plan(
                     context.getAppId(), planningRequest);
                 log.info("修改规划结果: {}", planResult);
 

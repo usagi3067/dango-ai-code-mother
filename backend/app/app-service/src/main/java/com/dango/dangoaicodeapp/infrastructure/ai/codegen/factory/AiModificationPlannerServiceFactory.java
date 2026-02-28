@@ -1,9 +1,9 @@
-package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
+package com.dango.dangoaicodeapp.infrastructure.ai.codegen.factory;
 
 import com.dango.aicodegenerate.guardrail.PromptSafetyInputGuardrail;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.AiModificationPlannerService;
 import com.dango.dangoaicodeapp.domain.codegen.tools.FileDirReadTool;
 import com.dango.dangoaicodeapp.domain.codegen.tools.FileReadTool;
+import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.AiModificationPlannerService;
 import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
