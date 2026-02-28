@@ -1,10 +1,10 @@
-package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
+package com.dango.dangoaicodeapp.infrastructure.ai.codegen.factory;
 
 import com.dango.aicodegenerate.guardrail.PromptSafetyInputGuardrail;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.CodeGeneratorService;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.LeetCodeCodeGeneratorService;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.InterviewCodeGeneratorService;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.VueCodeGeneratorService;
+import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.CodeGeneratorService;
+import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.LeetCodeCodeGeneratorService;
+import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.InterviewCodeGeneratorService;
+import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.VueCodeGeneratorService;
 
 import com.dango.dangoaicodeapp.domain.codegen.tools.ToolManager;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;

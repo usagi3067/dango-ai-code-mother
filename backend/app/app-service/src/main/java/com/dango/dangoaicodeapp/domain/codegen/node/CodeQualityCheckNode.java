@@ -3,7 +3,7 @@ package com.dango.dangoaicodeapp.domain.codegen.node;
 import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import com.dango.aicodegenerate.model.QualityResult;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.CodeQualityCheckService;
+import com.dango.dangoaicodeapp.domain.codegen.port.CodeQualityCheckGateway;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.utils.SpringContextUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -60,8 +60,8 @@ public class CodeQualityCheckNode {
 
                     // 2. 调用 AI 进行代码质量检查
                     // 不需要转义 {{}}，因为我们直接使用 ChatModel，不经过模板解析
-                    CodeQualityCheckService qualityCheckService = SpringContextUtil.getBean(CodeQualityCheckService.class);
-                    qualityResult = qualityCheckService.checkCodeQuality(codeContent);
+                    CodeQualityCheckGateway codeQualityCheckGateway = SpringContextUtil.getBean(CodeQualityCheckGateway.class);
+                    qualityResult = codeQualityCheckGateway.checkCodeQuality(codeContent);
 
                     log.info("代码质量检查完成 - 是否通过: {}", qualityResult.getIsValid());
 

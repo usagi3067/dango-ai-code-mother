@@ -6,9 +6,8 @@ import com.dango.aicodegenerate.extractor.ToolArgumentsExtractor;
 import com.dango.aicodegenerate.model.message.AiResponseMessage;
 import com.dango.aicodegenerate.model.message.StreamMessage;
 import com.dango.aicodegenerate.model.message.ToolExecutedMessage;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.CodeGeneratorService;
-import com.dango.dangoaicodeapp.domain.codegen.ai.factory.AiCodeGeneratorServiceFactory;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
+import com.dango.dangoaicodeapp.domain.codegen.port.CodeGenerationGateway;
 import dev.langchain4j.model.chat.response.ChatResponse;
 import dev.langchain4j.model.output.TokenUsage;
 import dev.langchain4j.service.TokenStream;
@@ -32,7 +31,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class AiCodeGeneratorFacade {
 
     @Resource
-    private AiCodeGeneratorServiceFactory aiCodeGeneratorServiceFactory;
+    private CodeGenerationGateway codeGenerationGateway;
 
     /**
      * 统一入口：生成并保存代码（流式, 使用 appId）
@@ -46,8 +45,7 @@ public class AiCodeGeneratorFacade {
                 appId,
                 codeGenTypeEnum != null ? codeGenTypeEnum.getValue() : "unknown",
                 userMessage != null ? userMessage.length() : 0);
-        CodeGeneratorService service = aiCodeGeneratorServiceFactory.getService(appId, codeGenTypeEnum);
-        TokenStream tokenStream = service.generateCodeStream(appId, userMessage);
+        TokenStream tokenStream = codeGenerationGateway.generateCodeStream(appId, codeGenTypeEnum, userMessage);
         return processTokenStream(tokenStream);
     }
 

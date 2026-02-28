@@ -9,9 +9,8 @@ import com.dango.aicodegenerate.model.message.AiResponseMessage;
 import com.dango.aicodegenerate.model.message.StreamMessage;
 import com.dango.aicodegenerate.model.message.ToolExecutedMessage;
 import com.dango.aicodegenerate.model.message.ToolRequestMessage;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.CodeFixerService;
-import com.dango.dangoaicodeapp.domain.codegen.ai.factory.AiCodeFixerServiceFactory;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
+import com.dango.dangoaicodeapp.domain.codegen.port.CodeFixGateway;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.utils.SpringContextUtil;
 import dev.langchain4j.service.TokenStream;
@@ -98,12 +97,9 @@ public class CodeFixerNode {
                     context.setGenerationType(generationType);
                 }
 
-                // 获取修复专用 AI 服务
-                AiCodeFixerServiceFactory fixerServiceFactory = SpringContextUtil.getBean(AiCodeFixerServiceFactory.class);
-                CodeFixerService fixerService = fixerServiceFactory.getFixerService(appId, generationType);
-
-                // 调用修复方法
-                TokenStream tokenStream = fixerService.fixCodeStream(appId, fixRequest);
+                // 获取修复领域端口并调用
+                CodeFixGateway codeFixGateway = SpringContextUtil.getBean(CodeFixGateway.class);
+                TokenStream tokenStream = codeFixGateway.fixCodeStream(appId, generationType, fixRequest);
 
                 // 使用 CountDownLatch 等待流式生成完成
                 CountDownLatch latch = new CountDownLatch(1);

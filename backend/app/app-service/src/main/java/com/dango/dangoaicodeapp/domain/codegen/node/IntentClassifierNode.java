@@ -1,7 +1,6 @@
 package com.dango.dangoaicodeapp.domain.codegen.node;
 
-import com.dango.dangoaicodeapp.domain.codegen.ai.factory.AiIntentClassifierServiceFactory;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.IntentClassifierService;
+import com.dango.dangoaicodeapp.domain.codegen.port.IntentClassificationGateway;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.utils.SpringContextUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -39,10 +38,8 @@ public class IntentClassifierNode {
                 userInput
             );
 
-            AiIntentClassifierServiceFactory factory = SpringContextUtil.getBean(AiIntentClassifierServiceFactory.class);
-            IntentClassifierService classifier = factory.createService();
-
-            String intent = classifier.classify(classifyInput).trim().toUpperCase();
+            IntentClassificationGateway intentClassificationGateway = SpringContextUtil.getBean(IntentClassificationGateway.class);
+            String intent = intentClassificationGateway.classify(classifyInput).trim().toUpperCase();
             if (!"MODIFY".equals(intent) && !"QA".equals(intent)) {
                 log.warn("意图识别结果异常: {}，默认为 MODIFY", intent);
                 intent = "MODIFY";

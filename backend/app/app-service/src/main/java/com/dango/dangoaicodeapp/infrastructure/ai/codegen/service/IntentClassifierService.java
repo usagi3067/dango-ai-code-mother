@@ -1,4 +1,4 @@
-package com.dango.dangoaicodeapp.domain.codegen.ai.service;
+package com.dango.dangoaicodeapp.infrastructure.ai.codegen.service;
 
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;

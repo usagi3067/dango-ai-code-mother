@@ -7,10 +7,9 @@ import com.dango.aicodegenerate.model.message.AiResponseMessage;
 import com.dango.aicodegenerate.model.message.StreamMessage;
 import com.dango.aicodegenerate.model.message.ToolExecutedMessage;
 import com.dango.aicodegenerate.model.message.ToolRequestMessage;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.AiCodeModifierService;
-import com.dango.dangoaicodeapp.domain.codegen.ai.factory.AiCodeModifierServiceFactory;
 import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
+import com.dango.dangoaicodeapp.domain.codegen.port.CodeModificationGateway;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.utils.SpringContextUtil;
 import dev.langchain4j.service.TokenStream;
@@ -87,12 +86,9 @@ public class CodeModifierNode {
                     context.setGenerationType(generationType);
                 }
 
-                // 获取修改专用 AI 服务（配置了文件操作工具）
-                AiCodeModifierServiceFactory modifierServiceFactory = SpringContextUtil.getBean(AiCodeModifierServiceFactory.class);
-                AiCodeModifierService modifierService = modifierServiceFactory.getModifierService(appId, generationType);
-
-                // 调用修改方法
-                TokenStream tokenStream = modifierService.modifyVueProjectCodeStream(appId, modifyRequest);
+                // 获取修改领域端口并调用
+                CodeModificationGateway codeModificationGateway = SpringContextUtil.getBean(CodeModificationGateway.class);
+                TokenStream tokenStream = codeModificationGateway.modifyCodeStream(appId, generationType, modifyRequest);
 
                 // 使用 CountDownLatch 等待流式生成完成
                 CountDownLatch latch = new CountDownLatch(1);
