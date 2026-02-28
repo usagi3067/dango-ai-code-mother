@@ -1,0 +1,19 @@
+# cAdvisor for Machine C (Alibaba Cloud ECS)
+# Deploy path: /opt/cadvisor
+# Usage: docker compose -f docker-compose.machine-c.yml up -d
+
+services:
+  cadvisor:
+    image: gcr.nju.edu.cn/cadvisor/cadvisor:v0.52.1
+    container_name: cadvisor
+    privileged: true
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "9098:8080"
+    restart: unless-stopped
+    mem_limit: 256m

@@ -764,6 +764,80 @@
       ],
       "title": "慢 SQL TOP 20（按平均耗时排序）",
       "type": "table"
+    },
+    {
+      "datasource": { "type": "mysql", "uid": "mysql-business" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "SQL 模板" },
+            "properties": [
+              { "id": "custom.width", "value": 520 },
+              { "id": "custom.cellOptions", "value": { "type": "auto", "wrapText": true } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 12, "x": 0, "y": 43 },
+      "id": 19,
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": { "show": false },
+        "sortBy": [{ "displayName": "执行次数", "desc": true }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "mysql", "uid": "mysql-business" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  LEFT(DIGEST_TEXT, 220) AS `SQL 模板`,\n  COUNT_STAR AS `执行次数`,\n  ROUND(SUM_TIMER_WAIT / 1000000000000, 3) AS `总耗时(s)`,\n  ROUND(AVG_TIMER_WAIT / 1000000000, 3) AS `平均耗时(ms)`,\n  ROUND(MAX_TIMER_WAIT / 1000000000, 3) AS `最大耗时(ms)`,\n  LAST_SEEN AS `最后执行时间`\nFROM performance_schema.events_statements_summary_by_digest\nWHERE DIGEST_TEXT IS NOT NULL\n  AND COUNT_STAR > 0\nORDER BY COUNT_STAR DESC\nLIMIT 50",
+          "refId": "A"
+        }
+      ],
+      "title": "最常用 SQL TOP 50（按执行次数）",
+      "type": "table"
+    },
+    {
+      "datasource": { "type": "mysql", "uid": "mysql-business" },
+      "fieldConfig": {
+        "defaults": {
+          "custom": { "align": "auto", "cellOptions": { "type": "auto" }, "inspect": false }
+        },
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "SQL 模板" },
+            "properties": [
+              { "id": "custom.width", "value": 520 },
+              { "id": "custom.cellOptions", "value": { "type": "auto", "wrapText": true } }
+            ]
+          }
+        ]
+      },
+      "gridPos": { "h": 10, "w": 12, "x": 12, "y": 43 },
+      "id": 20,
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": { "show": false },
+        "sortBy": [{ "displayName": "总耗时(s)", "desc": true }]
+      },
+      "targets": [
+        {
+          "datasource": { "type": "mysql", "uid": "mysql-business" },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT\n  LEFT(DIGEST_TEXT, 220) AS `SQL 模板`,\n  COUNT_STAR AS `执行次数`,\n  ROUND(SUM_TIMER_WAIT / 1000000000000, 3) AS `总耗时(s)`,\n  ROUND(AVG_TIMER_WAIT / 1000000000, 3) AS `平均耗时(ms)`,\n  ROUND(MAX_TIMER_WAIT / 1000000000, 3) AS `最大耗时(ms)`,\n  LAST_SEEN AS `最后执行时间`\nFROM performance_schema.events_statements_summary_by_digest\nWHERE DIGEST_TEXT IS NOT NULL\n  AND COUNT_STAR > 0\nORDER BY SUM_TIMER_WAIT DESC\nLIMIT 50",
+          "refId": "A"
+        }
+      ],
+      "title": "最耗时 SQL TOP 50（按总耗时）",
+      "type": "table"
     }
   ],
   "schemaVersion": 39,

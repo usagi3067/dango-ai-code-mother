@@ -69,15 +69,28 @@ scrape_configs:
         regex: ".+"
         action: keep
 
-  # Nacos (Machine B - 百度云)
+  # cAdvisor - 阿里云 ECS 容器指标（Machine C）
+  - job_name: "cadvisor-aliyun-c"
+    scheme: http
+    static_configs:
+      - targets: ["118.196.53.125:9098"]
+        labels:
+          machine: "machine-c"
+          cloud: "aliyun"
+    metric_relabel_configs:
+      - source_labels: [name]
+        regex: ".+"
+        action: keep
+
+  # Nacos (Machine C - 阿里云)
   - job_name: "nacos"
     metrics_path: "/nacos/actuator/prometheus"
     scheme: http
     static_configs:
-      - targets: ["106.13.14.164:8848"]
+      - targets: ["118.196.53.125:8848"]
         labels:
           service: "nacos"
-          machine: "machine-b"
+          machine: "machine-c"
 
   # 阿里云 RDS MySQL 指标
   - job_name: "mysqld"
