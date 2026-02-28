@@ -108,11 +108,7 @@ public class UserProfileApplicationServiceImpl implements UserProfileApplication
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND_ERROR, "用户不存在"));
 
-        try {
-            user.changePassword(request.getOldPassword(), request.getNewPassword());
-        } catch (IllegalArgumentException e) {
-            throw new BusinessException(ErrorCode.PARAMS_ERROR, e.getMessage());
-        }
+        user.changePassword(request.getOldPassword(), request.getNewPassword());
 
         userRepository.save(user);
         return true;

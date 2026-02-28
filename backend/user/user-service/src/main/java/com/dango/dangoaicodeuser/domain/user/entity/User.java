@@ -1,5 +1,7 @@
 package com.dango.dangoaicodeuser.domain.user.entity;
 
+import com.dango.dangoaicodecommon.exception.BusinessException;
+import com.dango.dangoaicodecommon.exception.ErrorCode;
 import com.dango.dangoaicodeuser.domain.user.valueobject.UserRoleEnum;
 import com.mybatisflex.annotation.Column;
 import com.mybatisflex.annotation.Id;
@@ -95,7 +97,7 @@ public class User implements Serializable {
      */
     public void changePassword(String rawOldPassword, String newPassword) {
         if (!validatePassword(rawOldPassword)) {
-            throw new IllegalArgumentException("旧密码不正确");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "旧密码不正确");
         }
         validatePasswordFormat(newPassword);
         this.userPassword = PASSWORD_ENCODER.encode(newPassword);
@@ -123,7 +125,7 @@ public class User implements Serializable {
      */
     public static void validateAccount(String userAccount) {
         if (userAccount == null || userAccount.length() < 4) {
-            throw new IllegalArgumentException("用户账号过短");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户账号过短");
         }
     }
 
@@ -132,7 +134,7 @@ public class User implements Serializable {
      */
     public static void validatePasswordFormat(String password) {
         if (password == null || password.length() < 8) {
-            throw new IllegalArgumentException("用户密码过短");
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "用户密码过短");
         }
     }
 }
