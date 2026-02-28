@@ -1,0 +1,463 @@
+{
+  "uid": "infrastructure-overview",
+  "title": "基础设施总览",
+  "tags": ["infrastructure"],
+  "schemaVersion": 40,
+  "editable": true,
+  "time": { "from": "now-1h", "to": "now" },
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "row",
+      "title": "容器状态",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "panels": []
+    },
+    {
+      "type": "table",
+      "title": "Docker Stats",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 12, "w": 24, "x": 0, "y": 1 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "label_replace(sum by (name, instance) (rate(container_cpu_usage_seconds_total{name!=\"\",name!=\"cadvisor\",job=~\"cadvisor-.*\"}[5m])) * 100, \"ip\", \"$1\", \"instance\", \"(.+):.+\")",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "B",
+          "expr": "label_replace(sum by (name, instance) (container_memory_usage_bytes{name!=\"\",name!=\"cadvisor\",job=~\"cadvisor-.*\"}), \"ip\", \"$1\", \"instance\", \"(.+):.+\")",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "C",
+          "expr": "label_replace(sum by (name, instance) (container_spec_memory_limit_bytes{name!=\"\",name!=\"cadvisor\",job=~\"cadvisor-.*\"}), \"ip\", \"$1\", \"instance\", \"(.+):.+\")",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "D",
+          "expr": "label_replace(sum by (name, instance) (container_memory_usage_bytes{name!=\"\",name!=\"cadvisor\",job=~\"cadvisor-.*\"}) / (sum by (name, instance) (container_spec_memory_limit_bytes{name!=\"\",name!=\"cadvisor\",job=~\"cadvisor-.*\"}) > 0) * 100, \"ip\", \"$1\", \"instance\", \"(.+):.+\")",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "E",
+          "expr": "label_replace(sum by (name, instance) (container_network_receive_bytes_total{name!=\"\",name!=\"cadvisor\",job=~\"cadvisor-.*\"}), \"ip\", \"$1\", \"instance\", \"(.+):.+\")",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "F",
+          "expr": "label_replace(sum by (name, instance) (container_network_transmit_bytes_total{name!=\"\",name!=\"cadvisor\",job=~\"cadvisor-.*\"}), \"ip\", \"$1\", \"instance\", \"(.+):.+\")",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "G",
+          "expr": "label_replace(sum by (name, instance) (container_fs_reads_bytes_total{name!=\"\",name!=\"cadvisor\",job=~\"cadvisor-.*\"}), \"ip\", \"$1\", \"instance\", \"(.+):.+\")",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "H",
+          "expr": "label_replace(sum by (name, instance) (container_fs_writes_bytes_total{name!=\"\",name!=\"cadvisor\",job=~\"cadvisor-.*\"}), \"ip\", \"$1\", \"instance\", \"(.+):.+\")",
+          "instant": true,
+          "format": "table"
+        },
+        {
+          "refId": "I",
+          "expr": "label_replace(sum by (name, instance) (container_processes{name!=\"\",name!=\"cadvisor\",job=~\"cadvisor-.*\"}), \"ip\", \"$1\", \"instance\", \"(.+):.+\")",
+          "instant": true,
+          "format": "table"
+        }
+      ],
+      "transformations": [
+        { "id": "merge", "options": {} },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": { "Time": true, "instance": true },
+            "renameByName": {
+              "name": "NAME",
+              "ip": "机器 IP",
+              "Value #A": "CPU %",
+              "Value #B": "MEM USAGE",
+              "Value #C": "MEM LIMIT",
+              "Value #D": "MEM %",
+              "Value #E": "NET RX",
+              "Value #F": "NET TX",
+              "Value #G": "BLOCK READ",
+              "Value #H": "BLOCK WRITE",
+              "Value #I": "PIDs"
+            },
+            "indexByName": {
+              "name": 0,
+              "ip": 1,
+              "Value #A": 2,
+              "Value #B": 3,
+              "Value #C": 4,
+              "Value #D": 5,
+              "Value #E": 6,
+              "Value #F": 7,
+              "Value #G": 8,
+              "Value #H": 9,
+              "Value #I": 10
+            }
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "NAME" },
+            "properties": [
+              { "id": "custom.width", "value": 220 },
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "容器详情",
+                    "url": "/d/container-detail?var-container=${__data.fields.NAME}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "机器 IP" },
+            "properties": [
+              { "id": "custom.width", "value": 140 }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "CPU %" },
+            "properties": [
+              { "id": "custom.width", "value": 160 },
+              { "id": "unit", "value": "percent" },
+              { "id": "decimals", "value": 2 },
+              { "id": "min", "value": 0 },
+              { "id": "max", "value": 100 },
+              { "id": "custom.cellOptions", "value": { "type": "gauge", "mode": "gradient" } },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 70 },
+                    { "color": "red", "value": 85 }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "MEM USAGE" },
+            "properties": [
+              { "id": "custom.width", "value": 120 },
+              { "id": "unit", "value": "bytes" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "MEM LIMIT" },
+            "properties": [
+              { "id": "custom.width", "value": 120 },
+              { "id": "unit", "value": "bytes" },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "0": { "text": "No Limit", "color": "text" }
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "MEM %" },
+            "properties": [
+              { "id": "custom.width", "value": 160 },
+              { "id": "unit", "value": "percent" },
+              { "id": "decimals", "value": 2 },
+              { "id": "min", "value": 0 },
+              { "id": "max", "value": 100 },
+              { "id": "custom.cellOptions", "value": { "type": "gauge", "mode": "gradient" } },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    { "color": "green", "value": null },
+                    { "color": "yellow", "value": 70 },
+                    { "color": "red", "value": 85 }
+                  ]
+                }
+              }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "NET RX" },
+            "properties": [
+              { "id": "custom.width", "value": 100 },
+              { "id": "unit", "value": "bytes" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "NET TX" },
+            "properties": [
+              { "id": "custom.width", "value": 100 },
+              { "id": "unit", "value": "bytes" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "BLOCK READ" },
+            "properties": [
+              { "id": "custom.width", "value": 100 },
+              { "id": "unit", "value": "bytes" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "BLOCK WRITE" },
+            "properties": [
+              { "id": "custom.width", "value": 100 },
+              { "id": "unit", "value": "bytes" }
+            ]
+          },
+          {
+            "matcher": { "id": "byName", "options": "PIDs" },
+            "properties": [
+              { "id": "custom.width", "value": 70 }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "row",
+      "title": "MySQL 概览",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 14 },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "连接数",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 15 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mysql_global_status_threads_connected"
+        }
+      ],
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "links": [{ "title": "MySQL 详情", "url": "/d/rds-detail" }]
+    },
+    {
+      "type": "stat",
+      "title": "QPS",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 15 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(mysql_global_status_queries[5m])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "decimals": 1
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "links": [{ "title": "MySQL 详情", "url": "/d/rds-detail" }]
+    },
+    {
+      "type": "stat",
+      "title": "慢查询/秒",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 15 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(mysql_global_status_slow_queries[5m])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 0.1 },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "links": [{ "title": "MySQL 详情", "url": "/d/rds-detail" }]
+    },
+    {
+      "type": "stat",
+      "title": "活跃线程",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 15 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "mysql_global_status_threads_running"
+        }
+      ],
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "links": [{ "title": "MySQL 详情", "url": "/d/rds-detail" }]
+    },
+    {
+      "type": "row",
+      "title": "Redis 概览",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 20 },
+      "panels": []
+    },
+    {
+      "type": "stat",
+      "title": "连接数",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 21 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "redis_connected_clients"
+        }
+      ],
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "links": [{ "title": "Redis 详情", "url": "/d/redis-detail" }]
+    },
+    {
+      "type": "stat",
+      "title": "内存使用",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 21 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "redis_memory_used_bytes"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes"
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "links": [{ "title": "Redis 详情", "url": "/d/redis-detail" }]
+    },
+    {
+      "type": "stat",
+      "title": "QPS",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 21 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(redis_commands_processed_total[5m])"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "decimals": 1
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "links": [{ "title": "Redis 详情", "url": "/d/redis-detail" }]
+    },
+    {
+      "type": "stat",
+      "title": "命中率",
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 21 },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "redis_keyspace_hits_total / (redis_keyspace_hits_total + redis_keyspace_misses_total) * 100"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "decimals": 2,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "yellow", "value": 80 },
+              { "color": "green", "value": 95 }
+            ]
+          }
+        }
+      },
+      "options": {
+        "graphMode": "area",
+        "colorMode": "value",
+        "justifyMode": "auto",
+        "textMode": "auto",
+        "reduceOptions": { "calcs": ["lastNotNull"] }
+      },
+      "links": [{ "title": "Redis 详情", "url": "/d/redis-detail" }]
+    }
+  ]
+}

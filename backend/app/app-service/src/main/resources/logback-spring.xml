@@ -165,8 +165,8 @@
             <appender-ref ref="FILE_ERROR"/>
             <appender-ref ref="CLS_LOG"/>
         </logger>
-        <!-- LangChain4j HTTP 日志 - 隐藏完整请求/响应体，仅在 DEBUG 时输出 -->
-        <logger name="dev.langchain4j.http.client.log" level="WARN" additivity="false">
+        <!-- LangChain4j HTTP 日志 - 输出请求/响应摘要 -->
+        <logger name="dev.langchain4j.http.client.log" level="INFO" additivity="false">
             <appender-ref ref="ASYNC_CONSOLE"/>
             <appender-ref ref="ASYNC_FILE_BIZ"/>
         </logger>

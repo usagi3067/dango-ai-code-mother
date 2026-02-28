@@ -51,6 +51,10 @@ scrape_configs:
         labels:
           machine: "machine-a"
           cloud: "tencent"
+    metric_relabel_configs:
+      - source_labels: [name]
+        regex: ".+"
+        action: keep
 
   # cAdvisor - 百度云 BCC 容器指标
   - job_name: "cadvisor-baidu"
@@ -60,6 +64,10 @@ scrape_configs:
         labels:
           machine: "machine-b"
           cloud: "baidu"
+    metric_relabel_configs:
+      - source_labels: [name]
+        regex: ".+"
+        action: keep
 
   # Nacos (Machine B - 百度云)
   - job_name: "nacos"

@@ -81,15 +81,17 @@ public class HigressAiModelProvider implements AiModelProvider {
         var svc = getServiceConfig(serviceType);
         String modelName = resolveModelName(svc);
         int maxTokens = svc.getMaxTokens() != null ? svc.getMaxTokens() : gw.getDefaultMaxTokens();
+        Duration timeout = svc.getTimeout() != null ? svc.getTimeout() : gw.getDefaultTimeout();
 
-        log.info("构建 StreamingChatModel: service={}, model={}, maxTokens={}",
-                serviceType.getConfigKey(), modelName, maxTokens);
+        log.info("构建 StreamingChatModel: service={}, model={}, maxTokens={}, timeout={}s",
+                serviceType.getConfigKey(), modelName, maxTokens, timeout.toSeconds());
 
         var builder = OpenAiStreamingChatModel.builder()
                 .baseUrl(gw.getBaseUrl())
                 .apiKey(gw.getApiKey())
                 .modelName(modelName)
                 .maxTokens(maxTokens)
+                .timeout(timeout)
                 .logRequests(gw.getLogRequests())
                 .logResponses(gw.getLogResponses());
         if (streamingExecutor != null) {
