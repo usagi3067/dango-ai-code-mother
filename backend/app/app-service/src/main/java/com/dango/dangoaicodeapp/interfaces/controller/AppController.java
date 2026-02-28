@@ -2,11 +2,13 @@ package com.dango.dangoaicodeapp.interfaces.controller;
 
 
 import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.annotation.SaCheckLogin;
 import cn.dev33.satoken.stp.StpUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 
 import com.dango.dangoaicodeapp.application.service.ProjectDownloadService;
+import com.dango.dangoaicodeapp.application.service.FeatureAnalysisApplicationService;
 import com.dango.dangoaicodeapp.infrastructure.redis.GenTaskService;
 import com.dango.dangoaicodecommon.ratelimit.annotation.RateLimit;
 import com.dango.dangoaicodecommon.ratelimit.enums.RateLimitType;
@@ -16,11 +18,8 @@ import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
 import com.dango.dangoaicodeapp.model.vo.AppInfoVO;
 import com.dango.dangoaicodeapp.model.vo.AppVO;
 import com.dango.dangoaicodeapp.model.vo.FeatureAnalysisVO;
-import com.dango.dangoaicodeapp.model.vo.FeatureItemVO;
 import com.dango.dangoaicodeapp.domain.codegen.service.AppInfoGeneratorFacade;
-import com.dango.dangoaicodeapp.domain.codegen.service.FeatureAnalyzerFacade;
 import com.dango.aicodegenerate.model.AppNameAndTagResult;
-import com.dango.aicodegenerate.model.FeatureAnalysisResult;
 import com.dango.dangoaicodeapp.application.service.AppApplicationService;
 import com.dango.dangoaicodeapp.application.service.CodeGenApplicationService;
 import com.dango.dangoaicodecommon.common.BaseResponse;
@@ -67,7 +66,7 @@ public class AppController {
     private ProjectDownloadService projectDownloadService;
 
     @Resource
-    private FeatureAnalyzerFacade featureAnalyzerFacade;
+    private FeatureAnalysisApplicationService featureAnalysisApplicationService;
 
     @Resource
     private AppInfoGeneratorFacade appInfoGeneratorFacade;
@@ -89,20 +88,13 @@ public class AppController {
      * 分析功能列表
      */
     @PostMapping("/analyze-features")
+    @SaCheckLogin
+    @RateLimit(limitType = RateLimitType.USER, rate = 10, rateInterval = 60)
     public BaseResponse<FeatureAnalysisVO> analyzeFeatures(@RequestBody AnalyzeFeaturesRequest request) {
-        ThrowUtils.throwIf(request == null || request.getPrompt() == null, ErrorCode.PARAMS_ERROR);
-        FeatureAnalysisResult result = featureAnalyzerFacade.analyzeFeatures(
-                request.getPrompt(), request.getSupplement());
-        FeatureAnalysisVO vo = new FeatureAnalysisVO();
-        vo.setFeatures(result.getFeatures().stream().map(item -> {
-            FeatureItemVO itemVO = new FeatureItemVO();
-            itemVO.setName(item.getName());
-            itemVO.setDescription(item.getDescription());
-            itemVO.setChecked(item.isChecked());
-            itemVO.setRecommended(item.isRecommended());
-            return itemVO;
-        }).toList());
-        return ResultUtils.success(vo);
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        return ResultUtils.success(
+                featureAnalysisApplicationService.analyzeFeatures(request.getPrompt(), request.getSupplement())
+        );
     }
 
     /**
