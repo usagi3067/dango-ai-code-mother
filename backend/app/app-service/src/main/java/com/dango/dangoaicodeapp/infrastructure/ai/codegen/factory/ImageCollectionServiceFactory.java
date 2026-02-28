@@ -1,11 +1,11 @@
-package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
+package com.dango.dangoaicodeapp.infrastructure.ai.codegen.factory;
 
 import com.dango.dangoaicodeapp.domain.codegen.tools.ImageSearchTool;
 import com.dango.dangoaicodeapp.domain.codegen.tools.LogoGeneratorTool;
 import com.dango.dangoaicodeapp.domain.codegen.tools.MermaidDiagramTool;
 import com.dango.dangoaicodeapp.domain.codegen.tools.UndrawIllustrationTool;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.ImageCollectionPlanService;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.ImageCollectionService;
+import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.ImageCollectionPlanService;
+import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.ImageCollectionService;
 import com.dango.aicodegenerate.model.AiModelProvider;
 import com.dango.aicodegenerate.model.AiServiceType;
 import dev.langchain4j.service.AiServices;

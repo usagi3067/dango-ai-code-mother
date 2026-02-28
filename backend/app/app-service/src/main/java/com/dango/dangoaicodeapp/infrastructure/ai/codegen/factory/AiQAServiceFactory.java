@@ -1,6 +1,6 @@
-package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
+package com.dango.dangoaicodeapp.infrastructure.ai.codegen.factory;
 
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.QAService;
+import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.QAService;
 import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;

@@ -2,8 +2,7 @@ package com.dango.dangoaicodeapp.domain.codegen.node;
 
 import cn.hutool.json.JSONUtil;
 import com.dango.aicodegenerate.model.message.AiResponseMessage;
-import com.dango.dangoaicodeapp.domain.codegen.ai.factory.AiAnimationAdvisorServiceFactory;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.InterviewAnimationAdvisorService;
+import com.dango.dangoaicodeapp.domain.codegen.port.AnimationAdvisorGateway;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.utils.SpringContextUtil;
 import dev.langchain4j.service.TokenStream;
@@ -34,10 +33,8 @@ public class InterviewAnimationAdvisorNode {
 
             String userPrompt = context.getOriginalPrompt();
 
-            AiAnimationAdvisorServiceFactory factory = SpringContextUtil.getBean(AiAnimationAdvisorServiceFactory.class);
-            InterviewAnimationAdvisorService advisor = factory.createInterviewService();
-
-            TokenStream tokenStream = advisor.advise(userPrompt);
+            AnimationAdvisorGateway animationAdvisorGateway = SpringContextUtil.getBean(AnimationAdvisorGateway.class);
+            TokenStream tokenStream = animationAdvisorGateway.adviseInterview(userPrompt);
             StringBuilder adviceBuilder = new StringBuilder();
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Throwable> errorRef = new AtomicReference<>();

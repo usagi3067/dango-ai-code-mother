@@ -1,7 +1,7 @@
-package com.dango.dangoaicodeapp.domain.codegen.ai.factory;
+package com.dango.dangoaicodeapp.infrastructure.ai.codegen.factory;
 
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.InterviewAnimationAdvisorService;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.LeetCodeAnimationAdvisorService;
+import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.InterviewAnimationAdvisorService;
+import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.LeetCodeAnimationAdvisorService;
 import com.dango.aicodegenerate.model.AiModelProvider;
 import com.dango.aicodegenerate.model.AiServiceType;
 import dev.langchain4j.service.AiServices;

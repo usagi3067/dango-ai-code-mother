@@ -2,8 +2,7 @@ package com.dango.dangoaicodeapp.domain.codegen.node;
 
 import cn.hutool.json.JSONUtil;
 import com.dango.aicodegenerate.model.message.AiResponseMessage;
-import com.dango.dangoaicodeapp.domain.codegen.ai.factory.AiQAServiceFactory;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.QAService;
+import com.dango.dangoaicodeapp.domain.codegen.port.QaGateway;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.utils.SpringContextUtil;
 import dev.langchain4j.service.TokenStream;
@@ -43,10 +42,8 @@ public class QANode {
                 userInput
             );
 
-            AiQAServiceFactory factory = SpringContextUtil.getBean(AiQAServiceFactory.class);
-            QAService qaService = factory.createService(context.getAppId());
-
-            TokenStream tokenStream = qaService.answer(context.getAppId(), qaInput);
+            QaGateway qaGateway = SpringContextUtil.getBean(QaGateway.class);
+            TokenStream tokenStream = qaGateway.answer(context.getAppId(), qaInput);
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Throwable> errorRef = new AtomicReference<>();
 

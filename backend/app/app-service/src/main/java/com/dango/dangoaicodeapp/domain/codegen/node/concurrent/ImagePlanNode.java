@@ -1,7 +1,7 @@
 package com.dango.dangoaicodeapp.domain.codegen.node.concurrent;
 
 import com.dango.aicodegenerate.model.ImageCollectionPlan;
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.ImageCollectionPlanService;
+import com.dango.dangoaicodeapp.domain.codegen.port.ImageCollectionGateway;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import com.dango.dangoaicodecommon.utils.SpringContextUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -29,9 +29,9 @@ public class ImagePlanNode {
             context.emitNodeMessage(NODE_NAME, "正在分析需求，规划图片收集任务...\n");
 
             try {
-                // 获取图片收集计划服务
-                ImageCollectionPlanService planService = SpringContextUtil.getBean(ImageCollectionPlanService.class);
-                ImageCollectionPlan plan = planService.planImageCollection(originalPrompt);
+                // 获取图片收集能力网关
+                ImageCollectionGateway imageCollectionGateway = SpringContextUtil.getBean(ImageCollectionGateway.class);
+                ImageCollectionPlan plan = imageCollectionGateway.planImageCollection(originalPrompt);
 
                 log.info("生成图片收集计划，准备启动并发分支");
 

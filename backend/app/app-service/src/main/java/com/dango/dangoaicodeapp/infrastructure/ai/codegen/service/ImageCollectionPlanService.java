@@ -1,4 +1,4 @@
-package com.dango.dangoaicodeapp.domain.codegen.ai.service;
+package com.dango.dangoaicodeapp.infrastructure.ai.codegen.service;
 
 import com.dango.aicodegenerate.model.ImageCollectionPlan;
 import dev.langchain4j.service.SystemMessage;
