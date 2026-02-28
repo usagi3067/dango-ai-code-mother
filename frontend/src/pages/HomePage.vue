@@ -41,18 +41,13 @@
         标题区域
         使用 flex 布局让 Logo 和文字水平排列
       -->
+      <!-- 视觉上改为单行主标题，进一步减少装饰元素 -->
       <div class="hero-title">
-        <span class="title-text">一句话</span>
-        <!-- 
-          @/assets/logo.png: @ 是路径别名，指向 src 目录
-          这是在 vite.config.ts 中配置的
-        -->
-        <img src="@/assets/logo.png" alt="Logo" class="hero-logo" />
-        <span class="title-text">呈所想</span>
+        <span class="title-text">一句话，生成可上线的应用</span>
       </div>
       
       <!-- 副标题 -->
-      <p class="hero-subtitle">与 AI 对话轻松创建应用和网站</p>
+      <p class="hero-subtitle">从想法到页面与功能，AI 协同完成搭建与交付。</p>
       
       <!-- 
         提示词输入框区域
@@ -78,7 +73,7 @@
         <a-textarea
           v-model:value="promptText"
           :auto-size="{ minRows: 2, maxRows: 4 }"
-          placeholder="使用 NoCode 创建一个高效的小工具，帮我计算......"
+          placeholder="描述你的目标，例如：生成一个活动报名官网，包含表单收集与数据看板。"
           class="prompt-input"
           @pressEnter="handleCreateApp"
         />
@@ -101,12 +96,12 @@
             >
               <a-button type="text" :loading="uploading">
                 <template #icon><UploadOutlined /></template>
-                上传项目
+                导入项目
               </a-button>
             </a-upload>
             <a-button type="text" disabled>
               <template #icon><ThunderboltOutlined /></template>
-              优化
+              智能优化（即将开放）
             </a-button>
           </div>
           
@@ -177,7 +172,7 @@
     <div v-if="loginUserStore.loginUser.id" class="section my-apps-section">
       <!-- 区块头部：标题 + 分页器 -->
       <div class="section-header">
-        <h2 class="section-title">我的作品</h2>
+        <h2 class="section-title">我的项目</h2>
         
         <!-- 
           a-pagination: Ant Design Vue 的分页组件
@@ -227,7 +222,7 @@
           a-empty: Ant Design Vue 的空状态组件
           当没有数据时显示友好的提示
         -->
-        <a-empty v-else description="暂无应用，快去创建吧~" />
+        <a-empty v-else description="你还没有项目，输入需求开始创建。" />
       </a-spin>
     </div>
 
@@ -238,10 +233,10 @@
     -->
     <div class="section featured-section">
       <div class="section-header">
-        <h2 class="section-title">精选案例</h2>
+        <h2 class="section-title">精选模板</h2>
         <div class="section-header-right">
           <router-link to="/cases" class="view-all-link">
-            全部案例 →
+            查看全部模板 →
           </router-link>
           <a-pagination
             v-if="featuredPagination.total > 0"
@@ -300,7 +295,7 @@
             @view-work="openDeployedApp"
           />
         </div>
-        <a-empty v-else description="暂无精选案例" />
+        <a-empty v-else description="暂无模板，稍后再来看看。" />
       </a-spin>
     </div>
 
@@ -478,7 +473,7 @@ const uploading = ref(false)
  * 这是一个普通数组，不是响应式的
  * 因为它不会变化，所以不需要响应式
  */
-const quickTags = ['波普风电商页面', '企业网站', '电商运营后台', '暗黑话题社区']
+const quickTags = ['品牌官网', '数据看板', '运营后台', '活动落地页']
 
 /**
  * 我的应用列表
@@ -954,13 +949,8 @@ onMounted(() => {
 /* 页面根容器 */
 .home-page {
   padding: 0;
-  /* 
-   * linear-gradient: CSS 渐变函数
-   * 180deg: 渐变方向（从上到下）
-   * #e8f4f0 0%: 起始颜色和位置
-   * #f5f7fa 30%: 结束颜色和位置
-   */
-  background: linear-gradient(180deg, #e8f4f0 0%, #f5f7fa 30%);
+  /* 视觉基线：浅色干净背景，降低渐变存在感，提升内容可读性 */
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 24%, #f8fafc 100%);
   /* 
    * min-height: 最小高度
    * calc(): CSS 计算函数
@@ -973,69 +963,47 @@ onMounted(() => {
 /* ==================== Hero 区域样式 ==================== */
 
 .hero-section {
-  text-align: center;  /* 文字居中 */
-  padding: 60px 24px 40px;  /* 上 左右 下 的内边距 */
+  text-align: center;
+  padding: 72px 24px 48px;
 }
 
 /* 标题容器 */
 .hero-title {
-  /* 
-   * Flexbox 布局
-   * display: flex 启用弹性布局
-   * align-items: center 垂直居中
-   * justify-content: center 水平居中
-   * gap: 子元素之间的间距
-   */
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 /* 标题文字 */
 .title-text {
-  font-size: 42px;
+  font-size: 56px;
   font-weight: 700;  /* 字体粗细：700 是粗体 */
-  /* 
-   * 文字渐变效果
-   * 1. 设置背景为渐变色
-   * 2. background-clip: text 让背景只显示在文字区域
-   * 3. -webkit-text-fill-color: transparent 让文字透明，显示背景
-   */
-  background: linear-gradient(135deg, #1a1a1a 0%, #4a4a4a 100%);
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 70%, #334155 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-}
-
-/* Hero Logo */
-.hero-logo {
-  width: 48px;
-  height: 48px;
+  letter-spacing: -0.6px;
 }
 
 /* 副标题 */
 .hero-subtitle {
-  font-size: 16px;
-  color: #666;
-  margin-bottom: 32px;
+  font-size: 17px;
+  color: #475569;
+  margin-bottom: 30px;
 }
 
 /* ==================== 输入框样式 ==================== */
 
 /* 输入框外层容器 */
 .prompt-input-wrapper {
-  max-width: 680px;  /* 最大宽度 */
+  max-width: 760px;  /* 最大宽度 */
   margin: 0 auto;    /* 水平居中 */
   background: #fff;
-  border-radius: 16px;  /* 圆角 */
-  /* 
-   * box-shadow: 阴影效果
-   * 参数: 水平偏移 垂直偏移 模糊半径 颜色
-   */
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
-  padding: 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;  /* 圆角 */
+  box-shadow: 0 16px 32px rgba(15, 23, 42, 0.06);
+  padding: 18px;
 }
 
 /* 输入框本身 */
@@ -1048,6 +1016,7 @@ onMounted(() => {
   box-shadow: none !important;
   resize: none;  /* 禁止调整大小 */
   font-size: 15px;
+  color: #0f172a;
 }
 
 /* 输入框获得焦点时的样式 */
@@ -1060,16 +1029,16 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;  /* 两端对齐 */
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid #f0f0f0;  /* 顶部分隔线 */
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #e2e8f0;  /* 顶部分隔线 */
 }
 
 /* 左侧按钮组 */
 .input-actions-left {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
 }
 
 /* 右侧按钮组 */
@@ -1081,14 +1050,14 @@ onMounted(() => {
 
 /* 发送按钮 */
 .send-btn {
-  /* 渐变背景 */
-  background: linear-gradient(135deg, #52c4a0 0%, #3db389 100%);
+  /* 发送按钮作为唯一高亮动作，使用品牌绿色提升聚焦 */
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
   border: none;
 }
 
 /* 发送按钮悬停效果 */
 .send-btn:hover {
-  background: linear-gradient(135deg, #45b894 0%, #35a07a 100%);
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
 }
 
 /* ==================== 快捷标签样式 ==================== */
@@ -1096,16 +1065,17 @@ onMounted(() => {
 .quick-tags {
   display: flex;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   margin-top: 24px;
   flex-wrap: wrap;  /* 允许换行 */
 }
 
 .quick-tag {
   cursor: pointer;  /* 鼠标悬停时显示手型 */
-  padding: 6px 16px;
+  padding: 7px 16px;
   border-radius: 20px;  /* 圆角（胶囊形状） */
-  border: 1px solid #d9d9d9;
+  border: 1px solid #e2e8f0;
+  color: #334155;
   background: #fff;
   /* 
    * transition: 过渡动画
@@ -1117,8 +1087,9 @@ onMounted(() => {
 
 /* 标签悬停效果 */
 .quick-tag:hover {
-  border-color: #52c4a0;
-  color: #52c4a0;
+  border-color: #22c55e;
+  color: #16a34a;
+  box-shadow: 0 8px 18px rgba(34, 197, 94, 0.16);
 }
 
 /* ==================== 区块通用样式 ==================== */
@@ -1126,7 +1097,7 @@ onMounted(() => {
 .section {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 36px 24px;
 }
 
 .section-header {
@@ -1137,10 +1108,11 @@ onMounted(() => {
 }
 
 .section-title {
-  font-size: 24px;
+  font-size: 28px;
   font-weight: 600;
   margin: 0;
-  color: #1a1a1a;
+  color: #0f172a;
+  letter-spacing: -0.3px;
 }
 
 .section-header-right {
@@ -1150,14 +1122,14 @@ onMounted(() => {
 }
 
 .view-all-link {
-  color: #52c4a0;
+  color: #16a34a;
   font-size: 14px;
   text-decoration: none;
   transition: color 0.2s;
 }
 
 .view-all-link:hover {
-  color: #3db389;
+  color: #15803d;
 }
 
 /* ==================== 标签筛选样式 ==================== */
@@ -1175,18 +1147,18 @@ onMounted(() => {
 
 /* 标签筛选按钮悬停效果 */
 .tag-filter-section :deep(.ant-btn:not(.ant-btn-primary):hover) {
-  border-color: #52c4a0;
-  color: #52c4a0;
+  border-color: #22c55e;
+  color: #16a34a;
 }
 
 /* 选中状态的按钮样式 */
 .tag-filter-section :deep(.ant-btn-primary) {
-  background: linear-gradient(135deg, #52c4a0 0%, #3db389 100%);
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%);
   border: none;
 }
 
 .tag-filter-section :deep(.ant-btn-primary:hover) {
-  background: linear-gradient(135deg, #45b894 0%, #35a07a 100%);
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
 }
 
 /* ==================== 应用卡片网格样式 ==================== */
@@ -1207,20 +1179,41 @@ onMounted(() => {
 
 /* 平板设备（屏幕宽度 ≤ 992px） */
 @media (max-width: 992px) {
+  .title-text {
+    font-size: 48px;
+  }
+
   .app-grid {
     grid-template-columns: repeat(2, 1fr);  /* 改为 2 列 */
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-section {
+    padding: 56px 20px 36px;
+  }
+
+  .title-text {
+    font-size: 36px;
+  }
+
+  .hero-subtitle {
+    font-size: 15px;
+  }
+
+  .prompt-input-wrapper {
+    padding: 14px;
+  }
+
+  .section-title {
+    font-size: 24px;
   }
 }
 
 /* 手机设备（屏幕宽度 ≤ 576px） */
 @media (max-width: 576px) {
   .title-text {
-    font-size: 28px;  /* 减小标题字号 */
-  }
-  
-  .hero-logo {
-    width: 36px;
-    height: 36px;
+    font-size: 30px;
   }
   
   .app-grid {

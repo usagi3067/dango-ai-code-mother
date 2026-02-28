@@ -46,17 +46,19 @@ const isHomePage = computed(() => {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  background: #f8fafc;
 }
 
 .content {
   flex: 1;
-  background: #f0f2f5;
-  padding: 24px;
+  /* 由布局层提供统一留白与背景基线，页面只关心内容本身 */
+  background: #f8fafc;
+  padding: 28px 24px 32px;
 }
 
 .content-home {
   padding: 0;
-  background: transparent;
+  background: #f8fafc;
 }
 
 .content-wrapper {
@@ -64,27 +66,29 @@ const isHomePage = computed(() => {
   margin: 0 auto;
   background: #fff;
   padding: 24px;
-  border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
   min-height: calc(100vh - 64px - 72px - 48px);
 }
 
 @media (max-width: 768px) {
   .content {
-    padding: 16px;
+    padding: 20px 16px 24px;
   }
   .content-wrapper {
     padding: 16px;
+    border-radius: 14px;
   }
 }
 
 @media (max-width: 576px) {
   .content {
-    padding: 12px;
+    padding: 16px 12px 20px;
   }
   .content-wrapper {
     padding: 12px;
-    border-radius: 0;
+    border-radius: 12px;
   }
 }
 </style>

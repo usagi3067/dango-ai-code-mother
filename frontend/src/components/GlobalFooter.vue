@@ -9,8 +9,8 @@
   -->
   <a-layout-footer class="footer">
     <div class="footer-content">
-      <!-- 版权信息文本 -->
-      ai项目 by
+      <!-- 采用更专业、克制的品牌描述 -->
+      AI 应用生成平台 · 由
       <!-- 
         外部链接标签
         href: 链接地址
@@ -41,8 +41,9 @@
 /* 页脚容器样式 */
 .footer {
   text-align: center; /* 文本居中对齐 */
-  background: #f0f2f5; /* 浅灰色背景 */
-  padding: 24px 50px; /* 内边距：上下 24px，左右 50px */
+  background: #f8fafc; /* 与主布局保持统一底色 */
+  border-top: 1px solid #e2e8f0; /* 轻分隔，弱化页脚存在感 */
+  padding: 20px 24px; /* 控制页脚高度，避免厚重 */
   position: relative; /* 相对定位 */
   bottom: 0; /* 距离底部 0 */
   width: 100%; /* 宽度占满父容器 */
@@ -50,21 +51,22 @@
 
 /* 页脚内容文本样式 */
 .footer-content {
-  color: rgba(0, 0, 0, 0.65); /* 文字颜色：黑色 65% 透明度 */
+  color: #64748b;
   font-size: 14px; /* 字体大小 14 像素 */
 }
 
 /* 页脚中的链接样式 */
 .footer-content a {
-  color: #1890ff; /* Ant Design 主题蓝色 */
+  color: #16a34a;
   text-decoration: none; /* 去除下划线 */
   transition: color 0.3s; /* 颜色变化过渡动画，持续 0.3 秒 */
+  font-weight: 600;
 }
 
 /* 鼠标悬停在链接上时的样式 */
 .footer-content a:hover {
-  color: #40a9ff; /* 更亮的蓝色 */
-  text-decoration: underline; /* 显示下划线 */
+  color: #15803d;
+  text-decoration: none;
 }
 
 /**
@@ -73,7 +75,7 @@
  */
 @media (max-width: 576px) {
   .footer {
-    padding: 16px 24px; /* 减小内边距以适应小屏幕 */
+    padding: 14px 16px;
   }
 
   .footer-content {

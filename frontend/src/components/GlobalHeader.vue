@@ -12,11 +12,7 @@
     <div class="header-content">
       <!-- Logo 区域：包含图标和网站标题 -->
       <div class="logo-section">
-        <!-- 
-          Logo 图片
-          src="@/assets/logo.png": @ 是 Vue 项目中的路径别名，指向 src 目录
-          alt: 图片加载失败时显示的替代文本
-        -->
+        <!-- 顶部导航保留品牌图标，增强站点识别 -->
         <img src="@/assets/logo.png" alt="Logo" class="logo" />
         <!-- 网站标题 -->
         <span class="title">AI 应用生成</span>
@@ -219,86 +215,83 @@ const menuItems = computed<MenuProps['items']>(() => {
 
 /* 头部容器样式 */
 .header {
-  background: #fff;
-  /* 白色背景 */
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  /* 阴影效果：水平偏移 0，垂直偏移 2px，模糊 8px */
+  /* 统一公共区的轻量质感：浅底 + 细边框 + 柔和阴影 */
+  background: rgba(255, 255, 255, 0.92);
+  border-bottom: 1px solid #e2e8f0;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.05);
+  backdrop-filter: saturate(180%) blur(10px);
   padding: 0;
-  /* 去除默认内边距 */
   position: sticky;
-  /* 粘性定位：滚动时固定在顶部 */
   top: 0;
-  /* 固定在顶部位置 */
   z-index: 999;
-  /* 层级：确保在其他元素之上 */
 }
 
 /* 头部内容容器：控制布局和最大宽度 */
 .header-content {
   max-width: 1200px;
-  /* 最大宽度 1200px */
   margin: 0 auto;
-  /* 水平居中 */
   display: flex;
-  /* 使用 Flexbox 布局 */
   align-items: center;
-  /* 垂直居中对齐 */
   justify-content: space-between;
-  /* 两端对齐，中间自动分配空间 */
   padding: 0 24px;
-  /* 左右内边距 24px */
   height: 64px;
-  /* 固定高度 64px */
+  gap: 20px;
 }
 
 /* Logo 区域样式 */
 .logo-section {
   display: flex;
-  /* Flexbox 布局 */
   align-items: center;
-  /* 垂直居中 */
-  gap: 12px;
-  /* 子元素之间的间距 12px */
+  gap: 10px;
   flex-shrink: 0;
-  /* 不允许缩小，保持固定大小 */
 }
 
-/* Logo 图片样式 */
+/* 顶部导航图标仅用于品牌识别，尺寸控制在低干扰范围 */
 .logo {
-  height: 40px;
-  /* 固定高度 40px */
+  height: 34px;
   width: auto;
-  /* 宽度自动，保持图片比例 */
 }
 
 /* 网站标题样式 */
 .title {
   font-size: 18px;
-  /* 字体大小 18px */
   font-weight: 600;
-  /* 字体粗细：半粗体 */
-  color: #1890ff;
-  /* Ant Design 主题蓝色 */
+  color: #0f172a;
   white-space: nowrap;
-  /* 不换行，保持在一行显示 */
+  letter-spacing: 0.2px;
 }
 
 /* 菜单样式 */
 .menu {
   flex: 1;
-  /* 占据剩余空间，自动伸缩 */
   border-bottom: none;
-  /* 去除底部边框 */
   line-height: 64px;
-  /* 行高与头部高度一致，实现垂直居中 */
-  margin: 0 24px;
-  /* 左右外边距 24px */
+  margin: 0 12px;
+  background: transparent;
 }
 
 /* 用户操作区域样式 */
 .user-section {
   flex-shrink: 0;
-  /* 不允许缩小，保持固定大小 */
+}
+
+/* 仅覆盖当前头部菜单的配色，避免影响其他页面菜单 */
+.menu :deep(.ant-menu-item) {
+  color: #334155;
+  font-weight: 500;
+}
+
+.menu :deep(.ant-menu-item:hover),
+.menu :deep(.ant-menu-item-active) {
+  color: #22c55e;
+}
+
+.menu :deep(.ant-menu-item-selected) {
+  color: #16a34a;
+}
+
+.menu :deep(.ant-menu-item-selected::after) {
+  border-bottom: 2px solid #22c55e;
 }
 
 /**
@@ -308,22 +301,19 @@ const menuItems = computed<MenuProps['items']>(() => {
 @media (max-width: 768px) {
   .header-content {
     padding: 0 16px;
-    /* 减小左右内边距 */
+    gap: 12px;
   }
 
   .title {
     font-size: 16px;
-    /* 减小标题字体 */
   }
 
   .menu {
-    margin: 0 12px;
-    /* 减小菜单左右间距 */
+    margin: 0 8px;
   }
 
   .logo {
-    height: 32px;
-    /* 减小 Logo 高度 */
+    height: 30px;
   }
 }
 
@@ -334,12 +324,10 @@ const menuItems = computed<MenuProps['items']>(() => {
 @media (max-width: 576px) {
   .title {
     display: none;
-    /* 隐藏标题，节省空间 */
   }
 
   .menu {
-    margin: 0 8px;
-    /* 进一步减小菜单间距 */
+    margin: 0 2px;
   }
 }
 </style>
