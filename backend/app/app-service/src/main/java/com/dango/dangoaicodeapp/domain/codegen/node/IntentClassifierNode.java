@@ -1,6 +1,6 @@
 package com.dango.dangoaicodeapp.domain.codegen.node;
 
-import com.dango.dangoaicodeapp.domain.codegen.port.IntentClassificationGateway;
+import com.dango.dangoaicodeapp.domain.codegen.port.IntentClassificationPort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +20,7 @@ public class IntentClassifierNode {
 
     private static final String NODE_NAME = "意图识别";
 
-    private final IntentClassificationGateway intentClassificationGateway;
+    private final IntentClassificationPort intentClassificationPort;
 
     public AsyncNodeAction<MessagesState<String>> action() {
         return node_async(state -> {
@@ -38,7 +38,7 @@ public class IntentClassifierNode {
                 userInput
             );
 
-            String intent = intentClassificationGateway.classify(classifyInput).trim().toUpperCase();
+            String intent = intentClassificationPort.classify(classifyInput).trim().toUpperCase();
             if (!"MODIFY".equals(intent) && !"QA".equals(intent)) {
                 log.warn("意图识别结果异常: {}，默认为 MODIFY", intent);
                 intent = "MODIFY";

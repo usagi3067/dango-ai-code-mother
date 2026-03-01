@@ -2,7 +2,7 @@ package com.dango.dangoaicodeapp.infrastructure.ai.gateway;
 
 import com.dango.dangoaicodeapp.domain.codegen.model.AnalyzedFeature;
 import com.dango.dangoaicodeapp.domain.codegen.model.FeatureAnalysis;
-import com.dango.dangoaicodeapp.domain.codegen.port.FeatureAnalysisGateway;
+import com.dango.dangoaicodeapp.domain.codegen.port.FeatureAnalysisPort;
 import com.dango.dangoaicodeapp.infrastructure.ai.model.FeatureAnalysisAiResult;
 import com.dango.dangoaicodeapp.infrastructure.ai.model.FeatureItemAiResult;
 import com.dango.dangoaicodeapp.infrastructure.ai.service.AiFeatureAnalyzerService;
@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.Objects;
 
 @Component
-public class FeatureAnalysisGatewayImpl implements FeatureAnalysisGateway {
+public class FeatureAnalysisPortImpl implements FeatureAnalysisPort {
 
     @Resource
     private AiFeatureAnalyzerService aiFeatureAnalyzerService;

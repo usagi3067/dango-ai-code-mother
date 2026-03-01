@@ -4,7 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.dango.aicodegenerate.model.FileModificationGuide;
 import com.dango.aicodegenerate.model.ModificationPlanResult;
 import com.dango.aicodegenerate.model.SqlStatementItem;
-import com.dango.dangoaicodeapp.domain.codegen.port.ModificationPlanningGateway;
+import com.dango.dangoaicodeapp.domain.codegen.port.ModificationPlanningPort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,7 +26,7 @@ public class ModificationPlannerNode {
 
     private static final String NODE_NAME = "修改规划";
 
-    private final ModificationPlanningGateway modificationPlanningGateway;
+    private final ModificationPlanningPort modificationPlanningPort;
 
     public AsyncNodeAction<MessagesState<String>> action() {
         return node_async(state -> {
@@ -40,7 +40,7 @@ public class ModificationPlannerNode {
                 String planningRequest = buildPlanningRequest(context);
                 log.info("修改规划请求:\n{}", planningRequest);
 
-                ModificationPlanResult planResult = modificationPlanningGateway.plan(
+                ModificationPlanResult planResult = modificationPlanningPort.plan(
                     context.getAppId(), planningRequest);
                 log.info("修改规划结果: {}", planResult);
 

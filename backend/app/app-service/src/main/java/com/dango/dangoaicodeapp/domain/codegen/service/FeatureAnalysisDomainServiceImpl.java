@@ -2,7 +2,7 @@ package com.dango.dangoaicodeapp.domain.codegen.service;
 
 import cn.hutool.core.util.StrUtil;
 import com.dango.dangoaicodeapp.domain.codegen.model.FeatureAnalysis;
-import com.dango.dangoaicodeapp.domain.codegen.port.FeatureAnalysisGateway;
+import com.dango.dangoaicodeapp.domain.codegen.port.FeatureAnalysisPort;
 import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
 import jakarta.annotation.Resource;
@@ -26,7 +26,7 @@ public class FeatureAnalysisDomainServiceImpl implements FeatureAnalysisDomainSe
     private static final String GENERIC_FAILURE_MESSAGE = "功能分析失败，请稍后重试";
 
     @Resource
-    private FeatureAnalysisGateway featureAnalysisGateway;
+    private FeatureAnalysisPort featureAnalysisPort;
 
     @Override
     public FeatureAnalysis analyzeFeatures(String prompt, String supplement) {
@@ -36,7 +36,7 @@ public class FeatureAnalysisDomainServiceImpl implements FeatureAnalysisDomainSe
         }
 
         try {
-            return featureAnalysisGateway.analyzeFeatures(fullPrompt);
+            return featureAnalysisPort.analyzeFeatures(fullPrompt);
         } catch (BusinessException e) {
             throw e;
         } catch (Exception e) {

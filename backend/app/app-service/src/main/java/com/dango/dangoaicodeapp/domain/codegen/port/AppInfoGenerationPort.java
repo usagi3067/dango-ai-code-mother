@@ -5,7 +5,7 @@ import com.dango.aicodegenerate.model.AppNameAndTagResult;
 /**
  * 应用信息生成能力领域端口。
  */
-public interface AppInfoGenerationGateway {
+public interface AppInfoGenerationPort {
 
     AppNameAndTagResult generateAppInfo(String userDescription);
 }

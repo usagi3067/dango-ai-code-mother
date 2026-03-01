@@ -1,7 +1,7 @@
 package com.dango.dangoaicodeapp.domain.codegen.node.concurrent;
 
 import com.dango.aicodegenerate.model.ImageCollectionPlan;
-import com.dango.dangoaicodeapp.domain.codegen.port.ImageCollectionGateway;
+import com.dango.dangoaicodeapp.domain.codegen.port.ImageCollectionPort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +21,7 @@ public class ImagePlanNode {
 
     private static final String NODE_NAME = "图片规划";
 
-    private final ImageCollectionGateway imageCollectionGateway;
+    private final ImageCollectionPort imageCollectionPort;
 
     public AsyncNodeAction<MessagesState<String>> action() {
         return node_async(state -> {
@@ -32,7 +32,7 @@ public class ImagePlanNode {
             context.emitNodeMessage(NODE_NAME, "正在分析需求，规划图片收集任务...\n");
 
             try {
-                ImageCollectionPlan plan = imageCollectionGateway.planImageCollection(originalPrompt);
+                ImageCollectionPlan plan = imageCollectionPort.planImageCollection(originalPrompt);
 
                 log.info("生成图片收集计划，准备启动并发分支");
                 context.setImageCollectionPlan(plan);

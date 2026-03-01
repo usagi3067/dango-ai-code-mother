@@ -6,7 +6,7 @@ import dev.langchain4j.service.TokenStream;
 /**
  * 代码生成领域端口。
  */
-public interface CodeGenerationGateway {
+public interface CodeGenerationPort {
 
     TokenStream generateCodeStream(long appId, CodeGenTypeEnum codeGenType, String userMessage);
 }

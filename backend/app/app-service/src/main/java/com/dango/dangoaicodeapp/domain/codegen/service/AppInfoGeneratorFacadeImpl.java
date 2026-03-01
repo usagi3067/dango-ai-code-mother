@@ -2,7 +2,7 @@ package com.dango.dangoaicodeapp.domain.codegen.service;
 
 
 import com.dango.aicodegenerate.model.AppNameAndTagResult;
-import com.dango.dangoaicodeapp.domain.codegen.port.AppInfoGenerationGateway;
+import com.dango.dangoaicodeapp.domain.codegen.port.AppInfoGenerationPort;
 import com.dango.dangoaicodeapp.model.enums.AppTagEnum;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +32,7 @@ public class AppInfoGeneratorFacadeImpl implements AppInfoGeneratorFacade {
     private static final String SPECIAL_CHARS_REGEX = "[\\n\\r@#$%^&*()\\[\\]{}|\\\\<>\"'`~;:+=]";
 
     @Resource
-    private AppInfoGenerationGateway appInfoGenerationGateway;
+    private AppInfoGenerationPort appInfoGenerationPort;
 
     @Override
     public AppNameAndTagResult generateAppInfo(String initPrompt) {
@@ -46,7 +46,7 @@ public class AppInfoGeneratorFacadeImpl implements AppInfoGeneratorFacade {
         }
 
         try {
-            AppNameAndTagResult aiResult = appInfoGenerationGateway.generateAppInfo(initPrompt);
+            AppNameAndTagResult aiResult = appInfoGenerationPort.generateAppInfo(initPrompt);
 
             // 处理应用名称
             String appName = sanitizeName(aiResult.getAppName());

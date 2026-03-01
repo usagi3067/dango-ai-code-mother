@@ -5,7 +5,7 @@ import com.dango.aicodegenerate.model.ImageCollectionPlan;
 /**
  * 图片规划与收集能力领域端口。
  */
-public interface ImageCollectionGateway {
+public interface ImageCollectionPort {
 
     ImageCollectionPlan planImageCollection(String userPrompt);
 
