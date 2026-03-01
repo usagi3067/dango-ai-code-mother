@@ -15,7 +15,9 @@ import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowStreamPort;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
 
 import java.io.Serial;
@@ -43,9 +45,12 @@ public class WorkflowContext implements Serializable {
     public static final String WORKFLOW_CONTEXT_KEY = "workflowContext";
 
     /**
-     * 流式输出端口（由基础设施层在启动时注入）。
+     * 运行时流式输出端口（按单次工作流执行注入）。
+     * 使用实例字段而非静态全局注册，避免跨请求共享状态带来的隐式耦合。
      */
-    private static volatile WorkflowStreamPort workflowStreamPort;
+    @ToString.Exclude
+    @EqualsAndHashCode.Exclude
+    private transient WorkflowStreamPort workflowStreamPort;
 
     /**
      * 当前执行步骤
@@ -272,15 +277,6 @@ public class WorkflowContext implements Serializable {
      */
     public static Map<String, Object> saveContext(WorkflowContext context) {
         return Map.of(WORKFLOW_CONTEXT_KEY, context);
-    }
-
-    // ========== 运行时端口注入 ==========
-
-    /**
-     * 注入流式输出端口（应用启动时调用一次）。
-     */
-    public static void configureWorkflowStreamPort(WorkflowStreamPort streamPort) {
-        workflowStreamPort = streamPort;
     }
 
     // ========== 流式输出方法 ==========

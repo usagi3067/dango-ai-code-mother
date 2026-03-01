@@ -1,5 +1,6 @@
 package com.dango.dangoaicodeapp.domain.codegen.workflow;
 
+import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowStreamPort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.command.RunWorkflowCommand;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.extern.slf4j.Slf4j;
@@ -24,10 +25,15 @@ public class CodeGenWorkflow {
 
     private final ExecutorService parallelExecutor;
     private final CodeGenWorkflowFactory workflowFactory;
+    private final WorkflowStreamPort workflowStreamPort;
 
-    public CodeGenWorkflow(ExecutorService parallelExecutor, CodeGenWorkflowFactory workflowFactory) {
+    public CodeGenWorkflow(
+            ExecutorService parallelExecutor,
+            CodeGenWorkflowFactory workflowFactory,
+            WorkflowStreamPort workflowStreamPort) {
         this.parallelExecutor = Objects.requireNonNull(parallelExecutor, "parallelExecutor");
         this.workflowFactory = Objects.requireNonNull(workflowFactory, "workflowFactory");
+        this.workflowStreamPort = Objects.requireNonNull(workflowStreamPort, "workflowStreamPort");
     }
 
     private RunnableConfig createRunnableConfig() {
@@ -50,6 +56,7 @@ public class CodeGenWorkflow {
                 .originalPrompt(command.originalPrompt())
                 .currentStep("初始化")
                 .workflowExecutionId(command.workflowExecutionId())
+                .workflowStreamPort(workflowStreamPort)
                 .elementInfo(command.elementInfo())
                 .databaseEnabled(command.databaseEnabled())
                 .databaseSchema(command.databaseSchema())
