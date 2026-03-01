@@ -2,7 +2,7 @@ package com.dango.dangoaicodeapp.infrastructure.repository;
 
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.codegen.port.ProjectScaffoldPort;
-import com.dango.dangoaicodeapp.domain.codegen.scaffold.ProjectScaffoldServiceFactory;
+import com.dango.dangoaicodeapp.infrastructure.scaffold.ProjectScaffoldServiceFactory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -20,4 +20,3 @@ public class ProjectScaffoldPortImpl implements ProjectScaffoldPort {
         scaffoldServiceFactory.getService(generationType).scaffold(appId);
     }
 }
-

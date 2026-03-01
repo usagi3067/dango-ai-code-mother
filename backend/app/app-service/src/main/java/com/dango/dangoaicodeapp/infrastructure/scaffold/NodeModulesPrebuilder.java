@@ -1,4 +1,4 @@
-package com.dango.dangoaicodeapp.domain.codegen.scaffold;
+package com.dango.dangoaicodeapp.infrastructure.scaffold;
 
 import cn.hutool.core.util.RuntimeUtil;
 import jakarta.annotation.PostConstruct;

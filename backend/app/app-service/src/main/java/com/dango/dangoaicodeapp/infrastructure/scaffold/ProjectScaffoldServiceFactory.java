@@ -1,4 +1,4 @@
-package com.dango.dangoaicodeapp.domain.codegen.scaffold;
+package com.dango.dangoaicodeapp.infrastructure.scaffold;
 
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import org.springframework.stereotype.Component;
