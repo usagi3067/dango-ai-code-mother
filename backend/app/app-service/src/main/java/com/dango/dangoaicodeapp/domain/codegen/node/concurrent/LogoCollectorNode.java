@@ -2,12 +2,13 @@ package com.dango.dangoaicodeapp.domain.codegen.node.concurrent;
 
 import com.dango.aicodegenerate.model.ImageCollectionPlan;
 import com.dango.aicodegenerate.model.ImageResource;
-import com.dango.dangoaicodeapp.domain.codegen.tools.LogoGeneratorTool;
+import com.dango.dangoaicodeapp.domain.codegen.port.ImageResourcePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
-import com.dango.dangoaicodecommon.utils.SpringContextUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,34 +16,34 @@ import java.util.List;
 import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
 
 /**
- * Logo 生成节点
- * 并发执行 Logo 生成任务
+ * Logo 生成节点。
  */
 @Slf4j
+@Component
+@RequiredArgsConstructor
 public class LogoCollectorNode {
 
     private static final String NODE_NAME = "Logo生成";
 
-    public static AsyncNodeAction<MessagesState<String>> create() {
+    private final ImageResourcePort imageResourcePort;
+
+    public AsyncNodeAction<MessagesState<String>> action() {
         return node_async(state -> {
             WorkflowContext context = WorkflowContext.getContext(state);
             List<ImageResource> logos = new ArrayList<>();
 
-            // 发送节点开始消息
             context.emitNodeStart(NODE_NAME);
 
             try {
                 ImageCollectionPlan plan = context.getImageCollectionPlan();
                 if (plan != null && plan.getLogoTasks() != null && !plan.getLogoTasks().isEmpty()) {
-                    LogoGeneratorTool logoTool = SpringContextUtil.getBean(LogoGeneratorTool.class);
-
                     log.info("开始并发生成Logo，任务数: {}", plan.getLogoTasks().size());
                     context.emitNodeMessage(NODE_NAME,
                             String.format("开始执行 %d 个生成任务...\n", plan.getLogoTasks().size()));
 
                     for (ImageCollectionPlan.LogoTask task : plan.getLogoTasks()) {
                         context.emitNodeMessage(NODE_NAME, String.format("生成: %s\n", task.description()));
-                        List<ImageResource> images = logoTool.generateLogos(task.description());
+                        List<ImageResource> images = imageResourcePort.generateLogos(task.description());
                         if (images != null) {
                             logos.addAll(images);
                         }

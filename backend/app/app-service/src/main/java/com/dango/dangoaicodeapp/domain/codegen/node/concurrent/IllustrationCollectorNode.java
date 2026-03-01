@@ -2,12 +2,13 @@ package com.dango.dangoaicodeapp.domain.codegen.node.concurrent;
 
 import com.dango.aicodegenerate.model.ImageCollectionPlan;
 import com.dango.aicodegenerate.model.ImageResource;
-import com.dango.dangoaicodeapp.domain.codegen.tools.UndrawIllustrationTool;
+import com.dango.dangoaicodeapp.domain.codegen.port.ImageResourcePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
-import com.dango.dangoaicodecommon.utils.SpringContextUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,34 +16,34 @@ import java.util.List;
 import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
 
 /**
- * 插画图片收集节点
- * 并发执行插画图片搜索任务
+ * 插画图片收集节点。
  */
 @Slf4j
+@Component
+@RequiredArgsConstructor
 public class IllustrationCollectorNode {
 
     private static final String NODE_NAME = "插画图片收集";
 
-    public static AsyncNodeAction<MessagesState<String>> create() {
+    private final ImageResourcePort imageResourcePort;
+
+    public AsyncNodeAction<MessagesState<String>> action() {
         return node_async(state -> {
             WorkflowContext context = WorkflowContext.getContext(state);
             List<ImageResource> illustrations = new ArrayList<>();
 
-            // 发送节点开始消息
             context.emitNodeStart(NODE_NAME);
 
             try {
                 ImageCollectionPlan plan = context.getImageCollectionPlan();
                 if (plan != null && plan.getIllustrationTasks() != null && !plan.getIllustrationTasks().isEmpty()) {
-                    UndrawIllustrationTool illustrationTool = SpringContextUtil.getBean(UndrawIllustrationTool.class);
-
                     log.info("开始并发收集插画图片，任务数: {}", plan.getIllustrationTasks().size());
                     context.emitNodeMessage(NODE_NAME,
                             String.format("开始执行 %d 个搜索任务...\n", plan.getIllustrationTasks().size()));
 
                     for (ImageCollectionPlan.IllustrationTask task : plan.getIllustrationTasks()) {
                         context.emitNodeMessage(NODE_NAME, String.format("搜索: %s\n", task.query()));
-                        List<ImageResource> images = illustrationTool.searchIllustrations(task.query());
+                        List<ImageResource> images = imageResourcePort.searchIllustrations(task.query());
                         if (images != null) {
                             illustrations.addAll(images);
                         }

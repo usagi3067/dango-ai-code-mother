@@ -6,20 +6,18 @@ import com.dango.aicodegenerate.extractor.ToolArgumentsExtractor;
 import com.dango.aicodegenerate.model.message.AiResponseMessage;
 import com.dango.aicodegenerate.model.message.StreamMessage;
 import com.dango.aicodegenerate.model.message.ToolExecutedMessage;
-import com.dango.aicodegenerate.model.message.ToolRequestMessage;
 import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.codegen.port.CodeModificationGateway;
+import com.dango.dangoaicodeapp.domain.codegen.port.ProjectWorkspacePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
-import com.dango.dangoaicodecommon.utils.SpringContextUtil;
 import dev.langchain4j.service.TokenStream;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,14 +42,18 @@ import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class CodeModifierNode {
 
     private static final String NODE_NAME = "代码修改";
 
+    private final CodeModificationGateway codeModificationGateway;
+    private final ProjectWorkspacePort projectWorkspacePort;
+
     /**
      * 创建节点动作
      */
-    public static AsyncNodeAction<MessagesState<String>> create() {
+    public AsyncNodeAction<MessagesState<String>> action() {
         return node_async(state -> {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);
@@ -82,12 +84,11 @@ public class CodeModifierNode {
 
                 // 如果没有设置代码生成类型，尝试从现有项目推断
                 if (generationType == null) {
-                    generationType = inferGenerationType(appId);
+                    generationType = projectWorkspacePort.inferGenerationType(appId);
                     context.setGenerationType(generationType);
                 }
 
                 // 获取修改领域端口并调用
-                CodeModificationGateway codeModificationGateway = SpringContextUtil.getBean(CodeModificationGateway.class);
                 TokenStream tokenStream = codeModificationGateway.modifyCodeStream(appId, generationType, modifyRequest);
 
                 // 使用 CountDownLatch 等待流式生成完成
@@ -145,7 +146,7 @@ public class CodeModifierNode {
                 }
 
                 // 构建生成的代码目录路径
-                String generatedCodeDir = buildGeneratedCodeDir(generationType, appId);
+                String generatedCodeDir = projectWorkspacePort.buildGeneratedCodeDir(generationType, appId);
                 context.setGeneratedCodeDir(generatedCodeDir);
 
                 context.emitNodeMessage(NODE_NAME, "\n代码修改完成\n");
@@ -163,33 +164,6 @@ public class CodeModifierNode {
             context.setCurrentStep(NODE_NAME);
             return WorkflowContext.saveContext(context);
         });
-    }
-
-    /**
-     * 根据 appId 推断代码生成类型
-     * 检查现有项目目录来确定类型
-     */
-    private static CodeGenTypeEnum inferGenerationType(Long appId) {
-        if (appId == null || appId <= 0) {
-            return CodeGenTypeEnum.VUE_PROJECT;
-        }
-        String baseDir = System.getProperty("user.dir") + File.separator + "tmp" + File.separator + "code_output";
-        for (CodeGenTypeEnum type : CodeGenTypeEnum.values()) {
-            Path path = Path.of(baseDir, type.getValue() + "_" + appId);
-            if (java.nio.file.Files.exists(path)) {
-                return type;
-            }
-        }
-        return CodeGenTypeEnum.VUE_PROJECT;
-    }
-
-    /**
-     * 构建生成的代码目录路径
-     */
-    private static String buildGeneratedCodeDir(CodeGenTypeEnum generationType, Long appId) {
-        String baseDir = System.getProperty("user.dir") + File.separator + "tmp" + File.separator + "code_output";
-        String dirName = generationType.getValue() + "_" + appId;
-        return baseDir + File.separator + dirName;
     }
 
     /**

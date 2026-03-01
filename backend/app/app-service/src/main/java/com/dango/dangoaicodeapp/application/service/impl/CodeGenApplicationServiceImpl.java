@@ -14,7 +14,7 @@ import com.dango.dangoaicodeapp.domain.codegen.model.GenerationStreamChunk;
 import com.dango.dangoaicodeapp.domain.codegen.model.GenerationSession;
 import com.dango.dangoaicodeapp.domain.codegen.model.GenerationTaskSnapshot;
 import com.dango.dangoaicodeapp.domain.codegen.service.GenerationSessionDomainService;
-import com.dango.dangoaicodeapp.domain.codegen.workflow.CodeGenWorkflow;
+import com.dango.dangoaicodeapp.domain.codegen.workflow.command.RunWorkflowCommand;
 import com.dango.dangoaicodeapp.infrastructure.config.AppProperties;
 import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
@@ -65,7 +65,7 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
     private AppProperties appProperties;
 
     @Resource
-    private CodeGenWorkflow codeGenWorkflow;
+    private CodeGenWorkflowExecutor codeGenWorkflowExecutor;
 
     @DubboReference
     private SupabaseService supabaseService;
@@ -171,9 +171,16 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
         String databaseSchema = loadDatabaseSchema(appId, databaseEnabled);
         MonitorContext monitorContext = buildMonitorContext(appId, userId);
 
-        Flux<String> codeStream = codeGenWorkflow.executeWorkflowWithFlux(
-                message, appId, elementInfo, databaseEnabled, databaseSchema, monitorContext, codeGenTypeEnum
-        );
+        RunWorkflowCommand command = RunWorkflowCommand.builder()
+                .originalPrompt(message)
+                .appId(appId)
+                .elementInfo(elementInfo)
+                .databaseEnabled(databaseEnabled)
+                .databaseSchema(databaseSchema)
+                .generationType(codeGenTypeEnum)
+                .build();
+
+        Flux<String> codeStream = codeGenWorkflowExecutor.executeWithFlux(command, monitorContext);
         return streamHandlerExecutor.doExecute(codeStream);
     }
 

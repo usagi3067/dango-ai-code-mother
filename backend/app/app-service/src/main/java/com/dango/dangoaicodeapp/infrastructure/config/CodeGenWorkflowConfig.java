@@ -3,6 +3,7 @@ package com.dango.dangoaicodeapp.infrastructure.config;
 import cn.hutool.core.thread.ExecutorBuilder;
 import cn.hutool.core.thread.ThreadFactoryBuilder;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.CodeGenWorkflow;
+import com.dango.dangoaicodeapp.domain.codegen.workflow.CodeGenWorkflowFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -31,7 +32,8 @@ public class CodeGenWorkflowConfig {
 
     @Bean
     public CodeGenWorkflow codeGenWorkflow(
-            @Qualifier("codeGenWorkflowParallelExecutor") ExecutorService parallelExecutor) {
-        return new CodeGenWorkflow(parallelExecutor);
+            @Qualifier("codeGenWorkflowParallelExecutor") ExecutorService parallelExecutor,
+            CodeGenWorkflowFactory codeGenWorkflowFactory) {
+        return new CodeGenWorkflow(parallelExecutor, codeGenWorkflowFactory);
     }
 }

@@ -5,7 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import com.dango.aicodegenerate.model.QualityResult;
 import com.dango.dangoaicodeapp.domain.codegen.port.CodeQualityCheckGateway;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
-import com.dango.dangoaicodecommon.utils.SpringContextUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
@@ -23,9 +23,11 @@ import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class CodeQualityCheckNode {
 
     private static final String NODE_NAME = "代码质量检查";
+    private final CodeQualityCheckGateway codeQualityCheckGateway;
 
     /**
      * 需要检查的文件扩展名
@@ -34,7 +36,7 @@ public class CodeQualityCheckNode {
             ".html", ".htm", ".css", ".js", ".json", ".vue", ".ts", ".jsx", ".tsx"
     );
 
-    public static AsyncNodeAction<MessagesState<String>> create() {
+    public AsyncNodeAction<MessagesState<String>> action() {
         return node_async(state -> {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);
@@ -60,7 +62,6 @@ public class CodeQualityCheckNode {
 
                     // 2. 调用 AI 进行代码质量检查
                     // 不需要转义 {{}}，因为我们直接使用 ChatModel，不经过模板解析
-                    CodeQualityCheckGateway codeQualityCheckGateway = SpringContextUtil.getBean(CodeQualityCheckGateway.class);
                     qualityResult = codeQualityCheckGateway.checkCodeQuality(codeContent);
 
                     log.info("代码质量检查完成 - 是否通过: {}", qualityResult.getIsValid());

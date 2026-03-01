@@ -8,12 +8,11 @@ import com.dango.aicodegenerate.model.QualityResult;
 import com.dango.aicodegenerate.model.message.AiResponseMessage;
 import com.dango.aicodegenerate.model.message.StreamMessage;
 import com.dango.aicodegenerate.model.message.ToolExecutedMessage;
-import com.dango.aicodegenerate.model.message.ToolRequestMessage;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.codegen.port.CodeFixGateway;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
-import com.dango.dangoaicodecommon.utils.SpringContextUtil;
 import dev.langchain4j.service.TokenStream;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
@@ -41,14 +40,16 @@ import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class CodeFixerNode {
 
     private static final String NODE_NAME = "代码修复";
+    private final CodeFixGateway codeFixGateway;
 
     /**
      * 创建节点动作
      */
-    public static AsyncNodeAction<MessagesState<String>> create() {
+    public AsyncNodeAction<MessagesState<String>> action() {
         return node_async(state -> {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);
@@ -98,7 +99,6 @@ public class CodeFixerNode {
                 }
 
                 // 获取修复领域端口并调用
-                CodeFixGateway codeFixGateway = SpringContextUtil.getBean(CodeFixGateway.class);
                 TokenStream tokenStream = codeFixGateway.fixCodeStream(appId, generationType, fixRequest);
 
                 // 使用 CountDownLatch 等待流式生成完成

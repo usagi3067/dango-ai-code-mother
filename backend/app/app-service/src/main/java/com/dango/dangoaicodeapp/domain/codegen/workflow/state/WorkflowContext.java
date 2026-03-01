@@ -11,21 +11,18 @@ import com.dango.aicodegenerate.model.message.AiResponseMessage;
 import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.app.valueobject.OperationModeEnum;
-import com.dango.dangoaicodecommon.monitor.MonitorContext;
-import com.dango.dangoaicodecommon.monitor.MonitorContextHolder;
+import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowStreamPort;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
-import reactor.core.publisher.FluxSink;
 
 import java.io.Serial;
 import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -46,10 +43,9 @@ public class WorkflowContext implements Serializable {
     public static final String WORKFLOW_CONTEXT_KEY = "workflowContext";
 
     /**
-     * 全局 FluxSink 注册表，使用 appId 作为 key
-     * 解决 langgraph4j 状态传递时 transient 字段丢失的问题
+     * 流式输出端口（由基础设施层在启动时注入）。
      */
-    private static final ConcurrentHashMap<String, FluxSink<String>> SINK_REGISTRY = new ConcurrentHashMap<>();
+    private static volatile WorkflowStreamPort workflowStreamPort;
 
     /**
      * 当前执行步骤
@@ -169,11 +165,6 @@ public class WorkflowContext implements Serializable {
     @Builder.Default
     private int fixRetryCount = 0;
 
-    /**
-     * 监控上下文（用于跨线程传递监控信息）
-     */
-    private MonitorContext monitorContext;
-
     // ========== 数据库相关字段 ==========
 
     /**
@@ -289,30 +280,13 @@ public class WorkflowContext implements Serializable {
         return Map.of(WORKFLOW_CONTEXT_KEY, context);
     }
 
-    // ========== FluxSink 注册表操作 ==========
+    // ========== 运行时端口注入 ==========
 
     /**
-     * 注册 FluxSink 到全局注册表
+     * 注入流式输出端口（应用启动时调用一次）。
      */
-    public static void registerSink(String executionId, FluxSink<String> sink) {
-        SINK_REGISTRY.put(executionId, sink);
-    }
-
-    /**
-     * 从全局注册表移除 FluxSink
-     */
-    public static void unregisterSink(String executionId) {
-        SINK_REGISTRY.remove(executionId);
-    }
-
-    /**
-     * 从全局注册表获取 FluxSink
-     */
-    private FluxSink<String> getSink() {
-        if (workflowExecutionId != null) {
-            return SINK_REGISTRY.get(workflowExecutionId);
-        }
-        return null;
+    public static void configureWorkflowStreamPort(WorkflowStreamPort streamPort) {
+        workflowStreamPort = streamPort;
     }
 
     // ========== 流式输出方法 ==========
@@ -322,9 +296,8 @@ public class WorkflowContext implements Serializable {
      * 注意：此方法直接发送原始消息，用于转发已经是 JSON 格式的消息
      */
     public void emit(String message) {
-        FluxSink<String> sink = getSink();
-        if (sink != null) {
-            sink.next(message);
+        if (workflowStreamPort != null && workflowExecutionId != null) {
+            workflowStreamPort.emit(workflowExecutionId, message);
         }
     }
 
@@ -333,12 +306,8 @@ public class WorkflowContext implements Serializable {
      * msgType 默认为 null，即 content 类型，用于发送 AI 实际回复内容
      */
     public void emitText(String text) {
-        FluxSink<String> sink = getSink();
-        if (sink != null) {
-            // 将纯文本包装为 AiResponseMessage JSON 格式
-            AiResponseMessage message = new AiResponseMessage(text);
-            sink.next(JSONUtil.toJsonStr(message));
-        }
+        AiResponseMessage message = new AiResponseMessage(text);
+        emit(JSONUtil.toJsonStr(message));
     }
 
     /**
@@ -346,12 +315,9 @@ public class WorkflowContext implements Serializable {
      * msgType 为 "log"，用于发送工作流节点状态等日志信息
      */
     public void emitLog(String text) {
-        FluxSink<String> sink = getSink();
-        if (sink != null) {
-            AiResponseMessage message = new AiResponseMessage(text);
-            message.setMsgType("log");
-            sink.next(JSONUtil.toJsonStr(message));
-        }
+        AiResponseMessage message = new AiResponseMessage(text);
+        message.setMsgType("log");
+        emit(JSONUtil.toJsonStr(message));
     }
 
     /**
@@ -382,23 +348,4 @@ public class WorkflowContext implements Serializable {
         emitNodeMessage(nodeName, "执行失败: " + error + "\n");
     }
 
-    // ========== 监控上下文操作 ==========
-
-    /**
-     * 恢复监控上下文到当前线程的 ThreadLocal
-     * 在每个调用 AI 的节点执行前调用此方法
-     */
-    public void restoreMonitorContext() {
-        if (monitorContext != null) {
-            MonitorContextHolder.setContext(monitorContext);
-        }
-    }
-
-    /**
-     * 清除当前线程的监控上下文
-     * 在节点执行完成后调用此方法
-     */
-    public void clearMonitorContext() {
-        MonitorContextHolder.clearContext();
-    }
 }

@@ -2,9 +2,10 @@ package com.dango.dangoaicodeapp.domain.codegen.node;
 
 import cn.hutool.core.util.StrUtil;
 import com.dango.aicodegenerate.model.QualityResult;
-import com.dango.dangoaicodeapp.domain.codegen.builder.VueProjectBuilder;
+import com.dango.dangoaicodeapp.domain.codegen.model.ProjectBuildResult;
+import com.dango.dangoaicodeapp.domain.codegen.port.ProjectBuildPort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
-import com.dango.dangoaicodecommon.utils.SpringContextUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
@@ -16,17 +17,18 @@ import java.util.List;
 import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
 
 /**
- * 构建检查节点
- * 执行 npm install + npm run build，用真实编译器错误驱动修复循环
- * 替代原有的 CodeQualityCheckNode（AI 质检）+ ProjectBuilderNode（构建）
+ * 构建检查节点。
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class BuildCheckNode {
 
     private static final String NODE_NAME = "构建检查";
 
-    public static AsyncNodeAction<MessagesState<String>> create() {
+    private final ProjectBuildPort projectBuildPort;
+
+    public AsyncNodeAction<MessagesState<String>> action() {
         return node_async(state -> {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);
@@ -34,16 +36,14 @@ public class BuildCheckNode {
             context.emitNodeStart(NODE_NAME);
 
             String generatedCodeDir = context.getGeneratedCodeDir();
-
             context.emitNodeMessage(NODE_NAME, "执行 npm install + npm run build...\n");
 
             QualityResult qualityResult;
 
             try {
-                VueProjectBuilder vueProjectBuilder = SpringContextUtil.getBean(VueProjectBuilder.class);
-                VueProjectBuilder.BuildResult buildResult = vueProjectBuilder.buildProjectWithResult(generatedCodeDir);
+                ProjectBuildResult buildResult = projectBuildPort.buildProject(generatedCodeDir);
 
-                if (buildResult.isSuccess()) {
+                if (buildResult.success()) {
                     qualityResult = QualityResult.builder()
                             .isValid(true)
                             .build();
@@ -54,8 +54,8 @@ public class BuildCheckNode {
                     log.info("构建检查通过，dist 目录: {}", buildResultDir);
                     context.emitNodeMessage(NODE_NAME, "✅ 构建成功\n");
                 } else {
-                    String errorSummary = buildResult.getErrorSummary();
-                    String stderr = buildResult.getStderr();
+                    String errorSummary = buildResult.errorSummary();
+                    String stderr = buildResult.stderr();
 
                     List<String> errors = List.of(errorSummary);
                     List<String> suggestions = StrUtil.isNotBlank(stderr) ? List.of(stderr) : List.of();

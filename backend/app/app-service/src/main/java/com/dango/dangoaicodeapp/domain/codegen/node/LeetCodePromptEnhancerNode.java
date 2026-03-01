@@ -9,10 +9,7 @@ import org.springframework.stereotype.Component;
 import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
 
 /**
- * 力扣题解提示词增强节点
- * 为力扣题解生成构建专用提示词，指定生成规范和文件范围
- *
- * @author dango
+ * 力扣题解提示词增强节点。
  */
 @Slf4j
 @Component
@@ -20,7 +17,7 @@ public class LeetCodePromptEnhancerNode {
 
     private static final String NODE_NAME = "力扣提示词增强";
 
-    public static AsyncNodeAction<MessagesState<String>> create() {
+    public AsyncNodeAction<MessagesState<String>> action() {
         return node_async(state -> {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);

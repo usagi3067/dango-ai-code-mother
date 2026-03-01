@@ -2,7 +2,7 @@ package com.dango.dangoaicodeapp.domain.codegen.node;
 
 import com.dango.dangoaicodeapp.domain.codegen.port.IntentClassificationGateway;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
-import com.dango.dangoaicodecommon.utils.SpringContextUtil;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
@@ -11,18 +11,18 @@ import org.springframework.stereotype.Component;
 import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
 
 /**
- * 意图识别节点
- * 根据用户输入判断意图为「修改代码」或「提问/答疑」，用于后续工作流路由
- *
- * @author dango
+ * 意图识别节点。
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class IntentClassifierNode {
 
     private static final String NODE_NAME = "意图识别";
 
-    public static AsyncNodeAction<MessagesState<String>> create() {
+    private final IntentClassificationGateway intentClassificationGateway;
+
+    public AsyncNodeAction<MessagesState<String>> action() {
         return node_async(state -> {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);
@@ -38,7 +38,6 @@ public class IntentClassifierNode {
                 userInput
             );
 
-            IntentClassificationGateway intentClassificationGateway = SpringContextUtil.getBean(IntentClassificationGateway.class);
             String intent = intentClassificationGateway.classify(classifyInput).trim().toUpperCase();
             if (!"MODIFY".equals(intent) && !"QA".equals(intent)) {
                 log.warn("意图识别结果异常: {}，默认为 MODIFY", intent);
@@ -56,7 +55,7 @@ public class IntentClassifierNode {
         });
     }
 
-    public static String routeByIntent(MessagesState<String> state) {
+    public String routeByIntent(MessagesState<String> state) {
         WorkflowContext context = WorkflowContext.getContext(state);
         String intent = context.getIntentType();
         if ("QA".equals(intent)) {

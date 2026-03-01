@@ -14,7 +14,7 @@ public class InterviewPromptEnhancerNode {
 
     private static final String NODE_NAME = "面试题解提示词增强";
 
-    public static AsyncNodeAction<MessagesState<String>> create() {
+    public AsyncNodeAction<MessagesState<String>> action() {
         return node_async(state -> {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);

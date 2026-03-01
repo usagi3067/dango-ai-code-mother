@@ -4,8 +4,8 @@ import cn.hutool.json.JSONUtil;
 import com.dango.aicodegenerate.model.message.AiResponseMessage;
 import com.dango.dangoaicodeapp.domain.codegen.port.QaGateway;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
-import com.dango.dangoaicodecommon.utils.SpringContextUtil;
 import dev.langchain4j.service.TokenStream;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
@@ -18,16 +18,18 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
 
 /**
- * 问答节点
- * 回答用户关于项目代码和技术的问题，支持流式输出
+ * 问答节点。
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class QANode {
 
     private static final String NODE_NAME = "问答";
 
-    public static AsyncNodeAction<MessagesState<String>> create() {
+    private final QaGateway qaGateway;
+
+    public AsyncNodeAction<MessagesState<String>> action() {
         return node_async(state -> {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);
@@ -42,7 +44,6 @@ public class QANode {
                 userInput
             );
 
-            QaGateway qaGateway = SpringContextUtil.getBean(QaGateway.class);
             TokenStream tokenStream = qaGateway.answer(context.getAppId(), qaInput);
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Throwable> errorRef = new AtomicReference<>();
