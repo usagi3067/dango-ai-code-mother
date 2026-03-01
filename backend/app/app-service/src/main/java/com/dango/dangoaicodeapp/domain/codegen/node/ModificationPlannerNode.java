@@ -97,7 +97,7 @@ public class ModificationPlannerNode {
         return request.toString();
     }
 
-    private static void outputPlanSummary(WorkflowContext context, ModificationPlanResult planResult) {
+    private void outputPlanSummary(WorkflowContext context, ModificationPlanResult planResult) {
         if (planResult == null) {
             workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "规划完成：无修改计划\n");
             return;
