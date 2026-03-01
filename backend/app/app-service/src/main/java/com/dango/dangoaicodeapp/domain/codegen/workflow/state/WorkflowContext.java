@@ -179,11 +179,6 @@ public class WorkflowContext implements Serializable {
     private String databaseSchema;
 
     /**
-     * DatabaseAnalyzer 输出：待执行的 SQL 语句列表
-     */
-    private List<SqlStatement> sqlStatements;
-
-    /**
      * DatabaseOperator 输出：SQL 执行结果
      */
     private List<SqlExecutionResult> executionResults;
@@ -229,9 +224,8 @@ public class WorkflowContext implements Serializable {
     // ========== ModificationPlanner 辅助方法 ==========
 
     /**
-     * 获取规划的 SQL 语句列表
-     * 从 modificationPlan 中提取，如果为空则返回空列表
-     * 注意：此方法返回的是 ModificationPlanner 规划的 SQL，而非 DatabaseAnalyzer 输出的 sqlStatements 字段
+     * 获取规划的 SQL 语句列表（由 ModificationPlanner 产出）。
+     * 如果规划为空则返回空列表。
      */
     public List<SqlStatement> getPlannedSqlStatements() {
         if (modificationPlan == null || modificationPlan.getSqlStatements() == null) {
