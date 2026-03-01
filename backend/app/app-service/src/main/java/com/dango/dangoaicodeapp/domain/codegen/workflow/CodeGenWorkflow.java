@@ -82,9 +82,4 @@ public class CodeGenWorkflow {
         return finalContext;
     }
 
-    public void shutdown() {
-        if (parallelExecutor != null && !parallelExecutor.isShutdown()) {
-            parallelExecutor.shutdown();
-        }
-    }
 }

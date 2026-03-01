@@ -101,11 +101,11 @@ class DatabaseInitMessageFlowTest {
      * 完整流程：
      * 1. ModeRouterNode: 判断为修改模式（有历史代码）
      * 2. CodeReaderNode: 读取项目结构
-     * 3. DatabaseAnalyzerNode: 分析项目，输出建表 SQL
+     * 3. ModificationPlannerNode: 分析项目，输出建表 SQL
      * 4. 条件边判断: sqlStatements 非空 → 执行 DatabaseOperatorNode
      * 5. DatabaseOperatorNode: 执行 SQL，获取最新 Schema
      * 6. CodeModifierNode: 根据新表结构生成数据库操作代码
-     * 7. CodeQualityCheckNode: 质检
+     * 7. BuildCheckNode: 构建检查（必要时进入 CodeFixerNode 循环）
      */
     @Test
     @Order(1)
