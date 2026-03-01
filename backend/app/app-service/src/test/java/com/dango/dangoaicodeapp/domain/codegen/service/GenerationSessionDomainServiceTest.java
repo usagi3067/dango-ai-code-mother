@@ -82,7 +82,6 @@ class GenerationSessionDomainServiceTest {
     void startSessionShouldCompensateWhenBindFails() {
         when(generationTaskPort.tryReserveTask(1L, 2L)).thenReturn(true);
         when(generationChatHistoryPort.createGeneratingAiMessage(1L, 2L)).thenReturn(100L);
-        when(generationTaskPort.getStreamKey(1L, 2L)).thenReturn("gen:stream:1:2");
         org.mockito.Mockito.doThrow(new RuntimeException("redis unavailable"))
                 .when(generationTaskPort)
                 .bindChatHistoryId(1L, 2L, 100L);

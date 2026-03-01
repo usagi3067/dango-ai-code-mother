@@ -1,9 +1,10 @@
 package com.dango.dangoaicodeapp.ai;
 
-import com.dango.dangoaicodeapp.domain.codegen.ai.service.ImageCollectionService;
 import com.dango.dangoaicodeapp.DangoAiCodeAppApplication;
+import com.dango.dangoaicodeapp.domain.codegen.port.ImageCollectionPort;
 import jakarta.annotation.Resource;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -18,10 +19,11 @@ import org.springframework.boot.test.context.SpringBootTest;
                 "dubbo.registry.check=false",           // 禁用注册中心检查
                 "dubbo.reference.check=false"           // 禁用引用检查
         })
+@Disabled("依赖外部 AI 与工具服务，默认构建跳过")
 class ImageCollectionServiceTest {
 
     @Resource
-    private ImageCollectionService imageCollectionService;
+    private ImageCollectionPort imageCollectionService;
 
     @Test
     void testTechWebsiteImageCollection() {

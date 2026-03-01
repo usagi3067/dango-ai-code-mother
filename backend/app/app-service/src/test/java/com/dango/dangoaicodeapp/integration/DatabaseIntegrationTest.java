@@ -34,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @ActiveProfiles("test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+@Disabled("依赖外部 Nacos/Supabase 环境，默认构建跳过")
 class DatabaseIntegrationTest {
 
     @Autowired

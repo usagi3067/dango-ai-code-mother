@@ -49,7 +49,8 @@ public class QANode {
             AtomicReference<Throwable> errorRef = new AtomicReference<>();
 
             answerStream
-                    .doOnNext(context::emit)
+                    .doOnNext(chunk ->
+                            workflowMessagePort.emitRaw(context.getWorkflowExecutionId(), chunk))
                     .doOnComplete(latch::countDown)
                     .doOnError(error -> {
                         errorRef.set(error);

@@ -4,6 +4,7 @@ import com.dango.aicodegenerate.model.ImageCategoryEnum;
 import com.dango.aicodegenerate.model.ImageResource;
 import com.dango.dangoaicodeapp.domain.codegen.tools.ImageSearchTool;
 import jakarta.annotation.Resource;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -12,6 +13,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(classes = ImageSearchTool.class)
+@Disabled("依赖外部图片检索服务，默认构建跳过")
 class ImageSearchToolTest {
 
     @Resource

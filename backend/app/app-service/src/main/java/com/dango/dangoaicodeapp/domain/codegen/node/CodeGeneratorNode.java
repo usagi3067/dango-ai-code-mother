@@ -71,7 +71,8 @@ public class CodeGeneratorNode {
 
                 codeStream
                         .subscribeOn(Schedulers.immediate())
-                        .doOnNext(context::emit)
+                        .doOnNext(chunk ->
+                                workflowMessagePort.emitRaw(context.getWorkflowExecutionId(), chunk))
                         .doOnError(errorRef::set)
                         .doFinally(signalType -> latch.countDown())
                         .subscribe();

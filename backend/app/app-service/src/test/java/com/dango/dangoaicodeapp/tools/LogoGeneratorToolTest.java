@@ -5,6 +5,7 @@ import com.dango.aicodegenerate.model.ImageResource;
 import com.dango.dangoaicodeapp.domain.codegen.tools.LogoGeneratorTool;
 import com.dango.dangoaicodeapp.DangoAiCodeAppApplication;
 import jakarta.annotation.Resource;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
@@ -19,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
                 "dubbo.registry.check=false",
                 "dubbo.reference.check=false"
         })
+@Disabled("依赖外部 Logo 生成服务，默认构建跳过")
 class LogoGeneratorToolTest {
 
     @Resource

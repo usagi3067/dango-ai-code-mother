@@ -89,7 +89,8 @@ public class CodeModifierNode {
 
                 // 统一消费端口暴露的标准消息流，节点不再处理 TokenStream 回调细节。
                 modifyStream
-                        .doOnNext(context::emit)
+                        .doOnNext(chunk ->
+                                workflowMessagePort.emitRaw(context.getWorkflowExecutionId(), chunk))
                         .doOnComplete(() -> {
                             log.info("代码修改完成");
                             latch.countDown();

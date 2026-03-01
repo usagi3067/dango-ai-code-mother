@@ -99,7 +99,8 @@ public class CodeFixerNode {
 
                 // 节点仅消费标准消息流，TokenStream 回调细节由端口适配层统一封装。
                 fixStream
-                        .doOnNext(context::emit)
+                        .doOnNext(chunk ->
+                                workflowMessagePort.emitRaw(context.getWorkflowExecutionId(), chunk))
                         .doOnComplete(() -> {
                             log.info("代码修复完成");
                             latch.countDown();
@@ -198,10 +199,10 @@ public class CodeFixerNode {
      * @return 输出格式指南字符串
      */
     public static String getOutputFormatGuide(CodeGenTypeEnum generationType) {
-        return switch (generationType) {
-            case LEETCODE_PROJECT -> getLeetCodeFixGuide();
-            default -> getVueFixGuide();
-        };
+        if (generationType == CodeGenTypeEnum.LEETCODE_PROJECT) {
+            return getLeetCodeFixGuide();
+        }
+        return getVueFixGuide();
     }
 
     private static String getVueFixGuide() {
@@ -230,7 +231,7 @@ public class CodeFixerNode {
                 1. 仔细阅读编译器错误，定位出错的文件和行号
                 2. 输出修复计划（格式见上方）
                 3. 使用【文件读取工具】查看出错文件的内容
-                4. 按计划逐一修复，每步输出进度信息
+                4. 使用【文件修改工具】或【文件写入工具】按计划逐一修复，每步输出进度信息
                 5. 确保修复不会引入新的问题
 
                 ### 禁止修改的文件

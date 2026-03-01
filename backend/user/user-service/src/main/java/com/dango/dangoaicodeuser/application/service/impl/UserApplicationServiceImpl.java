@@ -4,10 +4,9 @@ import cn.dev33.satoken.session.SaSession;
 import cn.dev33.satoken.stp.StpUtil;
 import com.dango.dangoaicodeuser.application.service.UserApplicationService;
 import com.dango.dangoaicodeuser.domain.user.entity.User;
+import com.dango.dangoaicodeuser.domain.user.repository.AuthzRepository;
 import com.dango.dangoaicodeuser.domain.user.repository.UserRepository;
 import com.dango.dangoaicodeuser.domain.user.service.UserDomainService;
-import com.dango.dangoaicodeuser.infrastructure.mapper.PermissionMapper;
-import com.dango.dangoaicodeuser.infrastructure.mapper.RoleMapper;
 import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
 import com.mybatisflex.core.paginate.Page;
@@ -31,10 +30,7 @@ public class UserApplicationServiceImpl implements UserApplicationService {
     private UserRepository userRepository;
 
     @Resource
-    private RoleMapper roleMapper;
-
-    @Resource
-    private PermissionMapper permissionMapper;
+    private AuthzRepository authzRepository;
 
     @Override
     @Transactional
@@ -53,8 +49,8 @@ public class UserApplicationServiceImpl implements UserApplicationService {
 
         // 3. 缓存角色和权限
         SaSession session = StpUtil.getSession();
-        session.set("roleList", roleMapper.selectRoleCodesByUserId(user.getId()));
-        session.set("permissionList", permissionMapper.selectPermissionCodesByUserId(user.getId()));
+        session.set("roleList", authzRepository.listRoleCodesByUserId(user.getId()));
+        session.set("permissionList", authzRepository.listPermissionCodesByUserId(user.getId()));
 
         return user;
     }
