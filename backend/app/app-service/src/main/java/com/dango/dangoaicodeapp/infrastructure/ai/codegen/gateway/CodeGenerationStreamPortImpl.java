@@ -2,7 +2,7 @@ package com.dango.dangoaicodeapp.infrastructure.ai.codegen.gateway;
 
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.codegen.port.CodeGenerationStreamPort;
-import com.dango.dangoaicodeapp.domain.codegen.service.AiCodeGeneratorFacade;
+import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.AiCodeGeneratorFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
@@ -21,4 +21,3 @@ public class CodeGenerationStreamPortImpl implements CodeGenerationStreamPort {
         return aiCodeGeneratorFacade.generateAndSaveCodeStream(userMessage, codeGenTypeEnum, appId);
     }
 }
-

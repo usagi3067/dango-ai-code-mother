@@ -1,4 +1,4 @@
-package com.dango.dangoaicodeapp.domain.codegen.service;
+package com.dango.dangoaicodeapp.infrastructure.ai.codegen.service;
 
 import cn.hutool.json.JSONUtil;
 
