@@ -2,6 +2,7 @@ package com.dango.dangoaicodeapp.domain.codegen.node.concurrent;
 
 import com.dango.aicodegenerate.model.ImageCollectionPlan;
 import com.dango.dangoaicodeapp.domain.codegen.port.ImageCollectionPort;
+import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowMessagePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ public class ImagePlanNode {
 
     private static final String NODE_NAME = "图片规划";
 
+    private final WorkflowMessagePort workflowMessagePort;
     private final ImageCollectionPort imageCollectionPort;
 
     public AsyncNodeAction<MessagesState<String>> action() {
@@ -28,8 +30,8 @@ public class ImagePlanNode {
             WorkflowContext context = WorkflowContext.getContext(state);
             String originalPrompt = context.getOriginalPrompt();
 
-            context.emitNodeStart(NODE_NAME);
-            context.emitNodeMessage(NODE_NAME, "正在分析需求，规划图片收集任务...\n");
+            workflowMessagePort.emitNodeStart(context.getWorkflowExecutionId(), NODE_NAME);
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "正在分析需求，规划图片收集任务...\n");
 
             try {
                 ImageCollectionPlan plan = imageCollectionPort.planImageCollection(originalPrompt);
@@ -43,16 +45,16 @@ public class ImagePlanNode {
                 int diagramCount = plan.getDiagramTasks() != null ? plan.getDiagramTasks().size() : 0;
                 int logoCount = plan.getLogoTasks() != null ? plan.getLogoTasks().size() : 0;
 
-                context.emitNodeMessage(NODE_NAME,
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                         String.format("计划完成：内容图片 %d 个任务，插画 %d 个任务，架构图 %d 个任务，Logo %d 个任务\n",
                                 contentCount, illustrationCount, diagramCount, logoCount));
 
             } catch (Exception e) {
                 log.error("图片计划生成失败: {}", e.getMessage(), e);
-                context.emitNodeError(NODE_NAME, e.getMessage());
+                workflowMessagePort.emitNodeError(context.getWorkflowExecutionId(), NODE_NAME, e.getMessage());
             }
 
-            context.emitNodeComplete(NODE_NAME);
+            workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
             return WorkflowContext.saveContext(context);
         });
     }

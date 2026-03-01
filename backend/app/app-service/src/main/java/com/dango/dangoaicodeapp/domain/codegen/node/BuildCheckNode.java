@@ -4,6 +4,7 @@ import cn.hutool.core.util.StrUtil;
 import com.dango.aicodegenerate.model.QualityResult;
 import com.dango.dangoaicodeapp.domain.codegen.model.ProjectBuildResult;
 import com.dango.dangoaicodeapp.domain.codegen.port.ProjectBuildPort;
+import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowMessagePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ public class BuildCheckNode {
 
     private static final String NODE_NAME = "构建检查";
 
+    private final WorkflowMessagePort workflowMessagePort;
     private final ProjectBuildPort projectBuildPort;
 
     public AsyncNodeAction<MessagesState<String>> action() {
@@ -33,10 +35,10 @@ public class BuildCheckNode {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);
 
-            context.emitNodeStart(NODE_NAME);
+            workflowMessagePort.emitNodeStart(context.getWorkflowExecutionId(), NODE_NAME);
 
             String generatedCodeDir = context.getGeneratedCodeDir();
-            context.emitNodeMessage(NODE_NAME, "执行 npm install + npm run build...\n");
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "执行 npm install + npm run build...\n");
 
             QualityResult qualityResult;
 
@@ -52,7 +54,7 @@ public class BuildCheckNode {
                     context.setBuildResultDir(buildResultDir);
 
                     log.info("构建检查通过，dist 目录: {}", buildResultDir);
-                    context.emitNodeMessage(NODE_NAME, "✅ 构建成功\n");
+                    workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "✅ 构建成功\n");
                 } else {
                     String errorSummary = buildResult.errorSummary();
                     String stderr = buildResult.stderr();
@@ -67,7 +69,7 @@ public class BuildCheckNode {
                             .build();
 
                     log.warn("构建检查失败: {}", errorSummary);
-                    context.emitNodeMessage(NODE_NAME,
+                    workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                             "❌ 构建失败: " + errorSummary + "\n");
                 }
             } catch (Exception e) {
@@ -77,11 +79,11 @@ public class BuildCheckNode {
                         .isValid(false)
                         .errors(List.of("构建检查异常: " + errorMsg))
                         .build();
-                context.emitNodeError(NODE_NAME, errorMsg);
+                workflowMessagePort.emitNodeError(context.getWorkflowExecutionId(), NODE_NAME, errorMsg);
             }
 
             context.setQualityResult(qualityResult);
-            context.emitNodeComplete(NODE_NAME);
+            workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
 
             context.setCurrentStep(NODE_NAME);
             return WorkflowContext.saveContext(context);

@@ -3,6 +3,7 @@ package com.dango.dangoaicodeapp.domain.codegen.node;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.app.valueobject.OperationModeEnum;
 import com.dango.dangoaicodeapp.domain.codegen.port.ProjectWorkspacePort;
+import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowMessagePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ public class ModeRouterNode {
 
     private static final String NODE_NAME = "模式路由";
 
+    private final WorkflowMessagePort workflowMessagePort;
     private final ProjectWorkspacePort projectWorkspacePort;
 
     public AsyncNodeAction<MessagesState<String>> action() {
@@ -29,17 +31,17 @@ public class ModeRouterNode {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);
 
-            context.emitNodeStart(NODE_NAME);
-            context.emitNodeMessage(NODE_NAME, "正在分析操作模式...\n");
+            workflowMessagePort.emitNodeStart(context.getWorkflowExecutionId(), NODE_NAME);
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "正在分析操作模式...\n");
 
             OperationModeEnum mode = determineOperationMode(context);
             context.setOperationMode(mode);
 
             log.info("操作模式判断完成: {} ({})", mode.getValue(), mode.getText());
-            context.emitNodeMessage(NODE_NAME,
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                     String.format("已确定操作模式: %s (%s)\n", mode.getText(), mode.getValue()));
 
-            context.emitNodeComplete(NODE_NAME);
+            workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
             context.setCurrentStep(NODE_NAME);
             return WorkflowContext.saveContext(context);
         });

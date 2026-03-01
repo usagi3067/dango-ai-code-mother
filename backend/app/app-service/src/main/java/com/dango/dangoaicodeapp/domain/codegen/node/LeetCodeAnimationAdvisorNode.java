@@ -3,6 +3,7 @@ package com.dango.dangoaicodeapp.domain.codegen.node;
 import cn.hutool.json.JSONUtil;
 import com.dango.aicodegenerate.model.message.AiResponseMessage;
 import com.dango.dangoaicodeapp.domain.codegen.port.AnimationAdvisorStreamPort;
+import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowMessagePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,6 +28,7 @@ public class LeetCodeAnimationAdvisorNode {
 
     private static final String NODE_NAME = "动画设计建议";
 
+    private final WorkflowMessagePort workflowMessagePort;
     private final AnimationAdvisorStreamPort animationAdvisorStreamPort;
 
     public AsyncNodeAction<MessagesState<String>> action() {
@@ -34,8 +36,8 @@ public class LeetCodeAnimationAdvisorNode {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);
 
-            context.emitNodeStart(NODE_NAME);
-            context.emitNodeMessage(NODE_NAME, "正在分析题目并生成动画设计建议...\n");
+            workflowMessagePort.emitNodeStart(context.getWorkflowExecutionId(), NODE_NAME);
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "正在分析题目并生成动画设计建议...\n");
 
             String userPrompt = context.getOriginalPrompt();
 
@@ -47,7 +49,7 @@ public class LeetCodeAnimationAdvisorNode {
             adviseStream
                     .doOnNext(chunk -> {
                         adviceBuilder.append(chunk);
-                        context.emit(JSONUtil.toJsonStr(new AiResponseMessage(chunk)));
+                        workflowMessagePort.emitRaw(context.getWorkflowExecutionId(), JSONUtil.toJsonStr(new AiResponseMessage(chunk)));
                     })
                     .doOnComplete(latch::countDown)
                     .doOnError(error -> {
@@ -67,8 +69,8 @@ public class LeetCodeAnimationAdvisorNode {
             }
 
             context.setEnhancedPrompt(adviceBuilder.toString());
-            context.emitNodeMessage(NODE_NAME, "\n动画设计建议生成完成\n");
-            context.emitNodeComplete(NODE_NAME);
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "\n动画设计建议生成完成\n");
+            workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
             context.setCurrentStep(NODE_NAME);
             return WorkflowContext.saveContext(context);
         });

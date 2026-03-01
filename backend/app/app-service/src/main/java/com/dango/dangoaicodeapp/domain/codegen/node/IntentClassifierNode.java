@@ -1,6 +1,7 @@
 package com.dango.dangoaicodeapp.domain.codegen.node;
 
 import com.dango.dangoaicodeapp.domain.codegen.port.IntentClassificationPort;
+import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowMessagePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ public class IntentClassifierNode {
 
     private static final String NODE_NAME = "意图识别";
 
+    private final WorkflowMessagePort workflowMessagePort;
     private final IntentClassificationPort intentClassificationPort;
 
     public AsyncNodeAction<MessagesState<String>> action() {
@@ -27,8 +29,8 @@ public class IntentClassifierNode {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);
 
-            context.emitNodeStart(NODE_NAME);
-            context.emitNodeMessage(NODE_NAME, "正在分析用户意图...\n");
+            workflowMessagePort.emitNodeStart(context.getWorkflowExecutionId(), NODE_NAME);
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "正在分析用户意图...\n");
 
             String userInput = context.getOriginalPrompt();
             String projectStructure = context.getProjectStructure();
@@ -46,10 +48,10 @@ public class IntentClassifierNode {
 
             context.setIntentType(intent);
             log.info("意图识别结果: {}", intent);
-            context.emitNodeMessage(NODE_NAME,
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                     String.format("识别为: %s\n", "QA".equals(intent) ? "问答模式" : "修改模式"));
 
-            context.emitNodeComplete(NODE_NAME);
+            workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
             context.setCurrentStep(NODE_NAME);
             return WorkflowContext.saveContext(context);
         });

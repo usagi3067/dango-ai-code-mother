@@ -1,6 +1,7 @@
 package com.dango.dangoaicodeapp.domain.codegen.node;
 
 import com.dango.dangoaicodeapp.domain.codegen.port.QaStreamPort;
+import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowMessagePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ public class QANode {
 
     private static final String NODE_NAME = "问答";
 
+    private final WorkflowMessagePort workflowMessagePort;
     private final QaStreamPort qaStreamPort;
 
     public AsyncNodeAction<MessagesState<String>> action() {
@@ -32,7 +34,7 @@ public class QANode {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);
 
-            context.emitNodeStart(NODE_NAME);
+            workflowMessagePort.emitNodeStart(context.getWorkflowExecutionId(), NODE_NAME);
 
             String userInput = context.getOriginalPrompt();
             String projectStructure = context.getProjectStructure();
@@ -61,8 +63,8 @@ public class QANode {
                 throw new RuntimeException(errorRef.get());
             }
 
-            context.emitNodeMessage(NODE_NAME, "\n回答完成\n");
-            context.emitNodeComplete(NODE_NAME);
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "\n回答完成\n");
+            workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
             context.setCurrentStep(NODE_NAME);
             return WorkflowContext.saveContext(context);
         });

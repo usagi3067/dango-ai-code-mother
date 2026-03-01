@@ -5,6 +5,7 @@ import com.dango.aicodegenerate.model.FileModificationGuide;
 import com.dango.aicodegenerate.model.ModificationPlanResult;
 import com.dango.aicodegenerate.model.SqlStatementItem;
 import com.dango.dangoaicodeapp.domain.codegen.port.ModificationPlanningPort;
+import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowMessagePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ public class ModificationPlannerNode {
 
     private static final String NODE_NAME = "修改规划";
 
+    private final WorkflowMessagePort workflowMessagePort;
     private final ModificationPlanningPort modificationPlanningPort;
 
     public AsyncNodeAction<MessagesState<String>> action() {
@@ -33,8 +35,8 @@ public class ModificationPlannerNode {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);
 
-            context.emitNodeStart(NODE_NAME);
-            context.emitNodeMessage(NODE_NAME, "正在分析需求并制定修改计划...\n");
+            workflowMessagePort.emitNodeStart(context.getWorkflowExecutionId(), NODE_NAME);
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "正在分析需求并制定修改计划...\n");
 
             try {
                 String planningRequest = buildPlanningRequest(context);
@@ -49,10 +51,10 @@ public class ModificationPlannerNode {
 
             } catch (Exception e) {
                 log.error("修改规划失败: {}", e.getMessage(), e);
-                context.emitNodeError(NODE_NAME, e.getMessage());
+                workflowMessagePort.emitNodeError(context.getWorkflowExecutionId(), NODE_NAME, e.getMessage());
             }
 
-            context.emitNodeComplete(NODE_NAME);
+            workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
             context.setCurrentStep(NODE_NAME);
             return WorkflowContext.saveContext(context);
         });
@@ -97,21 +99,21 @@ public class ModificationPlannerNode {
 
     private static void outputPlanSummary(WorkflowContext context, ModificationPlanResult planResult) {
         if (planResult == null) {
-            context.emitNodeMessage(NODE_NAME, "规划完成：无修改计划\n");
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "规划完成：无修改计划\n");
             return;
         }
 
         if (StrUtil.isNotBlank(planResult.getAnalysis())) {
-            context.emitNodeMessage(NODE_NAME, "分析说明：" + planResult.getAnalysis() + "\n");
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "分析说明：" + planResult.getAnalysis() + "\n");
         }
 
         if (StrUtil.isNotBlank(planResult.getStrategy())) {
-            context.emitNodeMessage(NODE_NAME, "修改策略：" + planResult.getStrategy() + "\n");
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "修改策略：" + planResult.getStrategy() + "\n");
         }
 
         List<SqlStatementItem> sqlStatements = planResult.getSqlStatements();
         if (sqlStatements != null && !sqlStatements.isEmpty()) {
-            context.emitNodeMessage(NODE_NAME,
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                 String.format("\nSQL 操作计划（共 %d 条）：\n", sqlStatements.size()));
 
             long ddlCount = sqlStatements.stream()
@@ -122,27 +124,27 @@ public class ModificationPlannerNode {
                 .count();
 
             if (ddlCount > 0) {
-                context.emitNodeMessage(NODE_NAME, String.format("  - DDL 操作：%d 条\n", ddlCount));
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, String.format("  - DDL 操作：%d 条\n", ddlCount));
             }
             if (dmlCount > 0) {
-                context.emitNodeMessage(NODE_NAME, String.format("  - DML 操作：%d 条\n", dmlCount));
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, String.format("  - DML 操作：%d 条\n", dmlCount));
             }
 
             for (SqlStatementItem stmt : sqlStatements) {
                 if (stmt != null) {
                     String type = stmt.getType() != null ? stmt.getType() : "UNKNOWN";
                     String description = stmt.getDescription() != null ? stmt.getDescription() : "无描述";
-                    context.emitNodeMessage(NODE_NAME,
+                    workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                         String.format("  - [%s] %s\n", type, description));
                 }
             }
         } else {
-            context.emitNodeMessage(NODE_NAME, "\nSQL 操作计划：无需数据库操作\n");
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "\nSQL 操作计划：无需数据库操作\n");
         }
 
         List<FileModificationGuide> filesToModify = planResult.getFilesToModify();
         if (filesToModify != null && !filesToModify.isEmpty()) {
-            context.emitNodeMessage(NODE_NAME,
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                 String.format("\n代码修改计划（共 %d 个文件）：\n", filesToModify.size()));
 
             long modifyCount = filesToModify.stream()
@@ -156,13 +158,13 @@ public class ModificationPlannerNode {
                 .count();
 
             if (modifyCount > 0) {
-                context.emitNodeMessage(NODE_NAME, String.format("  - 修改文件：%d 个\n", modifyCount));
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, String.format("  - 修改文件：%d 个\n", modifyCount));
             }
             if (createCount > 0) {
-                context.emitNodeMessage(NODE_NAME, String.format("  - 创建文件：%d 个\n", createCount));
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, String.format("  - 创建文件：%d 个\n", createCount));
             }
             if (deleteCount > 0) {
-                context.emitNodeMessage(NODE_NAME, String.format("  - 删除文件：%d 个\n", deleteCount));
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, String.format("  - 删除文件：%d 个\n", deleteCount));
             }
 
             for (FileModificationGuide file : filesToModify) {
@@ -170,12 +172,12 @@ public class ModificationPlannerNode {
                     String type = file.getType() != null ? file.getType() : "UNKNOWN";
                     String path = file.getPath() != null ? file.getPath() : "未知路径";
                     String reason = file.getReason() != null ? file.getReason() : "无说明";
-                    context.emitNodeMessage(NODE_NAME,
+                    workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                         String.format("  - [%s] %s: %s\n", type, path, reason));
                 }
             }
         } else {
-            context.emitNodeMessage(NODE_NAME, "\n代码修改计划：无需修改代码\n");
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "\n代码修改计划：无需修改代码\n");
         }
     }
 }

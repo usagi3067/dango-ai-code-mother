@@ -1,6 +1,7 @@
 package com.dango.dangoaicodeapp.domain.codegen.node;
 
 import com.dango.dangoaicodeapp.domain.codegen.port.DatabaseOperationPort;
+import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowMessagePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.SqlExecutionResult;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.SqlStatement;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
@@ -25,6 +26,7 @@ public class DatabaseOperatorNode {
 
     private static final String NODE_NAME = "数据库操作";
 
+    private final WorkflowMessagePort workflowMessagePort;
     private final DatabaseOperationPort databaseOperationPort;
 
     public AsyncNodeAction<MessagesState<String>> action() {
@@ -32,21 +34,21 @@ public class DatabaseOperatorNode {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);
 
-            context.emitNodeStart(NODE_NAME);
+            workflowMessagePort.emitNodeStart(context.getWorkflowExecutionId(), NODE_NAME);
 
             List<SqlStatement> statements = context.getPlannedSqlStatements();
             List<SqlExecutionResult> results = new ArrayList<>();
 
             if (statements == null || statements.isEmpty()) {
                 log.info("没有需要执行的 SQL 语句");
-                context.emitNodeMessage(NODE_NAME, "没有需要执行的 SQL 语句\n");
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "没有需要执行的 SQL 语句\n");
                 context.setExecutionResults(results);
-                context.emitNodeComplete(NODE_NAME);
+                workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
                 context.setCurrentStep(NODE_NAME);
                 return WorkflowContext.saveContext(context);
             }
 
-            context.emitNodeMessage(NODE_NAME,
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                     String.format("开始执行 %d 条 SQL 语句...\n", statements.size()));
 
             int successCount = 0;
@@ -54,7 +56,7 @@ public class DatabaseOperatorNode {
 
             for (int i = 0; i < statements.size(); i++) {
                 SqlStatement stmt = statements.get(i);
-                context.emitNodeMessage(NODE_NAME,
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                         String.format("  [%d/%d] %s...", i + 1, statements.size(), stmt.getDescription()));
 
                 SqlExecutionResult result = executeSql(context.getAppId(), stmt);
@@ -62,11 +64,11 @@ public class DatabaseOperatorNode {
 
                 if (result.isSuccess()) {
                     successCount++;
-                    context.emitNodeMessage(NODE_NAME, " ✓\n");
+                    workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, " ✓\n");
                 } else {
                     failCount++;
-                    context.emitNodeMessage(NODE_NAME, " ✗\n");
-                    context.emitNodeError(NODE_NAME,
+                    workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, " ✗\n");
+                    workflowMessagePort.emitNodeError(context.getWorkflowExecutionId(), NODE_NAME,
                             "SQL 执行失败: " + stmt.getDescription() + " - " + result.getError());
                 }
             }
@@ -80,10 +82,10 @@ public class DatabaseOperatorNode {
                 context.setLatestDatabaseSchema(context.getDatabaseSchema());
             }
 
-            context.emitNodeMessage(NODE_NAME,
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                     String.format("\n执行完成：成功 %d 条，失败 %d 条\n", successCount, failCount));
 
-            context.emitNodeComplete(NODE_NAME);
+            workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
             context.setCurrentStep(NODE_NAME);
             return WorkflowContext.saveContext(context);
         });

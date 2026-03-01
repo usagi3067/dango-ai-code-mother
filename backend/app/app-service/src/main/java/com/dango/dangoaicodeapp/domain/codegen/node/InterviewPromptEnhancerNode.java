@@ -1,6 +1,8 @@
 package com.dango.dangoaicodeapp.domain.codegen.node;
 
+import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowMessagePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
@@ -10,17 +12,20 @@ import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class InterviewPromptEnhancerNode {
 
     private static final String NODE_NAME = "面试题解提示词增强";
+
+    private final WorkflowMessagePort workflowMessagePort;
 
     public AsyncNodeAction<MessagesState<String>> action() {
         return node_async(state -> {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);
 
-            context.emitNodeStart(NODE_NAME);
-            context.emitNodeMessage(NODE_NAME, "正在构建面试题解生成提示词...\n");
+            workflowMessagePort.emitNodeStart(context.getWorkflowExecutionId(), NODE_NAME);
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "正在构建面试题解生成提示词...\n");
 
             String originalPrompt = context.getOriginalPrompt();
             String advisorAdvice = context.getEnhancedPrompt();
@@ -43,8 +48,8 @@ public class InterviewPromptEnhancerNode {
 
             context.setEnhancedPrompt(enhanced.toString());
 
-            context.emitNodeMessage(NODE_NAME, "提示词构建完成\n");
-            context.emitNodeComplete(NODE_NAME);
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "提示词构建完成\n");
+            workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
             context.setCurrentStep(NODE_NAME);
             return WorkflowContext.saveContext(context);
         });

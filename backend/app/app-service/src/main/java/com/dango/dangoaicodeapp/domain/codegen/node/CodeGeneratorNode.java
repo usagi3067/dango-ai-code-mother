@@ -6,6 +6,7 @@ import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.codegen.port.CodeGenerationStreamPort;
 import com.dango.dangoaicodeapp.domain.codegen.port.ProjectScaffoldPort;
 import com.dango.dangoaicodeapp.domain.codegen.port.ProjectWorkspacePort;
+import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowMessagePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +31,7 @@ public class CodeGeneratorNode {
 
     private static final String NODE_NAME = "代码生成";
 
+    private final WorkflowMessagePort workflowMessagePort;
     private final CodeGenerationStreamPort codeGenerationStreamPort;
     // 节点只依赖“脚手架准备”能力，不直接感知模板复制/软链等实现细节。
     private final ProjectScaffoldPort projectScaffoldPort;
@@ -40,7 +42,7 @@ public class CodeGeneratorNode {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);
 
-            context.emitNodeStart(NODE_NAME);
+            workflowMessagePort.emitNodeStart(context.getWorkflowExecutionId(), NODE_NAME);
 
             String userMessage = buildUserMessage(context);
             CodeGenTypeEnum generationType = context.getGenerationType();
@@ -51,15 +53,15 @@ public class CodeGeneratorNode {
 
             boolean isFixMode = isQualityCheckFailed(context.getQualityResult());
             if (isFixMode) {
-                context.emitNodeMessage(NODE_NAME, "检测到代码质量问题，正在修复...\n");
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "检测到代码质量问题，正在修复...\n");
             } else {
-                context.emitNodeMessage(NODE_NAME,
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                         String.format("开始生成 %s 类型代码...\n", generationType.getText()));
             }
 
             try {
                 projectScaffoldPort.scaffold(appId, generationType);
-                context.emitNodeMessage(NODE_NAME, "项目模板已就绪\n");
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "项目模板已就绪\n");
 
                 Flux<String> codeStream = codeGenerationStreamPort.generateAndSaveCodeStream(
                         userMessage, generationType, appId);
@@ -85,15 +87,15 @@ public class CodeGeneratorNode {
                 context.setQualityResult(null);
 
                 log.info("代码生成完成，目录: {}", generatedCodeDir);
-                context.emitNodeMessage(NODE_NAME, "\n代码生成并保存完成\n");
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "\n代码生成并保存完成\n");
 
             } catch (Exception e) {
                 log.error("代码生成失败: {}", e.getMessage(), e);
                 context.setErrorMessage("代码生成失败: " + e.getMessage());
-                context.emitNodeError(NODE_NAME, e.getMessage());
+                workflowMessagePort.emitNodeError(context.getWorkflowExecutionId(), NODE_NAME, e.getMessage());
             }
 
-            context.emitNodeComplete(NODE_NAME);
+            workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
             context.setCurrentStep(NODE_NAME);
             return WorkflowContext.saveContext(context);
         });

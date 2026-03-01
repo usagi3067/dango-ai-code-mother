@@ -3,6 +3,7 @@ package com.dango.dangoaicodeapp.domain.codegen.node.concurrent;
 import com.dango.aicodegenerate.model.ImageCollectionPlan;
 import com.dango.aicodegenerate.model.ImageResource;
 import com.dango.dangoaicodeapp.domain.codegen.port.ImageResourcePort;
+import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowMessagePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +26,7 @@ public class LogoCollectorNode {
 
     private static final String NODE_NAME = "Logo生成";
 
+    private final WorkflowMessagePort workflowMessagePort;
     private final ImageResourcePort imageResourcePort;
 
     public AsyncNodeAction<MessagesState<String>> action() {
@@ -32,17 +34,17 @@ public class LogoCollectorNode {
             WorkflowContext context = WorkflowContext.getContext(state);
             List<ImageResource> logos = new ArrayList<>();
 
-            context.emitNodeStart(NODE_NAME);
+            workflowMessagePort.emitNodeStart(context.getWorkflowExecutionId(), NODE_NAME);
 
             try {
                 ImageCollectionPlan plan = context.getImageCollectionPlan();
                 if (plan != null && plan.getLogoTasks() != null && !plan.getLogoTasks().isEmpty()) {
                     log.info("开始并发生成Logo，任务数: {}", plan.getLogoTasks().size());
-                    context.emitNodeMessage(NODE_NAME,
+                    workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                             String.format("开始执行 %d 个生成任务...\n", plan.getLogoTasks().size()));
 
                     for (ImageCollectionPlan.LogoTask task : plan.getLogoTasks()) {
-                        context.emitNodeMessage(NODE_NAME, String.format("生成: %s\n", task.description()));
+                        workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, String.format("生成: %s\n", task.description()));
                         List<ImageResource> images = imageResourcePort.generateLogos(task.description());
                         if (images != null) {
                             logos.addAll(images);
@@ -50,19 +52,19 @@ public class LogoCollectorNode {
                     }
 
                     log.info("Logo生成完成，共生成 {} 张图片", logos.size());
-                    context.emitNodeMessage(NODE_NAME,
+                    workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                             String.format("生成完成，共 %d 张图片\n", logos.size()));
                 } else {
-                    context.emitNodeMessage(NODE_NAME, "无Logo任务，跳过\n");
+                    workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "无Logo任务，跳过\n");
                 }
             } catch (Exception e) {
                 log.error("Logo生成失败: {}", e.getMessage(), e);
-                context.emitNodeError(NODE_NAME, e.getMessage());
+                workflowMessagePort.emitNodeError(context.getWorkflowExecutionId(), NODE_NAME, e.getMessage());
             }
 
             context.setLogos(logos);
             context.setCurrentStep(NODE_NAME);
-            context.emitNodeComplete(NODE_NAME);
+            workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
 
             return WorkflowContext.saveContext(context);
         });

@@ -5,6 +5,7 @@ import cn.hutool.core.util.StrUtil;
 import com.dango.aicodegenerate.model.QualityResult;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.codegen.port.CodeFixStreamPort;
+import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowMessagePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +39,7 @@ public class CodeFixerNode {
 
     private static final String NODE_NAME = "代码修复";
     private final CodeFixStreamPort codeFixStreamPort;
+    private final WorkflowMessagePort workflowMessagePort;
 
     /**
      * 创建节点动作
@@ -48,21 +50,21 @@ public class CodeFixerNode {
             log.info("执行节点: {}", NODE_NAME);
 
             // 发送节点开始消息
-            context.emitNodeStart(NODE_NAME);
+            workflowMessagePort.emitNodeStart(context.getWorkflowExecutionId(), NODE_NAME);
 
             // 增加重试计数
             int retryCount = context.getFixRetryCount() + 1;
             context.setFixRetryCount(retryCount);
 
             log.info("代码修复尝试次数: {}/{}", retryCount, WorkflowContext.MAX_FIX_RETRY_COUNT);
-            context.emitNodeMessage(NODE_NAME,
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                     String.format("修复尝试 %d/%d\n", retryCount, WorkflowContext.MAX_FIX_RETRY_COUNT));
 
             // 检查是否达到最大重试次数
             if (retryCount > WorkflowContext.MAX_FIX_RETRY_COUNT) {
                 log.warn("达到最大修复重试次数 ({})，使用当前代码作为最终结果",
                         WorkflowContext.MAX_FIX_RETRY_COUNT);
-                context.emitNodeMessage(NODE_NAME, "⚠️ 达到最大修复次数，使用当前代码作为最终结果\n");
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "⚠️ 达到最大修复次数，使用当前代码作为最终结果\n");
 
                 // 强制通过质检，结束修复循环
                 QualityResult qualityResult = context.getQualityResult();
@@ -70,7 +72,7 @@ public class CodeFixerNode {
                     qualityResult.setIsValid(true);
                 }
 
-                context.emitNodeComplete(NODE_NAME);
+                workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
                 context.setCurrentStep(NODE_NAME);
                 return WorkflowContext.saveContext(context);
             }
@@ -80,7 +82,7 @@ public class CodeFixerNode {
                 String fixRequest = buildFixRequest(context);
 
                 log.info("修复请求构建完成:\n{}", fixRequest);
-                context.emitNodeMessage(NODE_NAME, "正在分析错误并修复代码...\n");
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "正在分析错误并修复代码...\n");
 
                 Long appId = context.getAppId();
                 CodeGenTypeEnum generationType = context.getGenerationType();
@@ -117,7 +119,7 @@ public class CodeFixerNode {
                     throw new RuntimeException(errorRef.get());
                 }
 
-                context.emitNodeMessage(NODE_NAME, "\n代码修复完成，准备重新质检\n");
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "\n代码修复完成，准备重新质检\n");
 
                 // 清除质量检查结果，准备重新检查
                 context.setQualityResult(null);
@@ -125,11 +127,11 @@ public class CodeFixerNode {
             } catch (Exception e) {
                 log.error("代码修复失败: {}", e.getMessage(), e);
                 context.setErrorMessage("代码修复失败: " + e.getMessage());
-                context.emitNodeError(NODE_NAME, e.getMessage());
+                workflowMessagePort.emitNodeError(context.getWorkflowExecutionId(), NODE_NAME, e.getMessage());
             }
 
             // 发送节点完成消息
-            context.emitNodeComplete(NODE_NAME);
+            workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
 
             // 更新状态
             context.setCurrentStep(NODE_NAME);

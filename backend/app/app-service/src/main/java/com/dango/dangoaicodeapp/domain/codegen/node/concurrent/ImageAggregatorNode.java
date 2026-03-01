@@ -2,7 +2,9 @@ package com.dango.dangoaicodeapp.domain.codegen.node.concurrent;
 
 import cn.hutool.json.JSONUtil;
 import com.dango.aicodegenerate.model.ImageResource;
+import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowMessagePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
@@ -18,17 +20,20 @@ import static org.bsc.langgraph4j.action.AsyncNodeAction.node_async;
  */
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class ImageAggregatorNode {
 
     private static final String NODE_NAME = "图片聚合";
+
+    private final WorkflowMessagePort workflowMessagePort;
 
     public AsyncNodeAction<MessagesState<String>> action() {
         return node_async(state -> {
             WorkflowContext context = WorkflowContext.getContext(state);
             List<ImageResource> allImages = new ArrayList<>();
 
-            context.emitNodeStart(NODE_NAME);
-            context.emitNodeMessage(NODE_NAME, "正在聚合并发收集的图片...\n");
+            workflowMessagePort.emitNodeStart(context.getWorkflowExecutionId(), NODE_NAME);
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "正在聚合并发收集的图片...\n");
 
             log.info("开始聚合并发收集的图片");
 
@@ -53,7 +58,7 @@ public class ImageAggregatorNode {
 
             log.info("图片聚合完成，总共 {} 张图片", allImages.size());
 
-            context.emitNodeMessage(NODE_NAME,
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                     String.format("聚合完成：内容图片 %d 张，插画 %d 张，架构图 %d 张，Logo %d 张，总计 %d 张\n",
                             contentCount, illustrationCount, diagramCount, logoCount, allImages.size()));
 
@@ -61,7 +66,7 @@ public class ImageAggregatorNode {
             context.setImageListStr(JSONUtil.toJsonStr(allImages));
             context.setCurrentStep(NODE_NAME);
 
-            context.emitNodeComplete(NODE_NAME);
+            workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
             return WorkflowContext.saveContext(context);
         });
     }

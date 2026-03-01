@@ -1,17 +1,14 @@
 package com.dango.dangoaicodeapp.domain.codegen.workflow.state;
 
-import cn.hutool.json.JSONUtil;
 import com.dango.aicodegenerate.model.FileModificationGuide;
 import com.dango.aicodegenerate.model.ImageCollectionPlan;
 import com.dango.aicodegenerate.model.ImageResource;
 import com.dango.aicodegenerate.model.ModificationPlanResult;
 import com.dango.aicodegenerate.model.QualityResult;
 import com.dango.aicodegenerate.model.SqlStatementItem;
-import com.dango.aicodegenerate.model.message.AiResponseMessage;
 import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.app.valueobject.OperationModeEnum;
-import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowStreamPort;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -41,12 +38,6 @@ public class WorkflowContext implements Serializable {
      * WorkflowContext 在 MessagesState 中的存储 key
      */
     public static final String WORKFLOW_CONTEXT_KEY = "workflowContext";
-
-    /**
-     * 全局流式端口（应用启动时注入）。
-     * 工作流状态在节点间流转时可能复制/重建，运行时实例字段不稳定，改为全局静态引用保证发流可靠。
-     */
-    private static volatile WorkflowStreamPort workflowStreamPort;
 
     /**
      * 当前执行步骤
@@ -273,74 +264,6 @@ public class WorkflowContext implements Serializable {
      */
     public static Map<String, Object> saveContext(WorkflowContext context) {
         return Map.of(WORKFLOW_CONTEXT_KEY, context);
-    }
-
-    // ========== 运行时端口注入 ==========
-
-    public static void configureWorkflowStreamPort(WorkflowStreamPort streamPort) {
-        workflowStreamPort = streamPort;
-    }
-
-    // ========== 流式输出方法 ==========
-
-    /**
-     * 发送消息到流（如果 sink 存在）
-     * 注意：此方法直接发送原始消息，用于转发已经是 JSON 格式的消息
-     */
-    public void emit(String message) {
-        if (workflowExecutionId == null) {
-            return;
-        }
-        if (workflowStreamPort != null) {
-            workflowStreamPort.emit(workflowExecutionId, message);
-        }
-    }
-
-    /**
-     * 发送 AI 回复内容到流，自动包装为 JSON 格式
-     * msgType 默认为 null，即 content 类型，用于发送 AI 实际回复内容
-     */
-    public void emitText(String text) {
-        AiResponseMessage message = new AiResponseMessage(text);
-        emit(JSONUtil.toJsonStr(message));
-    }
-
-    /**
-     * 发送日志类型消息到流，自动包装为 JSON 格式
-     * msgType 为 "log"，用于发送工作流节点状态等日志信息
-     */
-    public void emitLog(String text) {
-        AiResponseMessage message = new AiResponseMessage(text);
-        message.setMsgType("log");
-        emit(JSONUtil.toJsonStr(message));
-    }
-
-    /**
-     * 发送带前缀的节点消息（自动包装为 JSON 格式，log 类型）
-     */
-    public void emitNodeMessage(String nodeName, String message) {
-        emitLog(String.format("[%s] %s", nodeName, message));
-    }
-
-    /**
-     * 发送节点开始消息
-     */
-    public void emitNodeStart(String nodeName) {
-        emitNodeMessage(nodeName, "开始执行...\n");
-    }
-
-    /**
-     * 发送节点完成消息
-     */
-    public void emitNodeComplete(String nodeName) {
-        emitNodeMessage(nodeName, "执行完成\n");
-    }
-
-    /**
-     * 发送节点错误消息
-     */
-    public void emitNodeError(String nodeName, String error) {
-        emitNodeMessage(nodeName, "执行失败: " + error + "\n");
     }
 
 }

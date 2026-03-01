@@ -3,6 +3,7 @@ package com.dango.dangoaicodeapp.domain.codegen.node;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.app.valueobject.OperationModeEnum;
 import com.dango.dangoaicodeapp.domain.codegen.port.ProjectWorkspacePort;
+import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowMessagePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +23,7 @@ public class CodeReaderNode {
 
     private static final String NODE_NAME = "代码读取";
 
+    private final WorkflowMessagePort workflowMessagePort;
     private final ProjectWorkspacePort projectWorkspacePort;
 
     public AsyncNodeAction<MessagesState<String>> action() {
@@ -29,8 +31,8 @@ public class CodeReaderNode {
             WorkflowContext context = WorkflowContext.getContext(state);
             log.info("执行节点: {}", NODE_NAME);
 
-            context.emitNodeStart(NODE_NAME);
-            context.emitNodeMessage(NODE_NAME, "正在读取项目结构...\n");
+            workflowMessagePort.emitNodeStart(context.getWorkflowExecutionId(), NODE_NAME);
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "正在读取项目结构...\n");
 
             Long appId = context.getAppId();
             CodeGenTypeEnum generationType = context.getGenerationType();
@@ -39,14 +41,14 @@ public class CodeReaderNode {
             if (projectStructure == null || projectStructure.isEmpty()) {
                 context.setOperationMode(OperationModeEnum.CREATE);
                 log.warn("未找到现有项目，切换到创建模式");
-                context.emitNodeMessage(NODE_NAME, "未找到现有项目代码，将切换到创建模式\n");
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "未找到现有项目代码，将切换到创建模式\n");
             } else {
                 context.setProjectStructure(projectStructure);
                 log.info("项目结构读取完成");
-                context.emitNodeMessage(NODE_NAME, "项目结构读取完成\n");
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "项目结构读取完成\n");
             }
 
-            context.emitNodeComplete(NODE_NAME);
+            workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
             context.setCurrentStep(NODE_NAME);
             return WorkflowContext.saveContext(context);
         });

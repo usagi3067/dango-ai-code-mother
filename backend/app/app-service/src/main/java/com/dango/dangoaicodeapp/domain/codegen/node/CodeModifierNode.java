@@ -5,6 +5,7 @@ import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.codegen.port.CodeModificationStreamPort;
 import com.dango.dangoaicodeapp.domain.codegen.port.ProjectWorkspacePort;
+import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowMessagePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -40,6 +41,7 @@ public class CodeModifierNode {
 
     private static final String NODE_NAME = "代码修改";
 
+    private final WorkflowMessagePort workflowMessagePort;
     private final CodeModificationStreamPort codeModificationStreamPort;
     private final ProjectWorkspacePort projectWorkspacePort;
 
@@ -52,16 +54,16 @@ public class CodeModifierNode {
             log.info("执行节点: {}", NODE_NAME);
 
             // 发送节点开始消息
-            context.emitNodeStart(NODE_NAME);
-            context.emitNodeMessage(NODE_NAME, "正在分析修改需求...\n");
+            workflowMessagePort.emitNodeStart(context.getWorkflowExecutionId(), NODE_NAME);
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "正在分析修改需求...\n");
 
             try {
                 // 检查是否有 SQL 执行失败
                 if (context.isDatabaseEnabled() && context.hasSqlExecutionFailure()) {
                     log.warn("检测到 SQL 执行失败，跳过代码修改");
-                    context.emitNodeMessage(NODE_NAME, "检测到数据库操作失败，跳过代码修改\n");
+                    workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "检测到数据库操作失败，跳过代码修改\n");
                     context.setErrorMessage("数据库操作失败，无法进行代码修改");
-                    context.emitNodeComplete(NODE_NAME);
+                    workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
                     context.setCurrentStep(NODE_NAME);
                     return WorkflowContext.saveContext(context);
                 }
@@ -70,7 +72,7 @@ public class CodeModifierNode {
                 String modifyRequest = buildModifyRequest(context);
 
                 log.info("修改请求构建完成:\n{}", modifyRequest);
-                context.emitNodeMessage(NODE_NAME, "修改请求已构建，正在调用 AI 服务...\n");
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "修改请求已构建，正在调用 AI 服务...\n");
 
                 Long appId = context.getAppId();
                 CodeGenTypeEnum generationType = context.getGenerationType();
@@ -111,16 +113,16 @@ public class CodeModifierNode {
                 String generatedCodeDir = projectWorkspacePort.buildGeneratedCodeDir(generationType, appId);
                 context.setGeneratedCodeDir(generatedCodeDir);
 
-                context.emitNodeMessage(NODE_NAME, "\n代码修改完成\n");
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "\n代码修改完成\n");
 
             } catch (Exception e) {
                 log.error("代码修改失败: {}", e.getMessage(), e);
                 context.setErrorMessage("代码修改失败: " + e.getMessage());
-                context.emitNodeError(NODE_NAME, e.getMessage());
+                workflowMessagePort.emitNodeError(context.getWorkflowExecutionId(), NODE_NAME, e.getMessage());
             }
 
             // 发送节点完成消息
-            context.emitNodeComplete(NODE_NAME);
+            workflowMessagePort.emitNodeComplete(context.getWorkflowExecutionId(), NODE_NAME);
 
             // 更新状态
             context.setCurrentStep(NODE_NAME);
@@ -144,25 +146,25 @@ public class CodeModifierNode {
         List<com.dango.aicodegenerate.model.FileModificationGuide> guides = context.getFileModificationGuides();
         if (guides != null && !guides.isEmpty()) {
             // 先输出修改清单到前端
-            context.emitNodeMessage(NODE_NAME,
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                 String.format("\n📋 修改清单（共 %d 个文件）：\n", guides.size()));
 
             for (int i = 0; i < guides.size(); i++) {
                 com.dango.aicodegenerate.model.FileModificationGuide guide = guides.get(i);
-                context.emitNodeMessage(NODE_NAME,
+                workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                     String.format("  %d. %s (%s)\n", i+1, guide.getPath(), guide.getType()));
 
                 // 输出每个文件的具体操作步骤
                 List<String> operations = guide.getOperations();
                 if (operations != null && !operations.isEmpty()) {
                     for (String operation : operations) {
-                        context.emitNodeMessage(NODE_NAME,
+                        workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME,
                             String.format("     - %s\n", operation));
                     }
                 }
             }
 
-            context.emitNodeMessage(NODE_NAME, "\n开始执行修改...\n\n");
+            workflowMessagePort.emitNodeMessage(context.getWorkflowExecutionId(), NODE_NAME, "\n开始执行修改...\n\n");
 
             // 构建修改指导部分（给 AI 看的）
             request.append("🚨 修改指导（必须严格按照以下顺序执行）\n\n");
