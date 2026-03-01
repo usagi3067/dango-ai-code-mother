@@ -2,14 +2,14 @@ package com.dango.dangoaicodeapp.domain.codegen.node;
 
 import cn.hutool.json.JSONUtil;
 import com.dango.aicodegenerate.model.message.AiResponseMessage;
-import com.dango.dangoaicodeapp.domain.codegen.port.AnimationAdvisorGateway;
+import com.dango.dangoaicodeapp.domain.codegen.port.AnimationAdvisorStreamPort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
-import dev.langchain4j.service.TokenStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -27,7 +27,7 @@ public class InterviewAnimationAdvisorNode {
 
     private static final String NODE_NAME = "面试图解设计建议";
 
-    private final AnimationAdvisorGateway animationAdvisorGateway;
+    private final AnimationAdvisorStreamPort animationAdvisorStreamPort;
 
     public AsyncNodeAction<MessagesState<String>> action() {
         return node_async(state -> {
@@ -39,22 +39,22 @@ public class InterviewAnimationAdvisorNode {
 
             String userPrompt = context.getOriginalPrompt();
 
-            TokenStream tokenStream = animationAdvisorGateway.adviseInterview(userPrompt);
+            Flux<String> adviseStream = animationAdvisorStreamPort.adviseInterview(userPrompt);
             StringBuilder adviceBuilder = new StringBuilder();
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Throwable> errorRef = new AtomicReference<>();
 
-            tokenStream
-                    .onPartialResponse(chunk -> {
+            adviseStream
+                    .doOnNext(chunk -> {
                         adviceBuilder.append(chunk);
                         context.emit(JSONUtil.toJsonStr(new AiResponseMessage(chunk)));
                     })
-                    .onCompleteResponse(response -> latch.countDown())
-                    .onError(error -> {
+                    .doOnComplete(latch::countDown)
+                    .doOnError(error -> {
                         errorRef.set(error);
                         latch.countDown();
                     })
-                    .start();
+                    .subscribe();
 
             latch.await(10, TimeUnit.MINUTES);
 

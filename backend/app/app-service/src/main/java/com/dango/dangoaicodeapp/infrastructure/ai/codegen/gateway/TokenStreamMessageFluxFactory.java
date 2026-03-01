@@ -31,6 +31,17 @@ public class TokenStreamMessageFluxFactory {
     }
 
     /**
+     * 转换为纯文本分片流（不做 JSON 包装）。
+     */
+    public Flux<String> toChunkFlux(TokenStream tokenStream) {
+        return Flux.create(sink -> tokenStream
+                .onPartialResponse(sink::next)
+                .onCompleteResponse(response -> sink.complete())
+                .onError(sink::error)
+                .start());
+    }
+
+    /**
      * 转换为文本 + 工具调用消息流（JSON 字符串）。
      */
     public Flux<String> toTextAndToolFlux(TokenStream tokenStream) {
@@ -63,4 +74,3 @@ public class TokenStreamMessageFluxFactory {
         });
     }
 }
-
