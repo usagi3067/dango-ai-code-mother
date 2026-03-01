@@ -3,9 +3,9 @@ package com.dango.dangoaicodeapp.domain.codegen.node;
 import cn.hutool.core.util.StrUtil;
 import com.dango.aicodegenerate.model.QualityResult;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
+import com.dango.dangoaicodeapp.domain.codegen.port.CodeGenerationStreamPort;
 import com.dango.dangoaicodeapp.domain.codegen.port.ProjectScaffoldPort;
 import com.dango.dangoaicodeapp.domain.codegen.port.ProjectWorkspacePort;
-import com.dango.dangoaicodeapp.domain.codegen.service.AiCodeGeneratorFacade;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,7 +30,7 @@ public class CodeGeneratorNode {
 
     private static final String NODE_NAME = "代码生成";
 
-    private final AiCodeGeneratorFacade codeGeneratorFacade;
+    private final CodeGenerationStreamPort codeGenerationStreamPort;
     // 节点只依赖“脚手架准备”能力，不直接感知模板复制/软链等实现细节。
     private final ProjectScaffoldPort projectScaffoldPort;
     private final ProjectWorkspacePort projectWorkspacePort;
@@ -61,7 +61,7 @@ public class CodeGeneratorNode {
                 projectScaffoldPort.scaffold(appId, generationType);
                 context.emitNodeMessage(NODE_NAME, "项目模板已就绪\n");
 
-                Flux<String> codeStream = codeGeneratorFacade.generateAndSaveCodeStream(
+                Flux<String> codeStream = codeGenerationStreamPort.generateAndSaveCodeStream(
                         userMessage, generationType, appId);
 
                 CountDownLatch latch = new CountDownLatch(1);
