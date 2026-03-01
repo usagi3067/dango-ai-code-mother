@@ -1,26 +1,19 @@
 package com.dango.dangoaicodeapp.domain.codegen.node;
 
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.json.JSONUtil;
-import com.dango.aicodegenerate.extractor.ToolArgumentsExtractor;
-import com.dango.aicodegenerate.model.message.AiResponseMessage;
-import com.dango.aicodegenerate.model.message.StreamMessage;
-import com.dango.aicodegenerate.model.message.ToolExecutedMessage;
 import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
-import com.dango.dangoaicodeapp.domain.codegen.port.CodeModificationGateway;
+import com.dango.dangoaicodeapp.domain.codegen.port.CodeModificationStreamPort;
 import com.dango.dangoaicodeapp.domain.codegen.port.ProjectWorkspacePort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
-import dev.langchain4j.service.TokenStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -47,7 +40,7 @@ public class CodeModifierNode {
 
     private static final String NODE_NAME = "代码修改";
 
-    private final CodeModificationGateway codeModificationGateway;
+    private final CodeModificationStreamPort codeModificationStreamPort;
     private final ProjectWorkspacePort projectWorkspacePort;
 
     /**
@@ -88,54 +81,23 @@ public class CodeModifierNode {
                     context.setGenerationType(generationType);
                 }
 
-                // 获取修改领域端口并调用
-                TokenStream tokenStream = codeModificationGateway.modifyCodeStream(appId, generationType, modifyRequest);
-
-                // 使用 CountDownLatch 等待流式生成完成
+                Flux<String> modifyStream = codeModificationStreamPort.modifyCodeStream(appId, generationType, modifyRequest);
                 CountDownLatch latch = new CountDownLatch(1);
                 AtomicReference<Throwable> errorRef = new AtomicReference<>();
 
-                // 为每个工具调用维护一个 extractor
-                Map<String, ToolArgumentsExtractor> extractors = new ConcurrentHashMap<>();
-
-                // 订阅 TokenStream，实时输出到前端
-                // 注意：必须注册所有回调，包括工具调用相关的回调，否则会导致 NPE
-                tokenStream
-                        .onPartialResponse(partialResponse -> {
-                            // 实时输出代码片段到前端（包装为 JSON 格式）
-                            AiResponseMessage aiResponseMessage = new AiResponseMessage(partialResponse);
-                            context.emit(JSONUtil.toJsonStr(aiResponseMessage));
-                        })
-                        .onPartialToolCall(partialToolCall -> {
-                            String toolId = partialToolCall.id();
-                            String toolName = partialToolCall.name();
-                            String delta = partialToolCall.partialArguments();
-
-                            ToolArgumentsExtractor extractor = extractors.computeIfAbsent(
-                                toolId,
-                                id -> new ToolArgumentsExtractor(id, toolName)
-                            );
-
-                            List<StreamMessage> messages = extractor.process(delta);
-                            for (StreamMessage msg : messages) {
-                                context.emit(JSONUtil.toJsonStr(msg));
-                            }
-                        })
-                        .onToolExecuted(toolExecution -> {
-                            // 处理工具执行结果
-                            ToolExecutedMessage toolExecutedMessage = new ToolExecutedMessage(toolExecution);
-                            context.emit(JSONUtil.toJsonStr(toolExecutedMessage));
-                        })
-                        .onCompleteResponse(response -> {
+                // 统一消费端口暴露的标准消息流，节点不再处理 TokenStream 回调细节。
+                modifyStream
+                        .doOnNext(context::emit)
+                        .doOnComplete(() -> {
                             log.info("代码修改完成");
                             latch.countDown();
                         })
-                        .onError(error -> {
+                        .doOnError(error -> {
                             log.error("代码修改失败: {}", error.getMessage(), error);
                             errorRef.set(error);
                             latch.countDown();
                         })
-                        .start();
+                        .subscribe();
 
                 // 等待流式生成完成
                 latch.await();

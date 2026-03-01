@@ -1,15 +1,13 @@
 package com.dango.dangoaicodeapp.domain.codegen.node;
 
-import cn.hutool.json.JSONUtil;
-import com.dango.aicodegenerate.model.message.AiResponseMessage;
-import com.dango.dangoaicodeapp.domain.codegen.port.QaGateway;
+import com.dango.dangoaicodeapp.domain.codegen.port.QaStreamPort;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.state.WorkflowContext;
-import dev.langchain4j.service.TokenStream;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.bsc.langgraph4j.action.AsyncNodeAction;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Flux;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -27,7 +25,7 @@ public class QANode {
 
     private static final String NODE_NAME = "问答";
 
-    private final QaGateway qaGateway;
+    private final QaStreamPort qaStreamPort;
 
     public AsyncNodeAction<MessagesState<String>> action() {
         return node_async(state -> {
@@ -44,18 +42,18 @@ public class QANode {
                 userInput
             );
 
-            TokenStream tokenStream = qaGateway.answer(context.getAppId(), qaInput);
+            Flux<String> answerStream = qaStreamPort.answer(context.getAppId(), qaInput);
             CountDownLatch latch = new CountDownLatch(1);
             AtomicReference<Throwable> errorRef = new AtomicReference<>();
 
-            tokenStream
-                    .onPartialResponse(chunk -> context.emit(JSONUtil.toJsonStr(new AiResponseMessage(chunk))))
-                    .onCompleteResponse(response -> latch.countDown())
-                    .onError(error -> {
+            answerStream
+                    .doOnNext(context::emit)
+                    .doOnComplete(latch::countDown)
+                    .doOnError(error -> {
                         errorRef.set(error);
                         latch.countDown();
                     })
-                    .start();
+                    .subscribe();
 
             latch.await(10, TimeUnit.MINUTES);
 
