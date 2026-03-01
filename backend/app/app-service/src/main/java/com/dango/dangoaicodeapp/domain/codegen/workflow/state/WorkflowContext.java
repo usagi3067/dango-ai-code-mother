@@ -15,9 +15,7 @@ import com.dango.dangoaicodeapp.domain.codegen.port.WorkflowStreamPort;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.ToString;
 import org.bsc.langgraph4j.prebuilt.MessagesState;
 
 import java.io.Serial;
@@ -45,12 +43,10 @@ public class WorkflowContext implements Serializable {
     public static final String WORKFLOW_CONTEXT_KEY = "workflowContext";
 
     /**
-     * 运行时流式输出端口（按单次工作流执行注入）。
-     * 使用实例字段而非静态全局注册，避免跨请求共享状态带来的隐式耦合。
+     * 全局流式端口（应用启动时注入）。
+     * 工作流状态在节点间流转时可能复制/重建，运行时实例字段不稳定，改为全局静态引用保证发流可靠。
      */
-    @ToString.Exclude
-    @EqualsAndHashCode.Exclude
-    private transient WorkflowStreamPort workflowStreamPort;
+    private static volatile WorkflowStreamPort workflowStreamPort;
 
     /**
      * 当前执行步骤
@@ -279,6 +275,12 @@ public class WorkflowContext implements Serializable {
         return Map.of(WORKFLOW_CONTEXT_KEY, context);
     }
 
+    // ========== 运行时端口注入 ==========
+
+    public static void configureWorkflowStreamPort(WorkflowStreamPort streamPort) {
+        workflowStreamPort = streamPort;
+    }
+
     // ========== 流式输出方法 ==========
 
     /**
@@ -286,7 +288,10 @@ public class WorkflowContext implements Serializable {
      * 注意：此方法直接发送原始消息，用于转发已经是 JSON 格式的消息
      */
     public void emit(String message) {
-        if (workflowStreamPort != null && workflowExecutionId != null) {
+        if (workflowExecutionId == null) {
+            return;
+        }
+        if (workflowStreamPort != null) {
             workflowStreamPort.emit(workflowExecutionId, message);
         }
     }
