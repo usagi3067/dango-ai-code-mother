@@ -1,7 +1,5 @@
 package com.dango.dangoaicodeapp.domain.codegen.workflow;
 
-import cn.hutool.core.thread.ExecutorBuilder;
-import cn.hutool.core.thread.ThreadFactoryBuilder;
 import cn.hutool.json.JSONUtil;
 import com.dango.aicodegenerate.model.QualityResult;
 import com.dango.aicodegenerate.model.message.AiResponseMessage;
@@ -26,8 +24,8 @@ import org.bsc.langgraph4j.prebuilt.MessagesStateGraph;
 import reactor.core.publisher.Flux;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 
 import static org.bsc.langgraph4j.StateGraph.END;
 import static org.bsc.langgraph4j.StateGraph.START;
@@ -123,20 +121,12 @@ public class CodeGenWorkflow {
     private static final String ROUTE_PASS = "pass";
 
     /**
-     * 并发执行线程池
+     * 并发节点执行器（由外部注入，生命周期由基础设施层托管）
      */
     private final ExecutorService parallelExecutor;
 
-    public CodeGenWorkflow() {
-        // 配置并发执行线程池
-        this.parallelExecutor = ExecutorBuilder.create()
-                .setCorePoolSize(10)
-                .setMaxPoolSize(20)
-                .setWorkQueue(new LinkedBlockingQueue<>(100))
-                .setThreadFactory(ThreadFactoryBuilder.create()
-                        .setNamePrefix("Parallel-Image-Collect-")
-                        .build())
-                .build();
+    public CodeGenWorkflow(ExecutorService parallelExecutor) {
+        this.parallelExecutor = Objects.requireNonNull(parallelExecutor, "parallelExecutor");
     }
 
     /**
@@ -623,7 +613,7 @@ public class CodeGenWorkflow {
     }
 
     /**
-     * 关闭线程池
+     * 关闭执行器（测试场景可显式调用；生产环境由 Spring 生命周期关闭）
      */
     public void shutdown() {
         if (parallelExecutor != null && !parallelExecutor.isShutdown()) {

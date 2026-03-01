@@ -1,6 +1,7 @@
 package com.dango.dangoaicodeapp.application.service;
 
 import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
+import com.dango.dangoaicodeapp.domain.codegen.model.GenerationTaskSnapshot;
 import reactor.core.publisher.Flux;
 
 /**
@@ -30,4 +31,9 @@ public interface CodeGenApplicationService {
      * @return 消息流
      */
     Flux<String> consumeGenerationStream(Long appId, long userId, String afterId);
+
+    /**
+     * 查询生成任务状态。
+     */
+    GenerationTaskSnapshot getGenerationStatus(Long appId, long userId);
 }

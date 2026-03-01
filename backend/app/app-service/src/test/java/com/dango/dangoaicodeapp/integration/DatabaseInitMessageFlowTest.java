@@ -22,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles;
 import java.io.File;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -135,7 +136,7 @@ class DatabaseInitMessageFlowTest {
         }
 
         // 3. 执行工作流
-        CodeGenWorkflow workflow = new CodeGenWorkflow();
+        CodeGenWorkflow workflow = new CodeGenWorkflow(Executors.newFixedThreadPool(10));
         try {
             System.out.println("\n开始执行工作流...");
             System.out.println("预期流程: ModeRouter → CodeReader → DatabaseAnalyzer → DatabaseOperator → CodeModifier → QualityCheck");

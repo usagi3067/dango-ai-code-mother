@@ -28,10 +28,11 @@ public class GenTaskService {
     }
 
     /**
-     * 尝试启动生成任务（CAS 防重复）
-     * @return true 表示成功启动，false 表示已有任务在运行
+     * 尝试预占生成任务（CAS 防重复）
+     *
+     * @return true 表示成功预占，false 表示已有任务在运行
      */
-    public boolean tryStartTask(Long appId, Long userId, Long chatHistoryId) {
+    public boolean tryReserveTask(Long appId, Long userId) {
         String taskKey = getTaskKey(appId, userId);
         // HSETNX：仅当 field 不存在时设置，用于防重复
         Boolean set = stringRedisTemplate.opsForHash().putIfAbsent(taskKey, "status", "generating");
@@ -58,10 +59,33 @@ public class GenTaskService {
         }
         stringRedisTemplate.opsForHash().putAll(taskKey, Map.of(
                 "status", "generating",
-                "startTime", String.valueOf(System.currentTimeMillis()),
-                "chatHistoryId", chatHistoryId.toString()
+                "startTime", String.valueOf(System.currentTimeMillis())
         ));
         return true;
+    }
+
+    /**
+     * 兼容旧调用：预占任务 + 绑定 chatHistoryId
+     * 新链路推荐显式两步调用，便于在中间失败时执行补偿。
+     */
+    public boolean tryStartTask(Long appId, Long userId, Long chatHistoryId) {
+        boolean reserved = tryReserveTask(appId, userId);
+        if (!reserved) {
+            return false;
+        }
+        bindChatHistoryId(appId, userId, chatHistoryId);
+        return true;
+    }
+
+    /**
+     * 绑定任务关联的 chatHistoryId
+     */
+    public void bindChatHistoryId(Long appId, Long userId, Long chatHistoryId) {
+        if (chatHistoryId == null) {
+            return;
+        }
+        String taskKey = getTaskKey(appId, userId);
+        stringRedisTemplate.opsForHash().put(taskKey, "chatHistoryId", chatHistoryId.toString());
     }
 
     /**

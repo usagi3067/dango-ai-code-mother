@@ -9,7 +9,6 @@ import cn.hutool.json.JSONUtil;
 
 import com.dango.dangoaicodeapp.application.service.ProjectDownloadService;
 import com.dango.dangoaicodeapp.application.service.FeatureAnalysisApplicationService;
-import com.dango.dangoaicodeapp.infrastructure.redis.GenTaskService;
 import com.dango.dangoaicodecommon.ratelimit.annotation.RateLimit;
 import com.dango.dangoaicodecommon.ratelimit.enums.RateLimitType;
 import com.dango.dangoaicodeapp.model.constant.AppConstant;
@@ -18,6 +17,7 @@ import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
 import com.dango.dangoaicodeapp.model.vo.AppInfoVO;
 import com.dango.dangoaicodeapp.model.vo.AppVO;
 import com.dango.dangoaicodeapp.model.vo.FeatureAnalysisVO;
+import com.dango.dangoaicodeapp.domain.codegen.model.GenerationTaskSnapshot;
 import com.dango.dangoaicodeapp.domain.codegen.service.AppInfoGeneratorFacade;
 import com.dango.aicodegenerate.model.AppNameAndTagResult;
 import com.dango.dangoaicodeapp.application.service.AppApplicationService;
@@ -70,9 +70,6 @@ public class AppController {
 
     @Resource
     private AppInfoGeneratorFacade appInfoGeneratorFacade;
-
-    @Resource
-    private GenTaskService genTaskService;
 
     /**
      * 创建应用
@@ -192,7 +189,7 @@ public class AppController {
     /**
      * 游标分页获取应用列表（支持搜索和标签筛选）
      */
-    @PostMapping("/list/cursor/vo")
+    @PostMapping("/cursor/vo")
     public BaseResponse<Page<AppVO>> listAppByCursor(@RequestBody AppQueryRequest appQueryRequest) {
         ThrowUtils.throwIf(appQueryRequest == null, ErrorCode.PARAMS_ERROR);
         return ResultUtils.success(appService.listAppsByCursor(appQueryRequest));
@@ -282,12 +279,11 @@ public class AppController {
         ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR);
         long loginUserId = StpUtil.getLoginIdAsLong();
 
-        String status = genTaskService.getStatus(appId, loginUserId);
-        Long chatHistoryId = genTaskService.getChatHistoryId(appId, loginUserId);
+        GenerationTaskSnapshot taskSnapshot = codeGenApplicationService.getGenerationStatus(appId, loginUserId);
 
         Map<String, Object> result = new HashMap<>();
-        result.put("status", status);
-        result.put("chatHistoryId", chatHistoryId);
+        result.put("status", taskSnapshot.status());
+        result.put("chatHistoryId", taskSnapshot.chatHistoryId());
         return ResultUtils.success(result);
     }
 
@@ -303,11 +299,11 @@ public class AppController {
         long loginUserId = StpUtil.getLoginIdAsLong();
 
         // 检查任务状态
-        String status = genTaskService.getStatus(appId, loginUserId);
-        if ("none".equals(status)) {
+        GenerationTaskSnapshot taskSnapshot = codeGenApplicationService.getGenerationStatus(appId, loginUserId);
+        if (taskSnapshot.isNone()) {
             return Flux.just(ServerSentEvent.<String>builder().event("done").data("").build());
         }
-        if ("error".equals(status)) {
+        if (GenerationTaskSnapshot.STATUS_ERROR.equals(taskSnapshot.status())) {
             return Flux.just(
                     ServerSentEvent.<String>builder().data(JSONUtil.toJsonStr(Map.of("d", "生成任务已失败，请重试"))).build(),
                     ServerSentEvent.<String>builder().event("done").data("").build()

@@ -2,24 +2,25 @@ package com.dango.dangoaicodeapp.application.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
-
+import com.dango.dangoaicodeapp.application.service.AppApplicationService;
 import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
 import com.dango.dangoaicodeapp.application.service.CodeGenApplicationService;
-import com.dango.dangoaicodeapp.application.service.AppApplicationService;
 import com.dango.dangoaicodeapp.domain.app.entity.App;
 import com.dango.dangoaicodeapp.domain.app.repository.AppRepository;
 import com.dango.dangoaicodeapp.domain.app.valueobject.CodeGenTypeEnum;
 import com.dango.dangoaicodeapp.domain.app.valueobject.ElementInfo;
 import com.dango.dangoaicodeapp.domain.codegen.handler.StreamHandlerExecutor;
+import com.dango.dangoaicodeapp.domain.codegen.model.GenerationStreamChunk;
+import com.dango.dangoaicodeapp.domain.codegen.model.GenerationSession;
+import com.dango.dangoaicodeapp.domain.codegen.model.GenerationTaskSnapshot;
+import com.dango.dangoaicodeapp.domain.codegen.service.GenerationSessionDomainService;
 import com.dango.dangoaicodeapp.domain.codegen.workflow.CodeGenWorkflow;
 import com.dango.dangoaicodeapp.infrastructure.config.AppProperties;
-import com.dango.dangoaicodecommon.monitor.MonitorContext;
-import com.dango.dangoaicodecommon.monitor.MonitorContextHolder;
-import com.dango.dangoaicodeapp.infrastructure.redis.GenTaskService;
-import com.dango.dangoaicodeapp.infrastructure.redis.RedisStreamService;
 import com.dango.dangoaicodecommon.exception.BusinessException;
 import com.dango.dangoaicodecommon.exception.ErrorCode;
 import com.dango.dangoaicodecommon.exception.ThrowUtils;
+import com.dango.dangoaicodecommon.monitor.MonitorContext;
+import com.dango.dangoaicodecommon.monitor.MonitorContextHolder;
 import com.dango.supabase.dto.TableSchemaDTO;
 import com.dango.supabase.service.SupabaseService;
 import jakarta.annotation.Resource;
@@ -27,9 +28,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.dubbo.config.annotation.DubboReference;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
+import reactor.core.publisher.FluxSink;
 import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -45,175 +48,70 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
 
     @Resource
     private AppRepository appRepository;
+
     @Resource
     private ChatHistoryService chatHistoryService;
+
     @Resource
     private StreamHandlerExecutor streamHandlerExecutor;
+
     @Resource
-    private RedisStreamService redisStreamService;
-    @Resource
-    private GenTaskService genTaskService;
+    private GenerationSessionDomainService generationSessionDomainService;
+
     @Resource
     private AppApplicationService appApplicationService;
+
     @Resource
     private AppProperties appProperties;
+
+    @Resource
+    private CodeGenWorkflow codeGenWorkflow;
+
     @DubboReference
     private SupabaseService supabaseService;
 
     @Override
     public boolean startBackgroundGeneration(Long appId, String message, ElementInfo elementInfo, long userId) {
-        // 1. 参数校验
-        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
-        ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
-        App app = appRepository.findById(appId).orElse(null);
-        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
-        if (!app.getUserId().equals(userId)) {
-            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限访问该应用");
-        }
-
-        // 2. 保存用户消息
+        // 主流程保持“用例脚本化”：校验 -> 启动会话 -> 组装流 -> 订阅收口。
+        // 细节下沉到私有方法，避免应用服务退化成大段基础设施实现代码。
+        App app = loadAndCheckOwnership(appId, message, userId);
+        saveUserMessageSafely(appId, userId, message);
+        GenerationSession generationSession = generationSessionDomainService.startSession(appId, userId);
         try {
-            chatHistoryService.saveUserMessage(appId, userId, message);
+            Flux<String> processedStream = buildProcessedStream(app, message, appId, elementInfo, userId);
+            subscribeGenerationStream(processedStream, generationSession, appId, userId);
+            return true;
         } catch (Exception e) {
-            log.error("保存用户消息失败: {}", e.getMessage());
-        }
-
-        // 3. 预插入 generating 状态的 AI 消息
-        Long chatHistoryId = chatHistoryService.saveAiMessageWithStatus(appId, userId, "", "generating");
-
-        // 4. CAS 防重复启动
-        if (!genTaskService.tryStartTask(appId, userId, chatHistoryId)) {
-            throw new BusinessException(ErrorCode.OPERATION_ERROR, "已有生成任务在运行中");
-        }
-
-        String streamKey = genTaskService.getStreamKey(appId, userId);
-
-        // 5. 构建 AI 生成 Flux
-        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(app.getCodeGenType());
-        if (codeGenTypeEnum == null) {
-            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的代码生成类型");
-        }
-
-        boolean databaseEnabled = Boolean.TRUE.equals(app.getHasDatabase());
-        String databaseSchema = null;
-        if (databaseEnabled) {
-            try {
-                var tables = supabaseService.getSchema(appId);
-                if (tables != null && !tables.isEmpty()) {
-                    databaseSchema = formatTableSchemas(tables);
-                    log.info("应用 {} 已启用数据库，当前有 {} 个表", appId, tables.size());
-                }
-            } catch (Exception e) {
-                log.error("查询数据库 Schema 失败: {}", e.getMessage(), e);
+            log.error("启动后台生成流程失败: appId={}, userId={}", appId, userId, e);
+            generationSessionDomainService.failSession(generationSession, e);
+            MonitorContextHolder.clearContext();
+            if (e instanceof BusinessException businessException) {
+                throw businessException;
             }
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "后台生成任务启动失败");
         }
-
-        MonitorContext monitorContext = MonitorContext.builder()
-                .userId(String.valueOf(userId))
-                .appId(appId.toString())
-                .build();
-
-        Flux<String> codeStream = new CodeGenWorkflow().executeWorkflowWithFlux(
-                message, appId, elementInfo, databaseEnabled, databaseSchema, monitorContext, codeGenTypeEnum);
-
-        // 6. 经过 StreamHandler 处理（解析 JSON 消息类型，但不保存历史）
-        Flux<String> processedStream = streamHandlerExecutor.doExecute(codeStream);
-
-        // 7. 独立订阅，写入 Redis Stream
-        StringBuilder fullContentBuilder = new StringBuilder();
-
-        processedStream
-            .subscribeOn(Schedulers.boundedElastic())
-            .timeout(Duration.ofMinutes(5))
-            .doOnNext(chunk -> {
-                // chunk 现在是 JSON 字符串，解析后写入 Redis Stream
-                cn.hutool.json.JSONObject jsonObj = JSONUtil.parseObj(chunk);
-                String content = jsonObj.getStr("d", "");
-                String msgType = jsonObj.getStr("msgType");
-
-                // 只有非 log 类型的内容才拼接到完整内容中（用于保存对话历史）
-                if (!"log".equals(msgType)) {
-                    fullContentBuilder.append(content);
-                }
-
-                // 写入 Redis Stream，保留 msgType
-                java.util.HashMap<String, String> streamData = new java.util.HashMap<>();
-                streamData.put("d", content);
-                if (msgType != null) {
-                    streamData.put("msgType", msgType);
-                }
-                redisStreamService.addToStream(streamKey, streamData);
-            })
-            .doOnComplete(() -> {
-                genTaskService.markCompleted(appId, userId);
-                chatHistoryService.updateAiMessage(chatHistoryId, fullContentBuilder.toString(), "completed");
-                MonitorContextHolder.clearContext();
-                log.info("后台生成任务完成: appId={}, userId={}", appId, userId);
-                // 生成完成后异步截图（用预览 URL，不依赖部署）
-                try {
-                    App completedApp = appRepository.findById(appId).orElse(null);
-                    if (completedApp != null && completedApp.getCodeGenType() != null) {
-                        String previewUrl = String.format("%s/api/static/%s_%s/dist/index.html",
-                                appProperties.getPreviewHost(), completedApp.getCodeGenType(), appId);
-                        appApplicationService.generateAppScreenshotAsync(appId, previewUrl);
-                        log.info("已触发生成完成截图: appId={}", appId);
-                    }
-                } catch (Exception e) {
-                    log.warn("触发截图失败（不影响主流程）: appId={}, error={}", appId, e.getMessage());
-                }
-            })
-            .doOnError(error -> {
-                log.error("后台生成任务失败: appId={}, userId={}, error={}", appId, userId, error.getMessage());
-                genTaskService.markError(appId, userId);
-                String partialContent = fullContentBuilder.toString();
-                chatHistoryService.updateAiMessage(chatHistoryId,
-                        StrUtil.isNotBlank(partialContent) ? partialContent : "AI回复失败: " + error.getMessage(),
-                        "error");
-                MonitorContextHolder.clearContext();
-            })
-            .subscribe();
-
-        return true;
     }
 
     @Override
     public Flux<String> consumeGenerationStream(Long appId, long userId, String afterId) {
-        String streamKey = genTaskService.getStreamKey(appId, userId);
-
         return Flux.<String>create(sink -> {
             Schedulers.boundedElastic().schedule(() -> {
                 String lastId = afterId != null ? afterId : "0";
                 try {
                     while (!sink.isCancelled()) {
                         // 非阻塞读取已有消息
-                        var records = redisStreamService.readFromStream(streamKey, lastId, 100);
-                        for (var record : records) {
-                            if (sink.isCancelled()) return;
-                            Object d = record.getValue().get("d");
-                            Object msgType = record.getValue().get("msgType");
-                            if (d != null) {
-                                // 将 d 和 msgType 组合为 JSON 传递给 SSE 端点
-                                java.util.HashMap<String, String> msg = new java.util.HashMap<>();
-                                msg.put("d", d.toString());
-                                if (msgType != null) {
-                                    msg.put("msgType", msgType.toString());
-                                }
-                                sink.next(JSONUtil.toJsonStr(msg));
-                            }
-                            lastId = record.getId().getValue();
-                        }
-
-                        // 检查任务状态
-                        String status = genTaskService.getStatus(appId, userId);
-
-                        // 如果任务已完成且没有更多消息，结束
-                        if (("completed".equals(status) || "error".equals(status)) && records.isEmpty()) {
-                            sink.complete();
+                        var records = generationSessionDomainService.readStreamChunks(appId, userId, lastId, 100);
+                        lastId = emitStreamRecords(records, lastId, sink);
+                        if (sink.isCancelled()) {
                             return;
                         }
 
-                        // 如果状态是 none（任务不存在），也结束
-                        if ("none".equals(status)) {
+                        GenerationTaskSnapshot taskSnapshot = generationSessionDomainService.getTaskSnapshot(appId, userId);
+                        if (taskSnapshot.isTerminal() && records.isEmpty()) {
+                            sink.complete();
+                            return;
+                        }
+                        if (taskSnapshot.isNone()) {
                             sink.complete();
                             return;
                         }
@@ -236,6 +134,155 @@ public class CodeGenApplicationServiceImpl implements CodeGenApplicationService 
                 }
             });
         });
+    }
+
+    @Override
+    public GenerationTaskSnapshot getGenerationStatus(Long appId, long userId) {
+        return generationSessionDomainService.getTaskSnapshot(appId, userId);
+    }
+
+    private App loadAndCheckOwnership(Long appId, String message, long userId) {
+        ThrowUtils.throwIf(appId == null || appId <= 0, ErrorCode.PARAMS_ERROR, "应用 ID 不能为空");
+        ThrowUtils.throwIf(StrUtil.isBlank(message), ErrorCode.PARAMS_ERROR, "用户消息不能为空");
+        App app = appRepository.findById(appId).orElse(null);
+        ThrowUtils.throwIf(app == null, ErrorCode.NOT_FOUND_ERROR, "应用不存在");
+        if (!app.getUserId().equals(userId)) {
+            throw new BusinessException(ErrorCode.NO_AUTH_ERROR, "无权限访问该应用");
+        }
+        return app;
+    }
+
+    private void saveUserMessageSafely(Long appId, long userId, String message) {
+        try {
+            chatHistoryService.saveUserMessage(appId, userId, message);
+        } catch (Exception e) {
+            log.error("保存用户消息失败: {}", e.getMessage(), e);
+        }
+    }
+
+    private Flux<String> buildProcessedStream(
+            App app, String message, Long appId, ElementInfo elementInfo, long userId) {
+        CodeGenTypeEnum codeGenTypeEnum = CodeGenTypeEnum.getEnumByValue(app.getCodeGenType());
+        if (codeGenTypeEnum == null) {
+            throw new BusinessException(ErrorCode.SYSTEM_ERROR, "不支持的代码生成类型");
+        }
+
+        boolean databaseEnabled = Boolean.TRUE.equals(app.getHasDatabase());
+        String databaseSchema = loadDatabaseSchema(appId, databaseEnabled);
+        MonitorContext monitorContext = buildMonitorContext(appId, userId);
+
+        Flux<String> codeStream = codeGenWorkflow.executeWorkflowWithFlux(
+                message, appId, elementInfo, databaseEnabled, databaseSchema, monitorContext, codeGenTypeEnum
+        );
+        return streamHandlerExecutor.doExecute(codeStream);
+    }
+
+    private void subscribeGenerationStream(
+            Flux<String> processedStream, GenerationSession session, Long appId, long userId) {
+        // 统一订阅收口：onNext/onComplete/onError 都走领域服务，
+        // 保证“任务状态 + 聊天消息状态”的一致性规则不会散落在多个分支里。
+        StringBuilder fullContentBuilder = new StringBuilder();
+        processedStream
+                .subscribeOn(Schedulers.boundedElastic())
+                .timeout(Duration.ofMinutes(5))
+                .doOnNext(chunk -> appendChunk(session, chunk, fullContentBuilder))
+                .doOnComplete(() -> completeSession(session, fullContentBuilder.toString(), appId, userId))
+                .doOnError(error -> failSession(session, error, fullContentBuilder.toString(), appId, userId))
+                .subscribe();
+    }
+
+    private String emitStreamRecords(
+            List<GenerationStreamChunk> records, String lastId, FluxSink<String> sink) {
+        // 抽成独立方法：把“遍历、取消检查、游标推进”封装成一个原子步骤，
+        // 让 consume 主循环只表达控制流（读流 -> 判状态 -> sleep）。
+        String nextLastId = lastId;
+        for (GenerationStreamChunk record : records) {
+            if (sink.isCancelled()) {
+                return nextLastId;
+            }
+            sink.next(toStreamPayload(record));
+            if (record.id() != null) {
+                nextLastId = record.id();
+            }
+        }
+        return nextLastId;
+    }
+
+    private String toStreamPayload(GenerationStreamChunk record) {
+        // 序列化集中在一处，避免不同调用点出现字段不一致（d/msgType）的问题。
+        HashMap<String, String> msg = new HashMap<>();
+        msg.put("d", record.content());
+        if (record.msgType() != null) {
+            msg.put("msgType", record.msgType());
+        }
+        return JSONUtil.toJsonStr(msg);
+    }
+
+    private void appendChunk(GenerationSession session, String chunk, StringBuilder fullContentBuilder) {
+        cn.hutool.json.JSONObject jsonObj = JSONUtil.parseObj(chunk);
+        String content = jsonObj.getStr("d", "");
+        String msgType = jsonObj.getStr("msgType");
+        if (!"log".equals(msgType)) {
+            fullContentBuilder.append(content);
+        }
+        generationSessionDomainService.appendChunk(session, content, msgType);
+    }
+
+    private void completeSession(GenerationSession session, String fullContent, Long appId, long userId) {
+        generationSessionDomainService.completeSession(session, fullContent);
+        MonitorContextHolder.clearContext();
+        log.info("后台生成任务完成: appId={}, userId={}", appId, userId);
+        triggerAppScreenshotSafely(appId);
+    }
+
+    private void failSession(
+            GenerationSession session, Throwable throwable, String partialContent, Long appId, long userId) {
+        log.error("后台生成任务失败: appId={}, userId={}, error={}", appId, userId, throwable.getMessage());
+        if (StrUtil.isNotBlank(partialContent)) {
+            generationSessionDomainService.failSession(session, partialContent);
+        } else {
+            generationSessionDomainService.failSession(session, throwable);
+        }
+        MonitorContextHolder.clearContext();
+    }
+
+    private void triggerAppScreenshotSafely(Long appId) {
+        try {
+            App completedApp = appRepository.findById(appId).orElse(null);
+            if (completedApp == null || completedApp.getCodeGenType() == null) {
+                return;
+            }
+            String previewUrl = String.format("%s/api/static/%s_%s/dist/index.html",
+                    appProperties.getPreviewHost(), completedApp.getCodeGenType(), appId);
+            appApplicationService.generateAppScreenshotAsync(appId, previewUrl);
+            log.info("已触发生成完成截图: appId={}", appId);
+        } catch (Exception e) {
+            log.warn("触发截图失败（不影响主流程）: appId={}, error={}", appId, e.getMessage());
+        }
+    }
+
+    private String loadDatabaseSchema(Long appId, boolean databaseEnabled) {
+        if (!databaseEnabled) {
+            return null;
+        }
+        try {
+            var tables = supabaseService.getSchema(appId);
+            if (tables == null || tables.isEmpty()) {
+                return null;
+            }
+            log.info("应用 {} 已启用数据库，当前有 {} 个表", appId, tables.size());
+            return formatTableSchemas(tables);
+        } catch (Exception e) {
+            log.error("查询数据库 Schema 失败: {}", e.getMessage(), e);
+            return null;
+        }
+    }
+
+    private MonitorContext buildMonitorContext(Long appId, long userId) {
+        return MonitorContext.builder()
+                .userId(String.valueOf(userId))
+                .appId(appId.toString())
+                .build();
     }
 
     /**
