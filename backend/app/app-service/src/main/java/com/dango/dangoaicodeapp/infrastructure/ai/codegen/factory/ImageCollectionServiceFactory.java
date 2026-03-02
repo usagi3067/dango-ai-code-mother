@@ -7,7 +7,7 @@ import com.dango.dangoaicodeapp.domain.codegen.tools.UndrawIllustrationTool;
 import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.ImageCollectionPlanService;
 import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.ImageCollectionService;
 import com.dango.aicodegenerate.model.AiModelProvider;
-import com.dango.aicodegenerate.model.AiServiceType;
+
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -39,7 +39,7 @@ public class ImageCollectionServiceFactory {
     @Bean
     public ImageCollectionService createImageCollectionService() {
         return AiServices.builder(ImageCollectionService.class)
-                .chatModel(aiModelProvider.getChatModel(AiServiceType.IMAGE_COLLECTION))
+                .chatModel(aiModelProvider.getChatModel("image-collection"))
                 .tools(
                         imageSearchTool,
                         undrawIllustrationTool,
@@ -56,7 +56,7 @@ public class ImageCollectionServiceFactory {
     @Bean
     public ImageCollectionPlanService createImageCollectionPlanService() {
         return AiServices.builder(ImageCollectionPlanService.class)
-                .chatModel(aiModelProvider.getChatModel(AiServiceType.IMAGE_COLLECTION))
+                .chatModel(aiModelProvider.getChatModel("image-collection"))
                 .build();
     }
 }

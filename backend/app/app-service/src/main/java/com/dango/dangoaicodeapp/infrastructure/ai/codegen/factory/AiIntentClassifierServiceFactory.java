@@ -2,7 +2,7 @@ package com.dango.dangoaicodeapp.infrastructure.ai.codegen.factory;
 
 import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.IntentClassifierService;
 import com.dango.aicodegenerate.model.AiModelProvider;
-import com.dango.aicodegenerate.model.AiServiceType;
+
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
@@ -18,7 +18,7 @@ public class AiIntentClassifierServiceFactory {
 
     public IntentClassifierService createService() {
         return AiServices.builder(IntentClassifierService.class)
-                .chatModel(aiModelProvider.getChatModel(AiServiceType.INTENT_CLASSIFIER))
+                .chatModel(aiModelProvider.getChatModel("intent-classifier"))
                 .build();
     }
 }

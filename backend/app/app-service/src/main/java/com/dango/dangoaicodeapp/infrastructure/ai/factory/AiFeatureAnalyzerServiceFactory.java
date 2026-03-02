@@ -1,7 +1,7 @@
 package com.dango.dangoaicodeapp.infrastructure.ai.factory;
 
 import com.dango.aicodegenerate.model.AiModelProvider;
-import com.dango.aicodegenerate.model.AiServiceType;
+
 import com.dango.dangoaicodeapp.infrastructure.ai.service.AiFeatureAnalyzerService;
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
@@ -20,7 +20,7 @@ public class AiFeatureAnalyzerServiceFactory {
     @Bean
     public AiFeatureAnalyzerService aiFeatureAnalyzerService() {
         return AiServices.builder(AiFeatureAnalyzerService.class)
-                .chatModel(aiModelProvider.getChatModel(AiServiceType.FEATURE_ANALYZER))
+                .chatModel(aiModelProvider.getChatModel("feature-analyzer"))
                 .build();
     }
 }

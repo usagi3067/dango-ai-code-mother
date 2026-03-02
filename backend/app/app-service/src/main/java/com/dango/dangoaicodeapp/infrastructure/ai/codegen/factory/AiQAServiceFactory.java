@@ -5,7 +5,7 @@ import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import com.dango.aicodegenerate.model.AiModelProvider;
-import com.dango.aicodegenerate.model.AiServiceType;
+
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -40,7 +40,7 @@ public class AiQAServiceFactory {
         chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 20);
 
         return AiServices.builder(QAService.class)
-                .streamingChatModel(aiModelProvider.getStreamingChatModel(AiServiceType.QA))
+                .streamingChatModel(aiModelProvider.getStreamingChatModel("qa"))
                 .chatMemory(chatMemory)
                 .chatMemoryProvider(memoryId -> chatMemory)
                 .build();

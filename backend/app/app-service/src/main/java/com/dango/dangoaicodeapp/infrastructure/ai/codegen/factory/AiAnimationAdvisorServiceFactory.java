@@ -4,7 +4,7 @@ import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.InterviewAnima
 import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.InterviewSourceCodeAdvisorService;
 import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.LeetCodeAnimationAdvisorService;
 import com.dango.aicodegenerate.model.AiModelProvider;
-import com.dango.aicodegenerate.model.AiServiceType;
+
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import org.springframework.stereotype.Component;
@@ -20,19 +20,19 @@ public class AiAnimationAdvisorServiceFactory {
 
     public LeetCodeAnimationAdvisorService createService() {
         return AiServices.builder(LeetCodeAnimationAdvisorService.class)
-                .streamingChatModel(aiModelProvider.getStreamingChatModel(AiServiceType.ANIMATION_ADVISOR))
+                .streamingChatModel(aiModelProvider.getStreamingChatModel("animation-advisor"))
                 .build();
     }
 
     public InterviewAnimationAdvisorService createInterviewService() {
         return AiServices.builder(InterviewAnimationAdvisorService.class)
-                .streamingChatModel(aiModelProvider.getStreamingChatModel(AiServiceType.ANIMATION_ADVISOR))
+                .streamingChatModel(aiModelProvider.getStreamingChatModel("animation-advisor"))
                 .build();
     }
 
     public InterviewSourceCodeAdvisorService createInterviewSourceCodeService() {
         return AiServices.builder(InterviewSourceCodeAdvisorService.class)
-                .streamingChatModel(aiModelProvider.getStreamingChatModel(AiServiceType.ANIMATION_ADVISOR))
+                .streamingChatModel(aiModelProvider.getStreamingChatModel("animation-advisor"))
                 .build();
     }
 }

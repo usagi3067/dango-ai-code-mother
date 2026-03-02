@@ -2,7 +2,7 @@ package com.dango.dangoaicodeapp.infrastructure.ai.codegen.factory;
 
 import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.AiAppInfoGeneratorService;
 import com.dango.aicodegenerate.model.AiModelProvider;
-import com.dango.aicodegenerate.model.AiServiceType;
+
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import org.springframework.context.annotation.Bean;
@@ -25,7 +25,7 @@ public class AiAppInfoGeneratorServiceFactory {
     @Bean
     public AiAppInfoGeneratorService aiAppInfoGeneratorService() {
         return AiServices.builder(AiAppInfoGeneratorService.class)
-                .chatModel(aiModelProvider.getChatModel(AiServiceType.APP_INFO_GENERATOR))
+                .chatModel(aiModelProvider.getChatModel("app-info-generator"))
                 .build();
     }
 }

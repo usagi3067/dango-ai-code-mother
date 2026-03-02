@@ -16,7 +16,7 @@ import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import com.dango.aicodegenerate.model.AiModelProvider;
-import com.dango.aicodegenerate.model.AiServiceType;
+
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -119,7 +119,7 @@ public class AiCodeFixerServiceFactory {
         };
 
         return AiServices.builder(serviceClass)
-                .streamingChatModel(aiModelProvider.getStreamingChatModel(AiServiceType.CODE_FIXER))
+                .streamingChatModel(aiModelProvider.getStreamingChatModel("code-fixer"))
                 .chatMemory(chatMemory)
                 .chatMemoryProvider(memoryId -> chatMemory)
                 .tools(

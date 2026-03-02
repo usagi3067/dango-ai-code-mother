@@ -9,7 +9,7 @@ import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import com.dango.aicodegenerate.model.AiModelProvider;
-import com.dango.aicodegenerate.model.AiServiceType;
+
 import dev.langchain4j.service.AiServices;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -65,7 +65,7 @@ public class AiModificationPlannerServiceFactory {
         chatHistoryService.loadChatHistoryToMemory(appId, chatMemory, 10);
 
         return AiServices.builder(AiModificationPlannerService.class)
-                .chatModel(aiModelProvider.getChatModel(AiServiceType.MODIFICATION_PLANNER))
+                .chatModel(aiModelProvider.getChatModel("modification-planner"))
                 .chatMemory(chatMemory)
                 .chatMemoryProvider(memoryId -> chatMemory)
                 .tools(
