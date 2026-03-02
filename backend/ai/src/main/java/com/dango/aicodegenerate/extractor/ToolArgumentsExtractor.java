@@ -7,34 +7,45 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * 工具参数提取器 - 状态机实现
- * <p>
- * 用于累积解析工具调用的 arguments JSON delta 片段：
- * 1. 累积 arguments delta 片段
- * 2. 状态机：INIT -> PARSING_TRIGGER_PARAM -> DONE
- * 3. 解析 triggerParam（如 relativeFilePath）完成后发送 TOOL_REQUEST
- * 4. JSON unescape 处理（反斜杠n, 反斜杠t, 反斜杠引号, 反斜杠反斜杠, 反斜杠uXXXX）
+ *
+ * <h2>功能说明</h2>
+ * 用于累积解析工具调用的 arguments JSON delta 片段。
+ * 使用状态机管理解析过程，当解析到触发参数时立即发送消息。
+ *
+ * <h2>工作原理</h2>
+ * <ol>
+ *   <li>累积 arguments delta 片段</li>
+ *   <li>状态机：INIT -> PARSING_TRIGGER_PARAM -> DONE</li>
+ *   <li>解析 triggerParam（如 relativeFilePath）完成后发送 TOOL_REQUEST</li>
+ *   <li>处理 JSON 转义字符（\n, \t, \", \\, \uXXXX）</li>
+ * </ol>
+ *
+ * <h2>使用说明</h2>
+ * 此类通常不需要直接使用，由 StreamingResponseProcessor 自动创建和管理。
+ *
+ * <h2>示例</h2>
+ * <pre>{@code
+ * // 创建提取器
+ * ToolArgumentsExtractor extractor = new ToolArgumentsExtractor(
+ *     "tool-123",           // 工具调用 ID
+ *     "writeFile",          // 工具名称
+ *     "relativeFilePath",   // 触发参数名
+ *     "write"               // 操作类型
+ * );
+ *
+ * // 处理 delta 片段
+ * String delta1 = "{\"relativeFilePath\":\"src/";
+ * List<StreamMessage> messages1 = extractor.process(delta1);  // 返回空列表
+ *
+ * String delta2 = "App.vue\",\"content\":\"...";
+ * List<StreamMessage> messages2 = extractor.process(delta2);  // 返回 ToolRequestMessage
+ * }</pre>
  */
 @Slf4j
 public class ToolArgumentsExtractor {
-
-    /**
-     * 工具配置：triggerParam 为触发参数名，解析完成后立即发送 TOOL_REQUEST
-     */
-    private static final Map<String, String> TOOL_TRIGGER_PARAMS = Map.of(
-            "writeFile", "relativeFilePath",
-            "modifyFile", "relativeFilePath",
-            "readFile", "relativeFilePath",
-            "readDir", "relativeDirPath",
-            "deleteFile", "relativeFilePath",
-            "searchContentImages", "query",
-            "searchIllustrations", "query",
-            "generateLogos", "description",
-            "generateMermaidDiagram", "mermaidCode"
-    );
 
     /**
      * 状态机状态
@@ -48,6 +59,7 @@ public class ToolArgumentsExtractor {
     private final String toolCallId;
     private final String toolName;
     private final String triggerParam;
+    private final String action;
 
     @Getter
     private State state = State.INIT;
@@ -65,21 +77,31 @@ public class ToolArgumentsExtractor {
     // 是否已发送 TOOL_REQUEST
     private boolean toolRequestSent = false;
 
-    public ToolArgumentsExtractor(String toolCallId, String toolName) {
+    /**
+     * 构造函数
+     *
+     * @param toolCallId 工具调用 ID
+     * @param toolName 工具名称
+     * @param triggerParam 触发参数名，解析到此参数时立即发送消息
+     * @param action 操作类型（write, read, search 等）
+     */
+    public ToolArgumentsExtractor(
+        String toolCallId,
+        String toolName,
+        String triggerParam,
+        String action
+    ) {
         this.toolCallId = toolCallId;
         this.toolName = toolName;
-        this.triggerParam = TOOL_TRIGGER_PARAMS.get(toolName);
-    }
-
-    /**
-     * 检查工具是否已配置
-     */
-    public static boolean isConfiguredTool(String toolName) {
-        return TOOL_TRIGGER_PARAMS.containsKey(toolName);
+        this.triggerParam = triggerParam;
+        this.action = action;
     }
 
     /**
      * 处理一个 delta 片段，返回需要发送的消息列表
+     *
+     * @param delta JSON delta 片段
+     * @return 需要发送的消息列表（可能为空）
      */
     public List<StreamMessage> process(String delta) {
         List<StreamMessage> messages = new ArrayList<>();
@@ -141,7 +163,6 @@ public class ToolArgumentsExtractor {
         triggerParamValue = unescape(rawValue);
 
         if (!toolRequestSent) {
-            String action = determineAction();
             messages.add(new ToolRequestMessage(toolCallId, toolName, triggerParamValue, action, null));
             toolRequestSent = true;
         }
@@ -225,21 +246,6 @@ public class ToolArgumentsExtractor {
         }
 
         return result.toString();
-    }
-
-    /**
-     * 确定操作类型
-     */
-    private String determineAction() {
-        return switch (toolName) {
-            case "writeFile" -> "write";
-            case "modifyFile" -> "modify";
-            case "readFile", "readDir" -> "read";
-            case "deleteFile" -> "delete";
-            case "searchContentImages", "searchIllustrations" -> "search";
-            case "generateLogos", "generateMermaidDiagram" -> "generate";
-            default -> "unknown";
-        };
     }
 
     /**
