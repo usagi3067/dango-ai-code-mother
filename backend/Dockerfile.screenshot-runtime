@@ -1,5 +1,0 @@
-# 运行时 Dockerfile（在远程机器上构建，基础镜像已预装）
-FROM dango-screenshot-base:1.0
-COPY app.jar app.jar
-EXPOSE 8125
-ENTRYPOINT ["sh", "-c", "java ${JAVA_OPTS:--Xmx256m} -jar app.jar"]
