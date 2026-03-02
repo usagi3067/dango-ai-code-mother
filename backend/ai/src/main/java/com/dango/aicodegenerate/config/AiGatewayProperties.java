@@ -23,8 +23,8 @@ public class AiGatewayProperties {
         private String apiKey;
         private Integer defaultMaxTokens = 8192;
         private Duration defaultTimeout = Duration.ofSeconds(60);
-        private Boolean logRequests = true;
-        private Boolean logResponses = true;
+        private Boolean logRequests = false;
+        private Boolean logResponses = false;
     }
 
     @Data

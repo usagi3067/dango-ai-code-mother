@@ -194,7 +194,7 @@
             <appender-ref ref="CLS_LOG"/>
         </logger>
         <!-- LangChain4j HTTP 日志 - 生产环境上报 CLS，观察 AI 请求/响应效果 -->
-        <logger name="dev.langchain4j.http.client.log" level="DEBUG" additivity="false">
+        <logger name="dev.langchain4j.http.client.log" level="INFO" additivity="false">
             <appender-ref ref="ASYNC_FILE_BIZ"/>
             <appender-ref ref="CLS_LOG"/>
         </logger>
