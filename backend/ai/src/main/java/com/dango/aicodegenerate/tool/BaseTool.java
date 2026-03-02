@@ -100,8 +100,9 @@ public abstract class BaseTool {
      * <p>当工具执行完成后，会调用此方法生成显示给用户的消息。
      * 子类必须实现此方法，定义如何格式化工具执行结果。
      *
-     * @param arguments 工具执行的参数（JSON 对象）
+     * @param arguments 工具执行的参数（JSON 对象），不能为 null
      * @return 格式化的执行结果字符串
+     * @throws NullPointerException 如果 arguments 为 null
      */
     public abstract String generateToolExecutedMessage(JSONObject arguments);
 }
