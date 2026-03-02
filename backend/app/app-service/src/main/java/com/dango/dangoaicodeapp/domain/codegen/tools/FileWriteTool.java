@@ -21,7 +21,7 @@ import java.nio.file.StandardOpenOption;
  */
 @Slf4j
 @Component
-public class FileWriteTool extends BaseTool{
+public class FileWriteTool extends CodeGenBaseTool {
 
     @Tool("写入文件到指定路径。参数顺序：必须先提供 relativeFilePath，再提供 content")
     public String writeFile(
@@ -71,7 +71,7 @@ public class FileWriteTool extends BaseTool{
     }
 
     @Override
-    public String generateToolExecutedResult(JSONObject arguments) {
+    public String generateToolExecutedMessage(JSONObject arguments) {
         String relativeFilePath = arguments.getStr("relativeFilePath");
         String suffix = FileUtil.getSuffix(relativeFilePath);
         String content = arguments.getStr("content");

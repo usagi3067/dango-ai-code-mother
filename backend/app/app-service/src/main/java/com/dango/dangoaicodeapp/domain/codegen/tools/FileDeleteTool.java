@@ -18,7 +18,7 @@ import java.nio.file.Paths;
  */
 @Slf4j
 @Component
-public class FileDeleteTool extends BaseTool {
+public class FileDeleteTool extends CodeGenBaseTool {
 
     @Tool("删除指定路径的文件")
     public String deleteFile(
@@ -86,7 +86,7 @@ public class FileDeleteTool extends BaseTool {
     }
 
     @Override
-    public String generateToolExecutedResult(JSONObject arguments) {
+    public String generateToolExecutedMessage(JSONObject arguments) {
         String relativeFilePath = arguments.getStr("relativeFilePath");
         return String.format("[工具调用] %s %s", getDisplayName(), relativeFilePath);
     }

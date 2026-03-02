@@ -21,7 +21,7 @@ import java.util.Set;
  */
 @Slf4j
 @Component
-public class FileDirReadTool extends BaseTool{
+public class FileDirReadTool extends CodeGenBaseTool{
 
     /**
      * 需要忽略的文件和目录
@@ -112,7 +112,7 @@ public class FileDirReadTool extends BaseTool{
     }
 
     @Override
-    public String generateToolExecutedResult(JSONObject arguments) {
+    public String generateToolExecutedMessage(JSONObject arguments) {
         String relativeDirPath = arguments.getStr("relativeDirPath");
         if (StrUtil.isEmpty(relativeDirPath)) {
             relativeDirPath = "根目录";

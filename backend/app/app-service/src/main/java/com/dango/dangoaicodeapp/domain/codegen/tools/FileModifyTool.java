@@ -20,7 +20,7 @@ import java.nio.file.StandardOpenOption;
  */
 @Slf4j
 @Component
-public class FileModifyTool extends BaseTool {
+public class FileModifyTool extends CodeGenBaseTool {
 
     @Tool("修改文件内容，用新内容替换指定的旧内容。参数顺序：必须先提供 relativeFilePath，再提供 oldContent 和 newContent")
     public String modifyFile(
@@ -77,7 +77,7 @@ public class FileModifyTool extends BaseTool {
     }
 
     @Override
-    public String generateToolExecutedResult(JSONObject arguments) {
+    public String generateToolExecutedMessage(JSONObject arguments) {
         String relativeFilePath = arguments.getStr("relativeFilePath");
         String oldContent = arguments.getStr("oldContent");
         String newContent = arguments.getStr("newContent");
