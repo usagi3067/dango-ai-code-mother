@@ -20,7 +20,7 @@ import java.util.List;
  *   <li>累积 arguments delta 片段</li>
  *   <li>状态机：INIT -> PARSING_TRIGGER_PARAM -> DONE</li>
  *   <li>解析 triggerParam（如 relativeFilePath）完成后发送 TOOL_REQUEST</li>
- *   <li>处理 JSON 转义字符（\n, \t, \", \\, \uXXXX）</li>
+   *   <li>处理 JSON 转义字符</li>
  * </ol>
  *
  * <h2>使用说明</h2>

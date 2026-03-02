@@ -5,7 +5,7 @@ import cn.hutool.json.JSONObject;
 import cn.hutool.json.JSONUtil;
 
 import com.dango.aicodegenerate.model.message.*;
-import com.dango.dangoaicodeapp.domain.codegen.tools.BaseTool;
+import com.dango.aicodegenerate.tool.BaseTool;
 import com.dango.dangoaicodeapp.domain.codegen.tools.ToolManager;
 import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
@@ -83,7 +83,7 @@ public class JsonMessageStreamHandler {
                     // 非流式工具：使用原有逻辑
                     BaseTool tool = toolManager.getTool(msg.getName());
                     if (tool != null) {
-                        return JSONUtil.toJsonStr(Map.of("d", tool.generateToolRequestResponse()));
+                        return JSONUtil.toJsonStr(Map.of("d", tool.generateToolRequestMessage()));
                     }
                 }
                 return "";
@@ -95,7 +95,7 @@ public class JsonMessageStreamHandler {
                 // 所有工具统一：工具执行完成后展示完整结果
                 BaseTool tool = toolManager.getTool(toolName);
                 JSONObject args = JSONUtil.parseObj(msg.getArguments());
-                String result = tool.generateToolExecutedResult(args);
+                String result = tool.generateToolExecutedMessage(args);
                 chatHistoryStringBuilder.append(result);
                 return JSONUtil.toJsonStr(Map.of("d", String.format("\n%s\n", result)));
             }
