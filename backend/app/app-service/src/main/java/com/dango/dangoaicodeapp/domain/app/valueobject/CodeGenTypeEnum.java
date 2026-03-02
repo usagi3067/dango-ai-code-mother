@@ -8,7 +8,8 @@ public enum CodeGenTypeEnum {
 
     VUE_PROJECT("Vue 工程模式", "vue_project"),
     LEETCODE_PROJECT("力扣题解", "leetcode_project"),
-    INTERVIEW_PROJECT("面试题解", "interview_project");
+    INTERVIEW_PROJECT("面试题解", "interview_project"),
+    INTERVIEW_SOURCE_CODE_PROJECT("面试源码题解", "interview_source_code_project");
 
 
     private final String text;

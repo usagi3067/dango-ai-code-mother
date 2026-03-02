@@ -33,6 +33,7 @@ public class CodeGenWorkflowFactory {
     private static final String SUBGRAPH_CREATE = "create_subgraph";
     private static final String SUBGRAPH_LEETCODE_CREATE = "leetcode_create_subgraph";
     private static final String SUBGRAPH_INTERVIEW_CREATE = "interview_create_subgraph";
+    private static final String SUBGRAPH_INTERVIEW_SOURCE_CODE_CREATE = "interview_source_code_create_subgraph";
     private static final String SUBGRAPH_EXISTING_CODE = "existing_code_subgraph";
     private static final String SUBGRAPH_BUILD_CHECK = "build_check_subgraph";
 
@@ -51,6 +52,9 @@ public class CodeGenWorkflowFactory {
     private static final String NODE_INTERVIEW_ANIMATION_ADVISOR = "interview_animation_advisor";
     private static final String NODE_INTERVIEW_PROMPT_ENHANCER = "interview_prompt_enhancer";
 
+    private static final String NODE_SOURCE_CODE_ADVISOR = "source_code_advisor";
+    private static final String NODE_SOURCE_CODE_PROMPT_ENHANCER = "source_code_prompt_enhancer";
+
     private static final String NODE_CODE_READER = "code_reader";
     private static final String NODE_INTENT_CLASSIFIER = "intent_classifier";
     private static final String NODE_QA = "qa_node";
@@ -64,6 +68,7 @@ public class CodeGenWorkflowFactory {
     private static final String ROUTE_CREATE = "create";
     private static final String ROUTE_LEETCODE_CREATE = "leetcode_create";
     private static final String ROUTE_INTERVIEW_CREATE = "interview_create";
+    private static final String ROUTE_INTERVIEW_SOURCE_CODE_CREATE = "interview_source_code_create";
     private static final String ROUTE_EXISTING_CODE = "existing_code";
     private static final String ROUTE_MODIFY = "modify";
     private static final String ROUTE_QA = "qa";
@@ -85,6 +90,8 @@ public class CodeGenWorkflowFactory {
     private final LeetCodePromptEnhancerNode leetCodePromptEnhancerNode;
     private final InterviewAnimationAdvisorNode interviewAnimationAdvisorNode;
     private final InterviewPromptEnhancerNode interviewPromptEnhancerNode;
+    private final SourceCodeAdvisorNode sourceCodeAdvisorNode;
+    private final SourceCodePromptEnhancerNode sourceCodePromptEnhancerNode;
     private final CodeReaderNode codeReaderNode;
     private final IntentClassifierNode intentClassifierNode;
     private final ModificationPlannerNode modificationPlannerNode;
@@ -98,6 +105,7 @@ public class CodeGenWorkflowFactory {
         StateGraph<MessagesState<String>> createSubGraph = buildCreateModeSubGraph();
         StateGraph<MessagesState<String>> leetCodeCreateSubGraph = buildLeetCodeCreateSubGraph();
         StateGraph<MessagesState<String>> interviewCreateSubGraph = buildInterviewCreateSubGraph();
+        StateGraph<MessagesState<String>> interviewSourceCodeCreateSubGraph = buildInterviewSourceCodeCreateSubGraph();
         StateGraph<MessagesState<String>> existingCodeSubGraph = buildExistingCodeSubGraph();
         StateGraph<MessagesState<String>> buildCheckSubGraph = buildBuildCheckSubGraph();
 
@@ -106,6 +114,7 @@ public class CodeGenWorkflowFactory {
                 .addNode(SUBGRAPH_CREATE, createSubGraph)
                 .addNode(SUBGRAPH_LEETCODE_CREATE, leetCodeCreateSubGraph)
                 .addNode(SUBGRAPH_INTERVIEW_CREATE, interviewCreateSubGraph)
+                .addNode(SUBGRAPH_INTERVIEW_SOURCE_CODE_CREATE, interviewSourceCodeCreateSubGraph)
                 .addNode(SUBGRAPH_EXISTING_CODE, existingCodeSubGraph)
                 .addNode(SUBGRAPH_BUILD_CHECK, buildCheckSubGraph)
                 .addEdge(START, NODE_MODE_ROUTER)
@@ -115,11 +124,13 @@ public class CodeGenWorkflowFactory {
                                 ROUTE_CREATE, SUBGRAPH_CREATE,
                                 ROUTE_LEETCODE_CREATE, SUBGRAPH_LEETCODE_CREATE,
                                 ROUTE_INTERVIEW_CREATE, SUBGRAPH_INTERVIEW_CREATE,
+                                ROUTE_INTERVIEW_SOURCE_CODE_CREATE, SUBGRAPH_INTERVIEW_SOURCE_CODE_CREATE,
                                 ROUTE_EXISTING_CODE, SUBGRAPH_EXISTING_CODE
                         ))
                 .addEdge(SUBGRAPH_CREATE, SUBGRAPH_BUILD_CHECK)
                 .addEdge(SUBGRAPH_LEETCODE_CREATE, SUBGRAPH_BUILD_CHECK)
                 .addEdge(SUBGRAPH_INTERVIEW_CREATE, SUBGRAPH_BUILD_CHECK)
+                .addEdge(SUBGRAPH_INTERVIEW_SOURCE_CODE_CREATE, SUBGRAPH_BUILD_CHECK)
                 .addConditionalEdges(SUBGRAPH_EXISTING_CODE,
                         edge_async(this::routeAfterExistingCode),
                         Map.of(
@@ -173,6 +184,17 @@ public class CodeGenWorkflowFactory {
                 .addEdge(START, NODE_INTERVIEW_ANIMATION_ADVISOR)
                 .addEdge(NODE_INTERVIEW_ANIMATION_ADVISOR, NODE_INTERVIEW_PROMPT_ENHANCER)
                 .addEdge(NODE_INTERVIEW_PROMPT_ENHANCER, NODE_CODE_GENERATOR)
+                .addEdge(NODE_CODE_GENERATOR, END);
+    }
+
+    private StateGraph<MessagesState<String>> buildInterviewSourceCodeCreateSubGraph() throws GraphStateException {
+        return new MessagesStateGraph<String>()
+                .addNode(NODE_SOURCE_CODE_ADVISOR, sourceCodeAdvisorNode.action())
+                .addNode(NODE_SOURCE_CODE_PROMPT_ENHANCER, sourceCodePromptEnhancerNode.action())
+                .addNode(NODE_CODE_GENERATOR, codeGeneratorNode.action())
+                .addEdge(START, NODE_SOURCE_CODE_ADVISOR)
+                .addEdge(NODE_SOURCE_CODE_ADVISOR, NODE_SOURCE_CODE_PROMPT_ENHANCER)
+                .addEdge(NODE_SOURCE_CODE_PROMPT_ENHANCER, NODE_CODE_GENERATOR)
                 .addEdge(NODE_CODE_GENERATOR, END);
     }
 

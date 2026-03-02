@@ -1,6 +1,7 @@
 package com.dango.dangoaicodeapp.infrastructure.ai.codegen.factory;
 
 import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.InterviewAnimationAdvisorService;
+import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.InterviewSourceCodeAdvisorService;
 import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.LeetCodeAnimationAdvisorService;
 import com.dango.aicodegenerate.model.AiModelProvider;
 import com.dango.aicodegenerate.model.AiServiceType;
@@ -25,6 +26,12 @@ public class AiAnimationAdvisorServiceFactory {
 
     public InterviewAnimationAdvisorService createInterviewService() {
         return AiServices.builder(InterviewAnimationAdvisorService.class)
+                .streamingChatModel(aiModelProvider.getStreamingChatModel(AiServiceType.ANIMATION_ADVISOR))
+                .build();
+    }
+
+    public InterviewSourceCodeAdvisorService createInterviewSourceCodeService() {
+        return AiServices.builder(InterviewSourceCodeAdvisorService.class)
                 .streamingChatModel(aiModelProvider.getStreamingChatModel(AiServiceType.ANIMATION_ADVISOR))
                 .build();
     }

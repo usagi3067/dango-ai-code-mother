@@ -1,0 +1,12 @@
+package com.dango.dangoaicodeapp.infrastructure.ai.codegen.service;
+
+import dev.langchain4j.service.MemoryId;
+import dev.langchain4j.service.SystemMessage;
+import dev.langchain4j.service.TokenStream;
+import dev.langchain4j.service.UserMessage;
+
+public interface InterviewSourceCodeFixerService extends CodeFixerService {
+    @SystemMessage(fromResource = "prompt/codegen-fix-interview-source-code-system-prompt.txt")
+    @Override
+    TokenStream fixCodeStream(@MemoryId long appId, @UserMessage String fixRequest);
+}

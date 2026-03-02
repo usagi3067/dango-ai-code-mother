@@ -4,6 +4,12 @@
       <div class="header-section">
         <h1 class="page-title">面试题解生成器</h1>
         <p class="page-desc">输入面试题目和参考答案，AI 自动生成交互式可视化讲解</p>
+        <div class="mode-switch">
+          <a-segmented
+            v-model:value="selectedMode"
+            :options="modeOptions"
+          />
+        </div>
         <div class="input-area">
           <a-input
             v-model:value="questionTitle"
@@ -51,33 +57,44 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { addApp, listMyAppByCursor } from '@/api/app/appController'
 import AppCard from '@/components/AppCard.vue'
 import { getDeployUrl } from '@/config/env'
 import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
+import { CodeGenTypeEnum } from '@/config/codeGenType'
 
 const router = useRouter()
 const questionTitle = ref('')
 const referenceAnswer = ref('')
 const creating = ref(false)
 
-const { items: appList, loading, hasMore } = useInfiniteScroll({
+const selectedMode = ref<string>(CodeGenTypeEnum.INTERVIEW_PROJECT)
+const modeOptions = [
+  { label: '图解动画', value: CodeGenTypeEnum.INTERVIEW_PROJECT },
+  { label: '源码剧场', value: CodeGenTypeEnum.INTERVIEW_SOURCE_CODE_PROJECT },
+]
+
+const { items: appList, loading, hasMore, reset } = useInfiniteScroll({
   pageSize: 12,
   fetchFn: async (lastId) => {
     const res = await listMyAppByCursor({
       lastId: lastId,
       pageSize: 12,
       tag: 'interview',
-      codeGenType: 'interview_project'
+      codeGenType: selectedMode.value
     })
     if (res.data.code === 0 && res.data.data) {
       return res.data.data.records || []
     }
     return []
   }
+})
+
+watch(selectedMode, () => {
+  reset()
 })
 
 const handleGenerate = async () => {
@@ -103,7 +120,7 @@ ${referenceAnswer.value.trim()}`
       initPrompt,
       appName: questionTitle.value.trim().slice(0, 50),
       tag: 'interview',
-      codeGenType: 'interview_project'
+      codeGenType: selectedMode.value
     })
     if (res.data.code === 0 && res.data.data) {
       const appId = String(res.data.data)
@@ -161,7 +178,13 @@ const openDeployedApp = (app: API.AppVO) => {
 .page-desc {
   font-size: 16px;
   color: #666;
-  margin-bottom: 32px;
+  margin-bottom: 20px;
+}
+
+.mode-switch {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 24px;
 }
 
 .input-area {

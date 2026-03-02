@@ -28,6 +28,9 @@ public class NodeModulesPrebuilder {
     private static final String INTERVIEW_PREBUILT_DIR_NAME = "_shared_interview_node_modules";
     private static final String INTERVIEW_TEMPLATE_PACKAGE_JSON = "templates/interview-project/package.json";
 
+    private static final String INTERVIEW_SOURCE_CODE_PREBUILT_DIR_NAME = "_shared_interview_source_code_node_modules";
+    private static final String INTERVIEW_SOURCE_CODE_TEMPLATE_PACKAGE_JSON = "templates/interview-source-code-project/package.json";
+
     private Path prebuiltDir;
     private volatile boolean ready = false;
 
@@ -37,15 +40,20 @@ public class NodeModulesPrebuilder {
     private Path interviewPrebuiltDir;
     private volatile boolean interviewReady = false;
 
+    private Path interviewSourceCodePrebuiltDir;
+    private volatile boolean interviewSourceCodeReady = false;
+
     @PostConstruct
     public void init() {
         String baseDir = System.getProperty("user.dir") + File.separator + "tmp" + File.separator + "code_output";
         this.prebuiltDir = Path.of(baseDir, PREBUILT_DIR_NAME);
         this.leetCodePrebuiltDir = Path.of(baseDir, LEETCODE_PREBUILT_DIR_NAME);
         this.interviewPrebuiltDir = Path.of(baseDir, INTERVIEW_PREBUILT_DIR_NAME);
+        this.interviewSourceCodePrebuiltDir = Path.of(baseDir, INTERVIEW_SOURCE_CODE_PREBUILT_DIR_NAME);
         Thread.ofVirtual().name("node-modules-prebuilder-vue").start(() -> prebuild(prebuiltDir, TEMPLATE_PACKAGE_JSON, "vue"));
         Thread.ofVirtual().name("node-modules-prebuilder-leetcode").start(() -> prebuild(leetCodePrebuiltDir, LEETCODE_TEMPLATE_PACKAGE_JSON, "leetcode"));
         Thread.ofVirtual().name("node-modules-prebuilder-interview").start(() -> prebuild(interviewPrebuiltDir, INTERVIEW_TEMPLATE_PACKAGE_JSON, "interview"));
+        Thread.ofVirtual().name("node-modules-prebuilder-interview-source-code").start(() -> prebuild(interviewSourceCodePrebuiltDir, INTERVIEW_SOURCE_CODE_TEMPLATE_PACKAGE_JSON, "interview-source-code"));
     }
 
     /**
@@ -91,12 +99,27 @@ public class NodeModulesPrebuilder {
     }
 
     /**
+     * 获取预构建的 interview source code node_modules 绝对路径
+     */
+    public Path getInterviewSourceCodePrebuiltNodeModulesPath() {
+        return interviewSourceCodePrebuiltDir.resolve("node_modules");
+    }
+
+    /**
+     * interview source code 预构建是否就绪
+     */
+    public boolean isInterviewSourceCodeReady() {
+        return interviewSourceCodeReady;
+    }
+
+    /**
      * 强制重建（依赖变更时调用）
      */
     public synchronized void rebuild() {
         ready = false;
         leetCodeReady = false;
         interviewReady = false;
+        interviewSourceCodeReady = false;
         try {
             Path vueNodeModules = getPrebuiltNodeModulesPath();
             if (Files.exists(vueNodeModules)) {
@@ -110,12 +133,17 @@ public class NodeModulesPrebuilder {
             if (Files.exists(interviewNodeModules)) {
                 deleteDirectory(interviewNodeModules);
             }
+            Path interviewSourceCodeNodeModules = getInterviewSourceCodePrebuiltNodeModulesPath();
+            if (Files.exists(interviewSourceCodeNodeModules)) {
+                deleteDirectory(interviewSourceCodeNodeModules);
+            }
         } catch (IOException e) {
             log.error("删除预构建 node_modules 失败", e);
         }
         Thread.ofVirtual().name("node-modules-prebuilder-vue").start(() -> prebuild(prebuiltDir, TEMPLATE_PACKAGE_JSON, "vue"));
         Thread.ofVirtual().name("node-modules-prebuilder-leetcode").start(() -> prebuild(leetCodePrebuiltDir, LEETCODE_TEMPLATE_PACKAGE_JSON, "leetcode"));
         Thread.ofVirtual().name("node-modules-prebuilder-interview").start(() -> prebuild(interviewPrebuiltDir, INTERVIEW_TEMPLATE_PACKAGE_JSON, "interview"));
+        Thread.ofVirtual().name("node-modules-prebuilder-interview-source-code").start(() -> prebuild(interviewSourceCodePrebuiltDir, INTERVIEW_SOURCE_CODE_TEMPLATE_PACKAGE_JSON, "interview-source-code"));
     }
 
     private void prebuild(Path targetDir, String packageJsonResource, String label) {
@@ -167,6 +195,8 @@ public class NodeModulesPrebuilder {
             this.leetCodeReady = value;
         } else if ("interview".equals(label)) {
             this.interviewReady = value;
+        } else if ("interview-source-code".equals(label)) {
+            this.interviewSourceCodeReady = value;
         }
     }
 

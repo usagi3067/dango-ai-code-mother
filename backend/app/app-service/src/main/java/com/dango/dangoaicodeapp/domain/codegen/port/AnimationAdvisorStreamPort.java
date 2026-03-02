@@ -10,5 +10,7 @@ public interface AnimationAdvisorStreamPort {
     Flux<String> adviseLeetCode(String userPrompt);
 
     Flux<String> adviseInterview(String userPrompt);
+
+    Flux<String> adviseInterviewSourceCode(String userPrompt);
 }
 

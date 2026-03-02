@@ -4,7 +4,8 @@
 export enum CodeGenTypeEnum {
   VUE_PROJECT = 'vue_project',
   LEETCODE_PROJECT = 'leetcode_project',
-  INTERVIEW_PROJECT = 'interview_project'
+  INTERVIEW_PROJECT = 'interview_project',
+  INTERVIEW_SOURCE_CODE_PROJECT = 'interview_source_code_project'
 }
 
 /**
@@ -22,6 +23,10 @@ export const CODE_GEN_TYPE_CONFIG = {
   [CodeGenTypeEnum.INTERVIEW_PROJECT]: {
     label: '面试题解模式',
     value: CodeGenTypeEnum.INTERVIEW_PROJECT,
+  },
+  [CodeGenTypeEnum.INTERVIEW_SOURCE_CODE_PROJECT]: {
+    label: '面试源码题解模式',
+    value: CodeGenTypeEnum.INTERVIEW_SOURCE_CODE_PROJECT,
   },
 } as const
 

@@ -3,6 +3,7 @@ package com.dango.dangoaicodeapp.infrastructure.ai.codegen.gateway;
 import com.dango.dangoaicodeapp.domain.codegen.port.AnimationAdvisorStreamPort;
 import com.dango.dangoaicodeapp.infrastructure.ai.codegen.factory.AiAnimationAdvisorServiceFactory;
 import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.InterviewAnimationAdvisorService;
+import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.InterviewSourceCodeAdvisorService;
 import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.LeetCodeAnimationAdvisorService;
 import dev.langchain4j.service.TokenStream;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,13 @@ public class AnimationAdvisorStreamPortImpl implements AnimationAdvisorStreamPor
     @Override
     public Flux<String> adviseInterview(String userPrompt) {
         InterviewAnimationAdvisorService service = aiAnimationAdvisorServiceFactory.createInterviewService();
+        TokenStream tokenStream = service.advise(userPrompt);
+        return tokenStreamMessageFluxFactory.toChunkFlux(tokenStream);
+    }
+
+    @Override
+    public Flux<String> adviseInterviewSourceCode(String userPrompt) {
+        InterviewSourceCodeAdvisorService service = aiAnimationAdvisorServiceFactory.createInterviewSourceCodeService();
         TokenStream tokenStream = service.advise(userPrompt);
         return tokenStreamMessageFluxFactory.toChunkFlux(tokenStream);
     }

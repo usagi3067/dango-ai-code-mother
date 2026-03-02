@@ -81,6 +81,10 @@ public class ModeRouterNode {
                     log.info("面试题解类型，路由到面试创建子图");
                     yield "interview_create";
                 }
+                if (context.getGenerationType() == CodeGenTypeEnum.INTERVIEW_SOURCE_CODE_PROJECT) {
+                    log.info("面试源码题解类型，路由到源码剧场创建子图");
+                    yield "interview_source_code_create";
+                }
                 yield "create";
             }
             case EXISTING_CODE -> {

@@ -4,6 +4,7 @@ import com.dango.aicodegenerate.guardrail.PromptSafetyInputGuardrail;
 import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.CodeGeneratorService;
 import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.LeetCodeCodeGeneratorService;
 import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.InterviewCodeGeneratorService;
+import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.InterviewSourceCodeGeneratorService;
 import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.VueCodeGeneratorService;
 
 import com.dango.dangoaicodeapp.domain.codegen.tools.ToolManager;
@@ -85,6 +86,7 @@ public class AiCodeGeneratorServiceFactory {
         Class<? extends CodeGeneratorService> serviceClass = switch (codeGenType) {
             case LEETCODE_PROJECT -> LeetCodeCodeGeneratorService.class;
             case INTERVIEW_PROJECT -> InterviewCodeGeneratorService.class;
+            case INTERVIEW_SOURCE_CODE_PROJECT -> InterviewSourceCodeGeneratorService.class;
             default -> VueCodeGeneratorService.class;
         };
 
