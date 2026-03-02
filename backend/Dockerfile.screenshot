@@ -1,0 +1,40 @@
+# CodeForge AI - Screenshot Service Dockerfile
+# 用于快速部署的一体化构建
+
+FROM maven:3.9-eclipse-temurin-21-alpine AS builder
+
+WORKDIR /build
+
+# 复制 pom 文件
+COPY pom.xml .
+COPY common/pom.xml common/
+COPY screenshot/pom.xml screenshot/
+COPY screenshot/screenshot-app/pom.xml screenshot/screenshot-app/
+
+# 下载依赖
+RUN mvn dependency:go-offline -pl screenshot/screenshot-app -am
+
+# 复制源代码
+COPY common/ common/
+COPY screenshot/ screenshot/
+
+# 构建
+ARG MODULE_PATH=screenshot/screenshot-app
+RUN mvn clean package -pl ${MODULE_PATH} -am -Dmaven.test.skip=true
+
+# 运行时镜像
+FROM eclipse-temurin:21-jre-alpine
+
+WORKDIR /app
+
+# 安装 Chromium 和依赖（用于截图）
+RUN apk add --no-cache chromium chromium-chromedriver
+
+# 复制 jar
+COPY --from=builder /build/screenshot/screenshot-app/target/*.jar app.jar
+
+# 暴露端口
+EXPOSE 8125 50054
+
+# 启动命令
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

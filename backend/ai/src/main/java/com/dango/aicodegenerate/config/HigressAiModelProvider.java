@@ -1,7 +1,6 @@
 package com.dango.aicodegenerate.config;
 
 import com.dango.aicodegenerate.model.AiModelProvider;
-import com.dango.aicodegenerate.model.AiServiceType;
 import dev.langchain4j.http.client.spring.restclient.SpringRestClient;
 import dev.langchain4j.model.chat.ChatModel;
 import dev.langchain4j.model.chat.StreamingChatModel;
@@ -29,8 +28,8 @@ public class HigressAiModelProvider implements AiModelProvider {
     private final List<ChatModelListener> listeners;
     private final AsyncTaskExecutor streamingExecutor;
 
-    private final ConcurrentHashMap<AiServiceType, ChatModel> chatModelCache = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<AiServiceType, StreamingChatModel> streamingModelCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ChatModel> chatModelCache = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, StreamingChatModel> streamingModelCache = new ConcurrentHashMap<>();
 
     public HigressAiModelProvider(
             AiGatewayProperties properties,
@@ -43,24 +42,24 @@ public class HigressAiModelProvider implements AiModelProvider {
     }
 
     @Override
-    public ChatModel getChatModel(AiServiceType serviceType) {
-        return chatModelCache.computeIfAbsent(serviceType, this::buildChatModel);
+    public ChatModel getChatModel(String serviceKey) {
+        return chatModelCache.computeIfAbsent(serviceKey, this::buildChatModel);
     }
 
     @Override
-    public StreamingChatModel getStreamingChatModel(AiServiceType serviceType) {
-        return streamingModelCache.computeIfAbsent(serviceType, this::buildStreamingChatModel);
+    public StreamingChatModel getStreamingChatModel(String serviceKey) {
+        return streamingModelCache.computeIfAbsent(serviceKey, this::buildStreamingChatModel);
     }
 
-    private ChatModel buildChatModel(AiServiceType serviceType) {
+    private ChatModel buildChatModel(String serviceKey) {
         var gw = properties.getGateway();
-        var svc = getServiceConfig(serviceType);
+        var svc = getServiceConfig(serviceKey);
         String modelName = resolveModelName(svc);
         int maxTokens = svc.getMaxTokens() != null ? svc.getMaxTokens() : gw.getDefaultMaxTokens();
         Duration timeout = svc.getTimeout() != null ? svc.getTimeout() : gw.getDefaultTimeout();
 
         log.info("构建 ChatModel: service={}, model={}, maxTokens={}, timeout={}s",
-                serviceType.getConfigKey(), modelName, maxTokens, timeout.toSeconds());
+                serviceKey, modelName, maxTokens, timeout.toSeconds());
 
         var builder = OpenAiChatModel.builder()
                 .baseUrl(gw.getBaseUrl())
@@ -76,15 +75,15 @@ public class HigressAiModelProvider implements AiModelProvider {
         return builder.build();
     }
 
-    private StreamingChatModel buildStreamingChatModel(AiServiceType serviceType) {
+    private StreamingChatModel buildStreamingChatModel(String serviceKey) {
         var gw = properties.getGateway();
-        var svc = getServiceConfig(serviceType);
+        var svc = getServiceConfig(serviceKey);
         String modelName = resolveModelName(svc);
         int maxTokens = svc.getMaxTokens() != null ? svc.getMaxTokens() : gw.getDefaultMaxTokens();
         Duration timeout = svc.getTimeout() != null ? svc.getTimeout() : gw.getDefaultTimeout();
 
         log.info("构建 StreamingChatModel: service={}, model={}, maxTokens={}, timeout={}s",
-                serviceType.getConfigKey(), modelName, maxTokens, timeout.toSeconds());
+                serviceKey, modelName, maxTokens, timeout.toSeconds());
 
         var builder = OpenAiStreamingChatModel.builder()
                 .baseUrl(gw.getBaseUrl())
@@ -103,9 +102,9 @@ public class HigressAiModelProvider implements AiModelProvider {
         return builder.build();
     }
 
-    private AiGatewayProperties.ServiceConfig getServiceConfig(AiServiceType serviceType) {
+    private AiGatewayProperties.ServiceConfig getServiceConfig(String serviceKey) {
         return properties.getServices()
-                .getOrDefault(serviceType.getConfigKey(), new AiGatewayProperties.ServiceConfig());
+                .getOrDefault(serviceKey, new AiGatewayProperties.ServiceConfig());
     }
 
     private String resolveModelName(AiGatewayProperties.ServiceConfig svc) {

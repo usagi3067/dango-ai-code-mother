@@ -39,3 +39,11 @@ nacos-configs/
 
 # Docs (design docs, plans, etc.)
 docs/
+
+# Old Dockerfiles (replaced by simplified versions)
+backend/Dockerfile.app-base
+backend/Dockerfile.app-runtime
+backend/Dockerfile.screenshot-base
+backend/Dockerfile.screenshot-runtime
+backend/Dockerfile.user-runtime
+backend/Dockerfile.supabase-runtime

@@ -3,14 +3,12 @@ set -e
 
 # ===== 服务器配置 =====
 MACHINE_A_HOST="42.194.244.5"
-MACHINE_A_USER="ubuntu"
+MACHINE_A_USER="root"
 MACHINE_A_COMPOSE="docker-compose.app.yml"
-MACHINE_A_SUDO="sudo"
 
 MACHINE_B_HOST="106.13.14.164"
 MACHINE_B_USER="root"
 MACHINE_B_COMPOSE="docker-compose.yml"
-MACHINE_B_SUDO=""
 
 PROJECT_DIR="/opt/dango-ai-code-mother"
 PLATFORM="linux/amd64"
@@ -59,15 +57,6 @@ contains_word() {
         *" $needle "*) return 0 ;;
         *) return 1 ;;
     esac
-}
-
-docker_cmd() {
-    local sudo_prefix=$1
-    if [ -n "$sudo_prefix" ]; then
-        echo "$sudo_prefix docker"
-    else
-        echo "docker"
-    fi
 }
 
 # ===== 解析参数 =====
@@ -163,15 +152,13 @@ if [ "$MODE" = "build" ]; then
 fi
 
 require_remote_base_image() {
-    local host=$1 user=$2 sudo_prefix=$3 label=$4 svc=$5 image=$6
+    local host=$1 user=$2 label=$3 svc=$4 image=$5
     [ -z "$image" ] && return 0
 
     local remote="${user}@${host}"
-    local remote_docker
-    remote_docker=$(docker_cmd "$sudo_prefix")
 
     ssh -o StrictHostKeyChecking=no "$remote" \
-        "if ! ${remote_docker} image inspect ${image} >/dev/null 2>&1; then \
+        "if ! docker image inspect ${image} >/dev/null 2>&1; then \
             echo '[错误] ${label} 缺少基础镜像 ${image}（服务: ${svc}）'; \
             echo '请先执行基础镜像初始化，再重新发布'; \
             exit 1; \
@@ -179,7 +166,7 @@ require_remote_base_image() {
 }
 
 remote_build() {
-    local host=$1 user=$2 sudo_prefix=$3 label=$4 svc=$5
+    local host=$1 user=$2 label=$3 svc=$4
 
     contains_word "$REMOTE_BUILD_LIST" "$svc" || return 0
 
@@ -198,15 +185,12 @@ remote_build() {
         exit 1
     fi
 
-    require_remote_base_image "$host" "$user" "$sudo_prefix" "$label" "$svc" "$base_image"
+    require_remote_base_image "$host" "$user" "$label" "$svc" "$base_image"
 
     local remote="${user}@${host}"
     local remote_build_dir="${PROJECT_DIR}/build-tmp-${svc}"
     local jar_size
     jar_size=$(du -h "$jar_path" | cut -f1)
-    local remote_docker
-    remote_docker=$(docker_cmd "$sudo_prefix")
-
     echo ""
     echo "===== 远程构建 $svc → $image (${label}) ====="
     echo "传输 jar ($jar_size) ..."
@@ -217,19 +201,16 @@ remote_build() {
 
     echo "远程 docker build ..."
     ssh -o StrictHostKeyChecking=no "$remote" \
-        "cd ${remote_build_dir} && DOCKER_BUILDKIT=0 ${remote_docker} build -t ${image} . && rm -rf ${remote_build_dir}"
+        "cd ${remote_build_dir} && DOCKER_BUILDKIT=0 docker build -t ${image} . && rm -rf ${remote_build_dir}"
     echo "$svc 远程构建完成"
 }
 
 push_images() {
-    local host=$1 user=$2 sudo_prefix=$3 label=$4
-    shift 4
+    local host=$1 user=$2 label=$3
+    shift 3
     local images="$*"
 
     [ -z "$(echo "$images" | tr -d ' ')" ] && return
-
-    local remote_docker
-    remote_docker=$(docker_cmd "$sudo_prefix")
 
     echo ""
     echo "===== 推送镜像到 ${label} (${host}) ====="
@@ -239,17 +220,17 @@ push_images() {
     echo "预估大小: ~${size}MB (压缩后更小)"
 
     if command -v pv &>/dev/null; then
-        docker save $images | gzip | pv -s "${size}m" | ssh -o StrictHostKeyChecking=no "${user}@${host}" "gunzip | ${remote_docker} load"
+        docker save $images | gzip | pv -s "${size}m" | ssh -o StrictHostKeyChecking=no "${user}@${host}" "gunzip | docker load"
     else
-        docker save $images | gzip | ssh -o StrictHostKeyChecking=no "${user}@${host}" "gunzip | ${remote_docker} load"
+        docker save $images | gzip | ssh -o StrictHostKeyChecking=no "${user}@${host}" "gunzip | docker load"
     fi
     echo "${label} 镜像加载完成"
 }
 
 # ===== 同步配置文件并启动服务 =====
 deploy_services() {
-    local host=$1 user=$2 compose=$3 sudo_prefix=$4 label=$5
-    shift 5
+    local host=$1 user=$2 compose=$3 label=$4
+    shift 4
     local services="$*"
 
     local remote="${user}@${host}"
@@ -266,29 +247,29 @@ deploy_services() {
     echo ""
     echo "===== ${label} - 启动: ${services} ====="
     ssh -o StrictHostKeyChecking=no "$remote" \
-        "cd ${PROJECT_DIR} && ${sudo_prefix} docker compose -f ${compose} up -d ${services}"
+        "cd ${PROJECT_DIR} && docker compose -f ${compose} up -d ${services}"
 }
 
 # ===== 执行部署（按输入服务对应机器顺序） =====
 for machine in $MACHINE_ORDER; do
     case $machine in
         A)
-            [ "$MODE" = "build" ] && push_images "$MACHINE_A_HOST" "$MACHINE_A_USER" "$MACHINE_A_SUDO" "机器 A" $A_IMAGES
+            [ "$MODE" = "build" ] && push_images "$MACHINE_A_HOST" "$MACHINE_A_USER" "机器 A" $A_IMAGES
             if [ "$MODE" = "build" ]; then
                 for svc in $A_TARGETS; do
-                    remote_build "$MACHINE_A_HOST" "$MACHINE_A_USER" "$MACHINE_A_SUDO" "机器 A" "$svc"
+                    remote_build "$MACHINE_A_HOST" "$MACHINE_A_USER" "机器 A" "$svc"
                 done
             fi
-            deploy_services "$MACHINE_A_HOST" "$MACHINE_A_USER" "$MACHINE_A_COMPOSE" "$MACHINE_A_SUDO" "机器 A" $A_TARGETS
+            deploy_services "$MACHINE_A_HOST" "$MACHINE_A_USER" "$MACHINE_A_COMPOSE" "机器 A" $A_TARGETS
             ;;
         B)
-            [ "$MODE" = "build" ] && push_images "$MACHINE_B_HOST" "$MACHINE_B_USER" "$MACHINE_B_SUDO" "机器 B" $B_IMAGES
+            [ "$MODE" = "build" ] && push_images "$MACHINE_B_HOST" "$MACHINE_B_USER" "机器 B" $B_IMAGES
             if [ "$MODE" = "build" ]; then
                 for svc in $B_TARGETS; do
-                    remote_build "$MACHINE_B_HOST" "$MACHINE_B_USER" "$MACHINE_B_SUDO" "机器 B" "$svc"
+                    remote_build "$MACHINE_B_HOST" "$MACHINE_B_USER" "机器 B" "$svc"
                 done
             fi
-            deploy_services "$MACHINE_B_HOST" "$MACHINE_B_USER" "$MACHINE_B_COMPOSE" "$MACHINE_B_SUDO" "机器 B" $B_TARGETS
+            deploy_services "$MACHINE_B_HOST" "$MACHINE_B_USER" "$MACHINE_B_COMPOSE" "机器 B" $B_TARGETS
             ;;
     esac
 done

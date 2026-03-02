@@ -1,0 +1,38 @@
+# CodeForge AI - User Service Dockerfile
+# 用于快速部署的一体化构建
+
+FROM maven:3.9-eclipse-temurin-21-alpine AS builder
+
+WORKDIR /build
+
+# 复制 pom 文件
+COPY pom.xml .
+COPY common/pom.xml common/
+COPY user/pom.xml user/
+COPY user/user-api/pom.xml user/user-api/
+COPY user/user-service/pom.xml user/user-service/
+
+# 下载依赖
+RUN mvn dependency:go-offline -pl user/user-service -am
+
+# 复制源代码
+COPY common/ common/
+COPY user/ user/
+
+# 构建
+ARG MODULE_PATH=user/user-service
+RUN mvn clean package -pl ${MODULE_PATH} -am -Dmaven.test.skip=true
+
+# 运行时镜像
+FROM eclipse-temurin:21-jre-alpine
+
+WORKDIR /app
+
+# 复制 jar
+COPY --from=builder /build/user/user-service/target/*.jar app.jar
+
+# 暴露端口
+EXPOSE 8123 50051
+
+# 启动命令
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app.jar"]

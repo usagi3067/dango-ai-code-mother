@@ -36,7 +36,7 @@ public class PromptSafetyInputGuardrail implements InputGuardrail {
             "破解", "越狱", "绕过限制", "绕过安全",
             // 英文敏感词
             "ignore previous instructions", "ignore above", "ignore all instructions",
-            "hack", "bypass", "jailbreak", "bypass security",
+            "hack", "jailbreak",
             "disregard previous", "forget everything above"
     );
 
