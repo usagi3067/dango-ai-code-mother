@@ -67,8 +67,21 @@ import { useInfiniteScroll } from '@/composables/useInfiniteScroll'
 import { CodeGenTypeEnum } from '@/config/codeGenType'
 
 const router = useRouter()
-const questionTitle = ref('')
-const referenceAnswer = ref('')
+const presetQuestionTitle = 'ThreadLocal 内存泄漏了解吗？'
+const presetReferenceAnswer = `真正导致内存泄漏的根本原因是：Thread 强引用 ThreadLocalMap，ThreadLocalMap 的 Entry 中 value 又是强引用，只要线程还活着，这些 value 就回收不掉。
+
+其实了解下引用链路就明白了：Thread 强引用 ThreadLocalMap，ThreadLocalMap 里有个 Entry 数组，每个 Entry 继承了 WeakReference，所以它的 key 也就是 ThreadLocal 对象是弱引用，但是 value 是个 Object 类型的强引用。
+
+那问题来了，虽然 key 可以被 GC 回收，但只要 Thread 对象还活着，这个 value 就一直被引用着，回收不掉，特别在线程池场景，核心线程会一直活着，如果你用完 ThreadLocal 不清理，那些 value 就会一直占着内存。
+
+那为什么 Entry 的 key 要用弱引用呢？我理解是一种减轻伤害的设计，如果 key 也是强引用，那 ThreadLocal 对象本身也回收不掉，问题会更严重，用了弱引用后，至少 ThreadLocal 对象可以被回收，Entry 变成僵尸 Entry（key 为 null，但 value 还在）。
+
+ThreadLocalMap 在 set、get、remove 的时候会顺便清理掉这些僵尸 Entry。但注意这有个前提：你还在用 ThreadLocal。如果业务逻辑已经跑完了，不再调用这些方法，清理机制就不会触发，内存泄漏还是避免不了。
+
+【总结】
+所以正确的做法就是用完立即 remove。`
+const questionTitle = ref(presetQuestionTitle)
+const referenceAnswer = ref(presetReferenceAnswer)
 const creating = ref(false)
 
 const selectedMode = ref<string>(CodeGenTypeEnum.INTERVIEW_PROJECT)

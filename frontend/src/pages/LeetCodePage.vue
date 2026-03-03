@@ -8,8 +8,8 @@
         <div class="input-row">
           <a-input-number
             v-model:value="problemNumber"
-            :min="1"
-            :max="3000"
+            :precision="0"
+            :step="1"
             placeholder="输入题号 (1-3000)"
             class="problem-input"
             @pressEnter="handleGenerate"
@@ -78,15 +78,21 @@ const { items: appList, loading, hasMore } = useInfiniteScroll({
 })
 
 const handleGenerate = async () => {
-  if (!problemNumber.value) {
-    message.warning('请输入力扣题号')
+  if (
+    typeof problemNumber.value !== 'number' ||
+    !Number.isInteger(problemNumber.value) ||
+    problemNumber.value < 1 ||
+    problemNumber.value > 3000
+  ) {
+    message.warning('请输入 1-3000 之间的整数题号')
     return
   }
+  const currentProblemNumber = problemNumber.value
   creating.value = true
   try {
     const res = await addApp({
-      initPrompt: `请生成力扣第 ${problemNumber.value} 题的算法可视化题解`,
-      appName: `LC-${problemNumber.value}`,
+      initPrompt: `请生成力扣第 ${currentProblemNumber} 题的算法可视化题解`,
+      appName: `LC-${currentProblemNumber}`,
       tag: 'algorithm',
       codeGenType: 'leetcode_project'
     })

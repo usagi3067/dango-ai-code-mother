@@ -1,6 +1,6 @@
-# CodeForge AI
+# Dango Code AI
 
-> 基于 LangGraph4j 的智能代码生成平台，支持多模型调度、工作流编排与实时协作
+> 基于 Spring Boot 3 + LangChain4j + LangGraph4j 的 AI 零代码应用生成平台。用户输入自然语言描述，由 AI Agent 通过工作流自动执行并发素材搜集、代码生成、质量检查与自动修复、项目构建的完整流程，支持多轮对话持续优化，最终一键部署为可访问的 Web 应用。项目采用 Spring Cloud Alibaba + Dubbo 微服务架构，通过分布式限流、Redis 缓存、Prompt 护轨等策略保障系统稳定性与安全性。
 
 **在线体验**: [dango1123.online](http://dango1123.online)
 
@@ -17,28 +17,44 @@
 
 ## 核心功能
 
-### 🎯 智能代码生成
-- **多模型支持**: 集成 Claude / DeepSeek，通过 Higress AI Gateway 统一调度
-- **工作流编排**: 基于 LangGraph4j 的可视化工作流引擎，支持复杂代码生成流程
-- **实时流式输出**: SSE (Server-Sent Events) + Redis Stream 实现毫秒级响应
-- **上下文感知**: 自动分析项目结构，提供精准的代码建议
+1. 多模式代码生成
 
-### 🛠️ 工具生态
-- **项目文件操作**: 智能读取、写入、修改项目文件
-- **Mermaid 图表生成**: AI 自动生成流程图、架构图
-- **图片搜索**: 集成 Unsplash 等图片资源
-- **可扩展工具系统**: 统一的工具注册与管理机制
+  - Vue 项目生成：完整的 Vue 3 + Vite 项目，包含 UI、逻辑、样式
+  - 力扣题解生成：自动生成算法题的动画讲解页面
+  - 面试题解生成：生成面试题的动画讲解和答案解析
+  - 源码剧场生成：生成源码分析的三段式动画讲解
 
-### 🗄️ 数据库集成
-- **Supabase 多租户隔离**: 每个应用独立 PostgreSQL Schema
-- **REST API 自动暴露**: 通过 PostgREST 自动生成 RESTful API
-- **一键初始化**: 用户点击按钮即可创建数据库并配置权限
+  2. 智能工作流引擎（基于 LangGraph4j）
 
-### 👥 协作与管理
-- **精选应用市场**: 社区共享的优质应用模板
-- **应用克隆**: 一键复制他人应用，快速上手
-- **权限控制**: 基于 Sa-Token 的细粒度权限管理
-- **限流保护**: Redisson 分布式限流，防止滥用
+  - 创建模式：图片收集（内容图/插画/架构图/Logo）→ 提示词增强 → 代码生成
+  - 修改模式：代码读取 → 意图分类 → 修改规划 → 数据库操作 → 代码修改
+  - 构建检查：自动检查构建错误 → 代码修复（最多 3 次重试）
+
+  3. 实时流式对话
+
+  - SSE 流式输出：AI 生成过程实时展示
+  - 断点续传：刷新页面后自动恢复生成进度（Redis Stream 缓存）
+  - 工具调用可视化：前端实时展示 AI 调用的工具（写文件、读文件、搜索图片等）
+
+  4. 丰富的 AI 工具系统
+
+  - 文件操作：写入、读取、修改、删除文件
+  - 图片资源：Pexels 图片搜索、Undraw 插画、Logo 生成
+  - 架构图生成：Mermaid 代码转 SVG 架构图
+  - 目录结构读取：获取项目目录树
+
+  5. 应用管理
+
+  - 我的作品：创建、编辑、删除应用
+  - 精选案例：展示优质应用（带缓存优化）
+  - 在线部署：一键部署到云端，生成访问链接
+  - 代码下载：导出完整项目代码
+
+  6. 用户系统
+
+  - 用户注册/登录
+  - 个人设置
+  - 管理员后台（用户管理、应用管理、对话管理）
 
 ---
 
@@ -176,18 +192,16 @@ graph TB
 - **差异化模型选择**：11 种 AI 服务类型，根据任务复杂度选择模型
   - 复杂任务（代码生成、修改规划）→ `strong` 模型（Claude）
   - 简单任务（QA、意图分类）→ `weak` 模型（DeepSeek）
-- **两级缓存架构**：
-  - **Model 缓存**（HigressAiModelProvider）：缓存 11 种服务类型的 ChatModel/StreamingChatModel，避免重复创建 HTTP 客户端
-  - **AiService 缓存**（AiCodeGeneratorServiceFactory）：每个应用独立 AiService 实例，缓存 30 分钟，避免重复反射解析注解和动态代理
+- **AiService 缓存**（AiCodeGeneratorServiceFactory）：每个应用独立 AiService 实例，缓存 30 分钟，避免重复反射解析注解和动态代理
 - **Nacos 动态配置**：运行时修改模型配置，无需重启服务
   - 监听 `EnvironmentChangeEvent`，自动清空 Model 和 AiService 缓存
   - 支持调整模型、超时时间、最大 Token 数
 - **对话历史预加载**：
   - AiService 创建时从数据库预加载历史对话（20 条）
   - 保证用户长时间离开后再回来，AI 仍能记住之前的对话上下文
-  - 保证用户长时间离开后再回来，AI 仍能记住之前的对话上下文
 
 **实现方案**：
+
 ```java
 @Component
 public class HigressAiModelProvider {
@@ -354,7 +368,6 @@ LIMIT #{pageSize}
 1. **Higress AI Gateway**：统一模型调度，支持负载均衡
 2. **智能降级**：Claude 限流时自动切换到 DeepSeek
 3. **成本控制**：简单任务优先使用 DeepSeek
-4. **模型缓存**：相同请求复用缓存结果
 
 ### 难点 4：分布式链路追踪的上下文传播
 **挑战**：
@@ -367,18 +380,6 @@ LIMIT #{pageSize}
 2. **ContextPropagatingTaskExecutor**：Spring 异步任务传播 MonitorContext 和 MDC
 3. **Dubbo Filter**：RPC 调用时自动传递 TraceId
 4. **统一拦截器**：HTTP 请求入口注入 TraceId
-
-### 难点 5：大文件上传与项目文件解析
-**挑战**：
-- 用户上传的项目文件可能达到数百 MB
-- 需要解析多种编程语言的代码结构
-- 文件编码不统一（UTF-8、GBK 等）
-
-**解决方案**：
-1. **分片上传**：前端分片上传，后端合并
-2. **异步解析**：文件上传后异步解析，避免阻塞
-3. **编码检测**：自动检测文件编码并转换
-4. **增量解析**：只解析变更的文件，减少重复工作
 
 ---
 
@@ -801,11 +802,7 @@ public class MyCustomNode implements WorkflowNode {
 4. 推送到分支：`git push origin feature/your-feature`
 5. 提交 Pull Request
 
----
 
-## 许可证
-
-本项目采用 MIT 许可证，详见 [LICENSE](./LICENSE) 文件。
 
 ---
 

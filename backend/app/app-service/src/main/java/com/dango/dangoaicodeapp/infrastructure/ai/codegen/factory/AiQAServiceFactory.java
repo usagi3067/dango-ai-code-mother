@@ -1,7 +1,10 @@
 package com.dango.dangoaicodeapp.infrastructure.ai.codegen.factory;
 
+import com.dango.dangoaicodeapp.domain.codegen.tools.FileDirReadTool;
+import com.dango.dangoaicodeapp.domain.codegen.tools.FileReadTool;
 import com.dango.dangoaicodeapp.infrastructure.ai.codegen.service.QAService;
 import com.dango.dangoaicodeapp.application.service.ChatHistoryService;
+import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.store.memory.chat.ChatMemoryStore;
 import com.dango.aicodegenerate.model.AiModelProvider;
@@ -27,6 +30,12 @@ public class AiQAServiceFactory {
     @Resource
     private ChatHistoryService chatHistoryService;
 
+    @Resource
+    private FileDirReadTool fileDirReadTool;
+
+    @Resource
+    private FileReadTool fileReadTool;
+
     public QAService createService(long appId) {
         log.info("为 appId: {} 创建问答服务实例", appId);
 
@@ -43,6 +52,13 @@ public class AiQAServiceFactory {
                 .streamingChatModel(aiModelProvider.getStreamingChatModel("qa"))
                 .chatMemory(chatMemory)
                 .chatMemoryProvider(memoryId -> chatMemory)
+                .tools(
+                        fileDirReadTool,
+                        fileReadTool
+                )
+                .hallucinatedToolNameStrategy(toolExecutionRequest -> ToolExecutionResultMessage.from(
+                        toolExecutionRequest, "Error: there is no tool called " + toolExecutionRequest.name()
+                ))
                 .build();
     }
 }
