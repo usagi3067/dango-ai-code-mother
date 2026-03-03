@@ -10,7 +10,7 @@
         <a-descriptions-item label="项目名称">AI 应用生成平台</a-descriptions-item>
         <a-descriptions-item label="版本">1.0.0</a-descriptions-item>
         <a-descriptions-item label="作者">
-          <a href="https://github.com/usagi3067" target="_blank" rel="noopener noreferrer">dango</a>
+          <a href="https://github.com/usagi3067/dango-ai-code-mother" target="_blank" rel="noopener noreferrer">dango</a>
         </a-descriptions-item>
         <a-descriptions-item label="定位">
           基于 LangGraph4j 工作流的 AI 代码生成平台，通过自然语言描述快速生成完整的 Vue 3 Web 应用

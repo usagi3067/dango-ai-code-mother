@@ -689,6 +689,7 @@ const workflowLogs = ref<string[]>([])
 const previewUrl = ref('')   // 预览 URL
 const iframeKey = ref(0)     // iframe 的 key，用于强制刷新
 const hasExistingPreview = ref(false) // 是否已有预览（已生成过代码）
+const QA_INTENT_LOG_MARKER = '识别为: 问答模式'
 
 /**
  * 部署相关
@@ -977,6 +978,8 @@ const checkAndResumeGeneration = async (): Promise<boolean> => {
     // 有正在进行的生成任务，开始恢复
     const aiMessageIndex = messages.value.length
     messages.value.push({ role: 'ai', content: '', loading: true })
+    // 恢复生成前若已有预览，保持 iframe 可见，避免生成过程中页面闪空
+    hasExistingPreview.value = hasExistingPreview.value || !!previewUrl.value
     isGenerating.value = true
     workflowLogs.value = []
     userScrolledAway.value = false
@@ -987,6 +990,7 @@ const checkAndResumeGeneration = async (): Promise<boolean> => {
     const eventSource = new EventSource(url, { withCredentials: true })
 
     let streamCompleted = false
+    let isQaRun = false
     let messageBuffer = ''
     let flushTimer: number | null = null
 
@@ -1010,7 +1014,11 @@ const checkAndResumeGeneration = async (): Promise<boolean> => {
         const data = JSON.parse(event.data)
         if (data?.d) {
           if (data.msgType === 'log') {
-            workflowLogs.value.push(data.d.trim())
+            const logText = data.d.trim()
+            workflowLogs.value.push(logText)
+            if (logText.includes(QA_INTENT_LOG_MARKER)) {
+              isQaRun = true
+            }
           } else {
             bufferContent(data.d)
           }
@@ -1032,7 +1040,9 @@ const checkAndResumeGeneration = async (): Promise<boolean> => {
         setTimeout(async () => {
           const appRes = await getAppVoById({ id: appId.value })
           if (appRes.data.code === 0 && appRes.data.data) appInfo.value = appRes.data.data
-          updatePreview()
+          if (!isQaRun) {
+            updatePreview()
+          }
         }, 1000)
       } else {
         if (flushTimer) { clearTimeout(flushTimer); flushMessageBuffer() }
@@ -1051,7 +1061,9 @@ const checkAndResumeGeneration = async (): Promise<boolean> => {
       setTimeout(async () => {
         const appRes = await getAppVoById({ id: appId.value })
         if (appRes.data.code === 0 && appRes.data.data) appInfo.value = appRes.data.data
-        updatePreview()
+        if (!isQaRun) {
+          updatePreview()
+        }
       }, 1000)
     })
 
@@ -1114,6 +1126,8 @@ const handleSend = async () => {
   // 记录索引，后续用于更新这条消息的内容
   const aiMessageIndex = messages.value.length
   messages.value.push({ role: 'ai', content: '', loading: true })
+  // 新一轮生成开始前，如果已有预览则保持显示，避免生成中 iframe 消失
+  hasExistingPreview.value = hasExistingPreview.value || !!previewUrl.value
   
   // 3. 设置生成状态
   isGenerating.value = true
@@ -1191,6 +1205,7 @@ const handleSend = async () => {
      * 用于区分正常关闭和异常错误
      */
     let streamCompleted = false
+    let isQaRun = false
     
     /**
      * 是否为修改模式
@@ -1288,7 +1303,11 @@ const handleSend = async () => {
           // 根据 msgType 路由到不同区域
           if (data.msgType === 'log') {
             // 日志消息 → 追加到工作流日志数组
-            workflowLogs.value.push(data.d.trim())
+            const logText = data.d.trim()
+            workflowLogs.value.push(logText)
+            if (logText.includes(QA_INTENT_LOG_MARKER)) {
+              isQaRun = true
+            }
           } else {
             // 内容消息（或无 msgType 的兼容消息）→ AI 回复
             bufferContent(data.d)
@@ -1368,7 +1387,9 @@ const handleSend = async () => {
           if (res.data.code === 0 && res.data.data) {
             appInfo.value = res.data.data
           }
-          updatePreview()
+          if (!isQaRun) {
+            updatePreview()
+          }
         }, 1000)
       } else {
         // 真正的错误：显示错误信息
@@ -1417,7 +1438,9 @@ const handleSend = async () => {
         if (res.data.code === 0 && res.data.data) {
           appInfo.value = res.data.data
         }
-        updatePreview()
+        if (!isQaRun) {
+          updatePreview()
+        }
       }, 1000)
     })
 
@@ -1471,6 +1494,7 @@ const updatePreview = () => {
    */
   if (appInfo.value?.codeGenType && appId.value) {
     previewUrl.value = getStaticPreviewUrl(appInfo.value.codeGenType, appId.value)
+    hasExistingPreview.value = true
     // 增加 key 值，强制 iframe 刷新
     iframeKey.value++
   } else if (appId.value) {
@@ -1480,6 +1504,7 @@ const updatePreview = () => {
         appInfo.value = res.data.data
         if (appInfo.value?.codeGenType) {
           previewUrl.value = getStaticPreviewUrl(appInfo.value.codeGenType, appId.value)
+          hasExistingPreview.value = true
           iframeKey.value++
         }
       }
