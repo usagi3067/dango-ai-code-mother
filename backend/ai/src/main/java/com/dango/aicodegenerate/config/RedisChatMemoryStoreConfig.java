@@ -15,7 +15,9 @@ import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.UnifiedJedis;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.time.Duration;
 
 @Configuration
 @ConfigurationProperties(prefix = "spring.data.redis")
@@ -77,6 +79,11 @@ public class RedisChatMemoryStoreConfig {
         poolConfig.setTestOnBorrow(true);
         poolConfig.setTestOnReturn(true);
         poolConfig.setTestWhileIdle(true);
+        // 每30秒检查一次空闲连接，驱逐空闲超过60秒的连接
+        // 防止长时间LLM调用（可能超过4分钟）后连接被云防火墙/NAT静默关闭
+        poolConfig.setTimeBetweenEvictionRuns(Duration.ofSeconds(30));
+        poolConfig.setMinEvictableIdleDuration(Duration.ofSeconds(60));
+        poolConfig.setNumTestsPerEvictionRun(3);
 
         // 创建带连接池的 Jedis 客户端
         HostAndPort hostAndPort = new HostAndPort(host, port);
@@ -96,16 +103,32 @@ public class RedisChatMemoryStoreConfig {
                 .build();
 
         try {
-            // 通过反射替换内部的 Jedis 客户端
+            // 第1步：取出 builder 创建的默认客户端并关闭（释放资源）
+            // RedisChatMemoryStore.client 字段本身不参与实际 Redis 操作，仅在构造时
+            // 传给 StringRedisOperations，之后闲置。此处只需取出来关闭，无需替换。
             Field clientField = RedisChatMemoryStore.class.getDeclaredField("client");
             clientField.setAccessible(true);
+            UnifiedJedis oldClient = (UnifiedJedis) clientField.get(store);
+            oldClient.close();
 
-            // 直接设置新的客户端（不关闭旧客户端，避免影响连接池）
-            clientField.set(store, jedis);
-            log.info("成功替换 RedisChatMemoryStore 的 Jedis 客户端，使用自定义超时配置和连接池");
+            // 第2步：替换 redisOperations（StringRedisOperations）
+            // 所有实际 Redis 操作（getMessages/updateMessages/deleteMessages）均通过
+            // StringRedisOperations.client 执行，而非 RedisChatMemoryStore.client。
+            // StringRedisOperations 在 RedisChatMemoryStore 构造时就持有了原始客户端的副本，
+            // 必须整体替换 redisOperations 实例，自定义连接池和超时配置才能真正生效。
+            Class<?> strOpsClass = Class.forName(
+                    "dev.langchain4j.community.store.memory.chat.redis.StringRedisOperations");
+            Constructor<?> ctor = strOpsClass.getDeclaredConstructor(UnifiedJedis.class);
+            ctor.setAccessible(true);
+            Object newRedisOps = ctor.newInstance(jedis);
+
+            Field redisOpsField = RedisChatMemoryStore.class.getDeclaredField("redisOperations");
+            redisOpsField.setAccessible(true);
+            redisOpsField.set(store, newRedisOps);
+
+            log.info("成功替换 RedisChatMemoryStore 的 StringRedisOperations，使用自定义超时配置和连接池");
         } catch (Exception e) {
-            log.error("替换 Jedis 客户端失败，将使用默认配置", e);
-            // 如果反射失败，关闭我们创建的客户端，使用默认的
+            log.error("替换 StringRedisOperations 失败，将使用默认配置（可能在长时间LLM调用后出现连接超时）", e);
             jedis.close();
         }
 
