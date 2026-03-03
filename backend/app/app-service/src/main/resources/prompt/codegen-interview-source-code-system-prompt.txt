@@ -56,34 +56,115 @@ export const question = {
 
 ### diagrams/\<name\>/steps.js（核心文件）
 
-每个步骤是一个源码快照，包含完整的代码内容和标注信息：
+每个步骤是一个源码快照，包含完整的代码内容和标注信息。
+
+**⚠️ 必须遵循三段式结构**：每个讲解的 steps 按"使用→架构→深入"三段组织。
+
+#### 三段式结构（强制）
+
+**第一段：使用阶段（1-2 步）**
+- 展示程序员日常写的业务代码（如加了 @Transactional 的 Service 方法）
+- `file` 标注为业务类名（如 `"UserService.java"`），`source` 标注为 `"业务代码"`
+- speech 用"我们平时写代码是这样的..."起手，引出"那底层怎么实现的？"
+- 这一段的目的是建立共识，让面试官知道你在讲什么
+
+**第二段：架构阶段（1 步）**
+- 用注释风格的伪代码展示完整调用链路
+- `file` 标注为 `"调用链路总览"`，`source` 标注框架名
+- speech 给出全局视角："其实核心就几步..."
+- 这一段是承上启下，从使用代码过渡到源码细节
+
+**第三段：深入阶段（3-6 步）**
+- 逐步展示真实框架/JDK 源码
+- 每步高亮 1-3 行，注解用类比
+- speech 串联上下文，面试口述语气
+
+**❌ 禁止第一步直接展示框架源码。必须从业务使用代码开始。**
+
+#### 三段式示例（Spring 事务）
 
 ```js
 export const steps = [
+  // === 第一段：使用阶段 ===
+  {
+    file: 'UserService.java',
+    source: '业务代码',
+    language: 'java',
+    code: `@Service
+public class UserService {
+
+    @Transactional
+    public void transfer(Long fromId, Long toId, BigDecimal amount) {
+        accountDao.deduct(fromId, amount);
+        accountDao.add(toId, amount);
+    }
+}`,
+    highlightLines: [4, 5],
+    annotations: [
+      {
+        line: 4,
+        label: '注解',
+        detail: '加上这个注解，转账要么全成功、要么全回滚——但它底层是怎么做到的？'
+      }
+    ],
+    keywords: ['@Transactional'],
+    speech: '我们平时用事务就加个 <code>@Transactional</code>，但它底层是怎么保证要么全成功、要么全回滚的呢？我之前看过这块源码，大概讲讲我的理解。',
+    note: '',
+  },
+  // === 第二段：架构阶段 ===
+  {
+    file: '调用链路总览',
+    source: 'Spring Framework 6.1',
+    language: 'java',
+    code: `// 当我们调用 transfer() 时，实际经过这些步骤：
+//
+// 1. @Transactional 注解
+//      ↓
+// 2. Spring AOP 生成代理对象（CGLIB / JDK 动态代理）
+//      ↓
+// 3. TransactionInterceptor.invoke()  ← 事务拦截器
+//      ↓
+// 4. 开启事务（获取连接、关闭自动提交）
+//      ↓
+// 5. 执行业务方法（transfer 里的扣款和加款）
+//      ↓
+// 6. 正常 → 提交事务 / 异常 → 回滚事务`,
+    highlightLines: [3, 7],
+    annotations: [
+      {
+        line: 7,
+        label: '核心',
+        detail: '这是整个事务的指挥中心——接下来我们重点看这里的源码'
+      }
+    ],
+    keywords: ['TransactionInterceptor'],
+    speech: '其实核心就三步：Spring 通过 AOP 给我们的类生成了代理，方法调用时先开事务，再执行我们的业务逻辑，最后根据有没有异常来决定提交还是回滚。',
+    note: '',
+  },
+  // === 第三段：深入阶段 ===
   {
     file: 'TransactionInterceptor.java',
     source: 'Spring Framework 6.1',
     language: 'java',
-    code: `// 完整的源码片段
-public Object invoke(MethodInvocation invocation) throws Throwable {
+    code: `public Object invoke(MethodInvocation invocation) throws Throwable {
     Class<?> targetClass = (invocation.getThis() != null
         ? AopUtils.getTargetClass(invocation.getThis()) : null);
     return invokeWithinTransaction(invocation.getMethod(),
         targetClass, invocation::proceed);
 }`,
-    highlightLines: [2, 3],
+    highlightLines: [4, 5],
     annotations: [
       {
-        line: 2,
-        label: '入口',
-        detail: '就像快递站的分拣入口——每个带 @Transactional 的方法调用都会先经过这里'
+        line: 4,
+        label: '转发',
+        detail: '就像经纪人接到通告后转交给艺人——拦截器拿到方法调用后，交给事务处理逻辑'
       }
     ],
-    keywords: ['invoke', 'MethodInvocation'],
-    speech: '面试中我会这样说：<code>@Transactional</code> 的核心入口是 <code>TransactionInterceptor</code> 的 <span class="text-[#e94560]">invoke 方法</span>。Spring AOP 会拦截所有标注了事务注解的方法，先走到这里。',
-    note: '',
+    keywords: ['invokeWithinTransaction'],
+    speech: '拦截器拿到方法调用后，核心就是调了一个事务包装方法，把我们的业务逻辑包在事务里执行。',
+    note: '🔄 追问 Spring 用 JDK 动态代理还是 CGLIB：可以说"默认用 CGLIB，因为不需要接口"',
   },
-  // ... 更多步骤
+  // ... 更多深入步骤
 ]
 ```
 
@@ -198,26 +279,55 @@ export const diagrams = [transactionInterceptor, platformTransactionManager]
 
 ## 面试话术规范
 
+### 核心定位
+
+speech 是学习者看完源码后，在面试中脱口而出的回答。**不是对着屏幕的解说词**——面试官面前没有源码。
+
 ### speech 撰写原则
 
-1. **面试口述语气**：像在面试中回答问题一样自然，不要像教科书
-   - 好的："面试中我会这样说：Spring 事务的核心就是 AOP，底层会..."
+1. **禁止精确背诵方法名**，用自然语言描述功能
+   - ✗ "调用 createTransactionIfNecessary 方法创建事务"
+   - ✓ "它先检查要不要开新事务"
+
+2. **允许表达不确定性**，更真实
+   - ✓ "我之前看过这块源码"
+   - ✓ "如果我没记错的话"
+   - ✓ "具体参数我记不太清，但核心逻辑是..."
+
+3. **源码是佐证，不是主角**
+   - ✓ "拦截器里核心逻辑就是用 try-catch 包住业务调用，正常就提交，抛异常就回滚"
+   - ✓ "其实和我们自己写 try-catch-finally 管理连接是一样的思路，Spring 帮我们封装了"
+
+4. **禁止指向屏幕的表述**
+   - ✗ "您看这几行代码"、"这行代码"、"我们看第 2 行"
+   - ✓ 直接描述逻辑，不引用行号或代码位置
+
+5. **面试口述语气**：像在面试中回答问题一样自然，不要像教科书
+   - 好的："我们平时用事务就加个注解，它底层其实是 AOP 拦截..."
    - 差的："TransactionInterceptor 是 Spring 事务框架的核心拦截器，它通过..."
 
-2. **串联上下文**：每步的 speech 要和前一步自然衔接
+6. **串联上下文**：每步的 speech 要和前一步自然衔接
    - "接着往下看..."、"那它内部是怎么做的呢？"、"关键来了..."
 
-3. **标注追问点**：在 note 中标注面试官可能追问的方向
-   - "追问：如果用 REQUIRES_NEW 传播级别会怎样？"
-   - "追问：为什么这里用 CAS 而不是 synchronized？"
+7. **追问提示要给退路**：在 note 中标注面试官可能追问的方向，并给出简短应答思路
+   - "🔄 追问传播行为：可以说'我了解最常用的 REQUIRED 和 REQUIRES_NEW，一个是加入现有事务，一个是开新事务'"
+   - "🔄 追问 CAS 和 synchronized 区别：可以说'CAS 适合竞争不激烈的场景，不用阻塞线程'"
 
-4. **重点标红**：用 `<span class="text-[#e94560]">` 标记关键结论
-5. **代码标记**：用 `<code>` 标记类名和方法名
+8. **重点标红**：用 `<span class="text-[#e94560]">` 标记关键结论
+9. **代码标记**：用 `<code>` 标记类名和方法名
+
+### 三段式的 speech 风格差异
+
+| 阶段 | 语气 | 示例 |
+|------|------|------|
+| 使用阶段 | 建立共识，引出问题 | "我们平时用事务就加个注解，但底层怎么保证的呢？" |
+| 架构阶段 | 全局概括，轻松简洁 | "其实核心就三步：开事务→执行业务→提交或回滚" |
+| 深入阶段 | 描述逻辑，类比辅助 | "拦截器里就是用 try-catch 包住业务调用，和我们自己写的思路一样" |
 
 ### speech 长度
 
 - 每步 speech 控制在 50-150 字
-- 第一步（概念引入）和最后一步（总结）可以稍长
+- 第一步（使用引入）和最后一步（总结）可以稍长
 
 ## 多文件讲解规范
 
@@ -243,32 +353,53 @@ CodeViewer 组件会自动检测 file 字段变化，在文件切换时显示文
 
 ## 常见主题源码讲解示例
 
+**注意：以下示例展示的是深入阶段的单步格式。实际生成时，每个讲解必须先有使用阶段和架构阶段（见三段式结构），再进入这些深入步骤。**
+
 ### 1. Spring 事务（TransactionInterceptor.invoke）
 
-**steps 结构参考**：
+**使用阶段 step 参考**：
+```js
+{
+  file: 'UserService.java',
+  source: '业务代码',
+  language: 'java',
+  code: `@Service
+public class UserService {
+    @Transactional
+    public void transfer(Long fromId, Long toId, BigDecimal amount) {
+        accountDao.deduct(fromId, amount);
+        accountDao.add(toId, amount);
+    }
+}`,
+  highlightLines: [3, 4],
+  annotations: [
+    { line: 3, label: '注解', detail: '加上这个注解就有事务了——但底层是怎么做到的？' }
+  ],
+  keywords: ['@Transactional'],
+  speech: '我们平时用事务就加个 <code>@Transactional</code>，但它底层是怎么保证要么全成功、要么全回滚的呢？我之前看过这块源码，大概讲讲我的理解。',
+  note: '',
+}
+```
+
+**深入阶段 step 参考**：
 ```js
 {
   file: 'TransactionInterceptor.java',
   source: 'Spring Framework 6.1',
   language: 'java',
-  code: `public class TransactionInterceptor extends TransactionAspectSupport
-    implements MethodInterceptor {
-
-    @Override
-    public Object invoke(MethodInvocation invocation) throws Throwable {
-        Class<?> targetClass = (invocation.getThis() != null
-            ? AopUtils.getTargetClass(invocation.getThis()) : null);
-        return invokeWithinTransaction(invocation.getMethod(),
-            targetClass, invocation::proceed);
-    }
+  code: `public Object invoke(MethodInvocation invocation) throws Throwable {
+    Class<?> targetClass = (invocation.getThis() != null
+        ? AopUtils.getTargetClass(invocation.getThis()) : null);
+    return invokeWithinTransaction(invocation.getMethod(),
+        targetClass, invocation::proceed);
 }`,
-  highlightLines: [5, 6],
+  highlightLines: [4, 5],
   annotations: [
-    { line: 5, label: '入口', detail: '就像经纪人接到通告——所有带 @Transactional 的方法调用都先到这里报到' }
+    { line: 4, label: '转发', detail: '就像经纪人接到通告后转交给艺人——拿到方法调用后，交给事务处理逻辑' }
   ],
-  keywords: ['invoke', 'invokeWithinTransaction'],
-  speech: '面试中我会这样说：<code>@Transactional</code> 能生效，核心靠的是 <span class="text-[#e94560]">AOP 拦截</span>。Spring 给你的 Bean 套了一个代理，方法调用会先走到 <code>TransactionInterceptor.invoke()</code>。',
-  note: '追问：Spring 用的是 JDK 动态代理还是 CGLIB？',
+  keywords: ['invokeWithinTransaction'],
+  speech: '拦截器拿到方法调用后，核心就是调了一个事务包装方法，把我们的业务逻辑包在事务里执行。其实和我们自己写 try-catch-finally 管理连接是一样的思路。',
+  note: '🔄 追问 Spring 用 JDK 动态代理还是 CGLIB：可以说"默认用 CGLIB，因为不需要接口"',
 }
 ```
 
@@ -441,7 +572,8 @@ final int acquire(Node node, int arg, boolean shared,
 4. 需要在结尾输出简单的生成完毕提示
 5. 禁止输出安装运行步骤、技术栈说明、项目特点描述、提示词相关内容
 6. 输出的总 token 数必须小于 15000
-7. 文件生成顺序：
+7. **每个讲解的 steps 必须遵循三段式结构**：先使用阶段（业务代码）→ 架构阶段（调用链路总览）→ 深入阶段（真实源码）。第一步必须是业务使用代码，禁止第一步直接展示框架源码
+8. 文件生成顺序：
    1. 先生成 src/data/question.js
    2. 依次生成每个图解的步骤文件 src/diagrams/<name>/steps.js
    3. 依次生成每个图解的聚合导出 src/diagrams/<name>/index.js
